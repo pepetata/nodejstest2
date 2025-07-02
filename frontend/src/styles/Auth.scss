@@ -1,0 +1,557 @@
+// Import SCSS modules and variables
+@use 'sass:color';
+@use './variables.scss' as vars;
+
+// Auth form styling using our color scheme
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: vars.$bg-color;
+  padding: 1rem;
+}
+
+.auth-card {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid rgba(vars.$primary, 0.1);
+}
+
+.auth-title {
+  font-family: vars.$body-font !important;
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: vars.$primary !important;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  color: vars.$text-primary;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-family: vars.$body-font;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: vars.$body-font;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: vars.$primary;
+    box-shadow: 0 0 0 3px rgba(vars.$primary, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: vars.$primary;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: vars.$body-font;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: color.scale(vars.$primary, $lightness: -10%);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.auth-link {
+  color: vars.$textLabel;
+  text-decoration: none;
+  font-family: vars.$body-font;
+  font-weight: 500;
+
+  &:hover {
+    color: color.scale(vars.$textLabel, $lightness: -15%);
+    text-decoration: underline;
+  }
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-family: vars.$body-font;
+  color: vars.$text-secondary;
+}
+
+.error-alert {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-family: vars.$body-font;
+  font-size: 0.875rem;
+}
+
+.success-alert {
+  background-color: #efe;
+  border: 1px solid #cfc;
+  color: #3c3;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-family: vars.$body-font;
+  font-size: 0.875rem;
+}
+
+/* Restaurant Registration Specific Styles */
+.restaurant-registration {
+  max-width: 800px;
+
+  .subtitle {
+    text-align: center;
+    color: vars.$text-secondary;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+  }
+}
+
+/* Progress Bar Styles */
+.progress-container {
+  .progress-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 1.5rem;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background-color: #e1e5e9;
+      z-index: 1;
+    }
+  }
+
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+
+    .step-number {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background-color: #e1e5e9;
+      color: vars.$text-secondary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      border: 2px solid #e1e5e9;
+    }
+
+    .step-label {
+      font-size: 0.75rem;
+      color: vars.$text-secondary;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    &.active {
+      .step-number {
+        background-color: vars.$primary;
+        color: white;
+        border-color: vars.$primary;
+      }
+
+      .step-label {
+        color: vars.$primary;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+/* Step Content Styles */
+.step-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: vars.$primary;
+  margin-bottom: 0.5rem;
+}
+
+.step-description {
+  color: vars.$text-secondary;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+/* Form Layout Improvements */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+/* Operating Hours Styles */
+.operating-hours {
+  margin-top: 1.5rem;
+
+  .hours-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e1e5e9;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .day-label {
+      font-weight: 600;
+      color: vars.$text-primary;
+      min-width: 100px;
+    }
+
+    .hours-inputs {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      input[type='checkbox'] {
+        margin-right: 0.25rem;
+      }
+
+      label {
+        margin-right: 1rem;
+        font-size: 0.875rem;
+        color: vars.$text-secondary;
+      }
+
+      .time-input {
+        width: 100px;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+
+      span {
+        color: vars.$text-secondary;
+        font-size: 0.875rem;
+      }
+    }
+  }
+}
+
+/* Features Grid */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.feature-card {
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: white;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: color.scale(vars.$primary, $lightness: 60%);
+  }
+
+  &.selected {
+    border-color: vars.$primary;
+    background-color: color.scale(vars.$primary, $lightness: 95%);
+  }
+
+  &.required {
+    border-color: vars.$logoO;
+    background-color: color.scale(vars.$logoO, $lightness: 95%);
+  }
+
+  .feature-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+
+    input[type='checkbox'] {
+      margin-right: 0.75rem;
+      transform: scale(1.2);
+    }
+
+    .feature-name {
+      font-weight: 600;
+      color: vars.$text-primary;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .required-badge {
+      background-color: vars.$logoO;
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      margin-left: auto;
+      font-weight: 500;
+    }
+  }
+
+  .feature-description {
+    color: vars.$text-secondary;
+    font-size: 0.875rem;
+    margin: 0;
+  }
+}
+
+/* Plan Recommendation */
+.plan-recommendation {
+  margin-top: 2rem;
+
+  h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: vars.$text-primary;
+    margin-bottom: 1rem;
+  }
+}
+
+.plan-card {
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  background-color: white;
+
+  &.recommended {
+    border-color: vars.$primary;
+    background-color: color.scale(vars.$primary, $lightness: 97%);
+    position: relative;
+
+    &::before {
+      content: 'Recommended';
+      position: absolute;
+      top: -10px;
+      left: 1rem;
+      background-color: vars.$primary;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  }
+
+  h5 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: vars.$primary;
+    margin-bottom: 0.5rem;
+  }
+
+  .plan-price {
+    font-size: 2rem;
+    font-weight: 700;
+    color: vars.$logoO;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: vars.$text-secondary;
+    margin: 0;
+  }
+}
+
+/* Checkbox Groups */
+.checkbox-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+
+  input[type='checkbox'] {
+    margin-top: 0.125rem;
+    transform: scale(1.1);
+  }
+
+  label {
+    color: vars.$text-primary;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+}
+
+/* Plan Summary */
+.plan-summary {
+  background-color: color.scale(vars.$primary, $lightness: 97%);
+  border: 1px solid color.scale(vars.$primary, $lightness: 80%);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: vars.$primary;
+    margin-bottom: 0.75rem;
+  }
+
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+
+    &:not(:last-child) {
+      margin-bottom: 0.5rem;
+    }
+
+    span:first-child {
+      color: vars.$text-primary;
+    }
+
+    span:last-child {
+      font-weight: 600;
+      color: vars.$logoO;
+    }
+  }
+}
+
+/* Security Notice */
+.security-notice {
+  background-color: color.scale(#28a745, $lightness: 95%);
+  border: 1px solid color.scale(#28a745, $lightness: 80%);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: color.scale(#28a745, $lightness: -30%);
+  }
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  gap: 1rem;
+
+  .auth-button {
+    &.secondary {
+      background-color: transparent;
+      color: vars.$text-primary;
+      border: 2px solid #e1e5e9;
+
+      &:hover {
+        background-color: #f8f9fa;
+        border-color: color.scale(vars.$primary, $lightness: 60%);
+      }
+    }
+
+    &.primary {
+      background-color: vars.$primary;
+      border-color: vars.$primary;
+
+      &:hover {
+        background-color: color.scale(vars.$primary, $lightness: -10%);
+      }
+    }
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .restaurant-registration {
+    max-width: 100%;
+    padding: 1rem;
+  }
+
+  .progress-container .progress-bar {
+    &::before {
+      left: 5%;
+      right: 5%;
+    }
+  }
+
+  .progress-step {
+    .step-number {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .step-label {
+      font-size: 0.7rem;
+    }
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operating-hours .hours-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .hours-inputs {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+
+    .auth-button {
+      width: 100%;
+    }
+  }
+}

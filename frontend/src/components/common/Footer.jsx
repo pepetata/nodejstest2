@@ -1,61 +1,65 @@
+import React from 'react';
+import { Container, Row, Col } from 'react-bootstrap';
+import '../../styles/Footer.scss';
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-800 text-white py-8">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="footer-bg">
+      <Container>
+        <Row>
           {/* Restaurant Info */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Restaurant Name</h3>
-            <p className="mb-2">123 Restaurant Street</p>
-            <p className="mb-2">City, State 12345</p>
-            <p className="mb-2">Phone: (123) 456-7890</p>
-            <p>Email: info@restaurant.com</p>
-          </div>
+          <Col md={4} className="mb-4">
+            <h3 className="footer-title">Restaurant Name</h3>
+            <p className="footer-text">123 Restaurant Street</p>
+            <p className="footer-text">City, State 12345</p>
+            <p className="footer-text">Phone: (123) 456-7890</p>
+            <p className="footer-text">Email: info@restaurant.com</p>
+          </Col>
 
           {/* Quick Links */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
-              <li>
-                <a href="/" className="hover:text-primary-400">
+          <Col md={4} className="mb-4">
+            <h3 className="footer-title">Quick Links</h3>
+            <ul className="list-unstyled">
+              <li className="mb-2">
+                <a href="/" className="footer-link">
                   Home
                 </a>
               </li>
-              <li>
-                <a href="/menu" className="hover:text-primary-400">
+              <li className="mb-2">
+                <a href="/menu" className="footer-link">
                   Menu
                 </a>
               </li>
-              <li>
-                <a href="/about" className="hover:text-primary-400">
+              <li className="mb-2">
+                <a href="/about" className="footer-link">
                   About Us
                 </a>
               </li>
-              <li>
-                <a href="/contact" className="hover:text-primary-400">
+              <li className="mb-2">
+                <a href="/contact" className="footer-link">
                   Contact
                 </a>
               </li>
             </ul>
-          </div>
+          </Col>
 
           {/* Hours */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Hours</h3>
-            <p className="mb-2">Monday - Friday: 11AM - 10PM</p>
-            <p className="mb-2">Saturday: 10AM - 11PM</p>
-            <p>Sunday: 10AM - 9PM</p>
+          <Col md={4} className="mb-4">
+            <h3 className="footer-title">Hours</h3>
+            <p className="footer-hours">Monday - Friday: 11AM - 10PM</p>
+            <p className="footer-hours">Saturday: 10AM - 11PM</p>
+            <p className="footer-hours">Sunday: 10AM - 9PM</p>
 
-            <div className="mt-4 flex space-x-4">
+            <div className="mt-4 d-flex">
               <a
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-primary-400"
+                className="footer-link me-3"
               >
-                <span className="sr-only">Facebook</span>
+                <span className="visually-hidden">Facebook</span>
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fillRule="evenodd"
@@ -68,9 +72,9 @@ const Footer = () => {
                 href="https://instagram.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-primary-400"
+                className="footer-link me-3"
               >
-                <span className="sr-only">Instagram</span>
+                <span className="visually-hidden">Instagram</span>
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fillRule="evenodd"
@@ -83,21 +87,21 @@ const Footer = () => {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-primary-400"
+                className="footer-link"
               >
-                <span className="sr-only">Twitter</span>
+                <span className="visually-hidden">Twitter</span>
                 <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                 </svg>
               </a>
             </div>
-          </div>
-        </div>
+          </Col>
+        </Row>
 
-        <div className="mt-8 pt-4 border-t border-gray-700 text-center">
+        <div className="footer-copyright">
           <p>&copy; {currentYear} Restaurant Name. All rights reserved.</p>
         </div>
-      </div>
+      </Container>
     </footer>
   );
 };

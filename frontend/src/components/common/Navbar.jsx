@@ -70,10 +70,10 @@ const AppNavbar = () => {
                     size="sm"
                     className="menu-btn"
                   >
-                    Login
+                    Entrar
                   </Button>
                   <Button variant="primary" as={Link} to="/register" size="sm" className="menu-btn">
-                    Register
+                    Registrar
                   </Button>
                 </>
               )}

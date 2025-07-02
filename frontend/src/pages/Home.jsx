@@ -14,8 +14,14 @@ const Home = ({ source }) => {
             <hr className="my-4" />
             <p>Get started by creating an account or logging in to access your restaurant.</p>
             <div className="mt-4">
-              <Button variant="light" size="lg" as={Link} to="/register" className="me-3">
-                Get Started
+              <Button
+                variant="light"
+                size="lg"
+                as={Link}
+                to="/register-restaurant"
+                className="me-3"
+              >
+                Register Your Restaurant
               </Button>
               <Button variant="outline-light" size="lg" as={Link} to="/login">
                 Sign In
@@ -29,8 +35,8 @@ const Home = ({ source }) => {
         <Col md={4} className="text-center mb-4">
           <h3>For Restaurants</h3>
           <p>Manage your menu, orders, and staff with our comprehensive platform.</p>
-          <Button variant="outline-primary" as={Link} to="/register">
-            Sign Up Your Restaurant
+          <Button variant="outline-primary" as={Link} to="/register-restaurant">
+            Register Your Restaurant
           </Button>
         </Col>
         <Col md={4} className="text-center mb-4">

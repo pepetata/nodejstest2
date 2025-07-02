@@ -1,6 +1,10 @@
+// Import SCSS modules and variables
+@use 'sass:color';
+@use './variables.scss' as vars;
+
 // Restaurant navbar styling
 .navbar-bg-logo {
-  background: rgba(255, 214, 153, 0.85) !important;
+  background: rgba(vars.$header-color, 0.85) !important;
   min-height: 80px;
   padding-top: 12px;
   padding-bottom: 12px;
@@ -25,19 +29,20 @@
   padding: 8px 16px !important;
   font-size: 16px !important;
   font-weight: 600 !important;
-  color: #0d6efd !important;
+  color: vars.$primary !important;
   background-color: transparent !important;
-  border: 2px solid #0d6efd !important;
+  border: 2px solid vars.$primary !important;
   border-radius: 6px !important;
   text-decoration: none !important;
   transition: all 0.3s ease;
+  font-family: vars.$body-font;
 
   &:hover {
     color: #fff !important;
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
+    background-color: vars.$primary !important;
+    border-color: vars.$primary !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    box-shadow: 0 4px 8px rgba(vars.$primary, 0.3);
   }
 }
 
@@ -51,6 +56,7 @@
   margin: 0 4px !important;
   text-decoration: none !important;
   transition: all 0.3s ease;
+  font-family: vars.$body-font;
 }
 
 // Logo positioning - single logo that changes position based on screen size
@@ -78,29 +84,29 @@
 
 // Button styling for login/register
 .btn-outline-primary {
-  color: #0d6efd !important;
-  border-color: #0d6efd !important;
+  color: vars.$primary !important;
+  border-color: vars.$primary !important;
   background-color: transparent !important;
 
   &:hover {
     color: #fff !important;
-    background-color: #0d6efd !important;
-    border-color: #0d6efd !important;
+    background-color: vars.$primary !important;
+    border-color: vars.$primary !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+    box-shadow: 0 4px 8px rgba(vars.$primary, 0.3);
   }
 }
 
 .btn-primary {
   color: #fff !important;
-  background-color: #0d6efd !important;
-  border-color: #0d6efd !important;
+  background-color: vars.$primary !important;
+  border-color: vars.$primary !important;
 
   &:hover {
-    background-color: #0b5ed7 !important;
-    border-color: #0a58ca !important;
+    background-color: vars.$primary-hover !important;
+    border-color: vars.$primary-hover !important;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.4);
+    box-shadow: 0 4px 8px rgba(vars.$primary, 0.4);
   }
 }
 
@@ -154,12 +160,21 @@ body {
 
 // Custom button styling for restaurant theme
 .btn-restaurant-primary {
-  background-color: #ddbf3c !important;
-  color: #dc143c !important;
-  border: 2px solid #ddbf3c !important;
+  background-color: vars.$logoO !important;
+  color: vars.$dark !important;
+  border: 2px solid vars.$logoO !important;
+  font-family: vars.$body-font;
 
   &:hover {
-    background-color: rgba(221, 191, 60, 0.8) !important;
-    border-color: #ddbf3c !important;
+    background-color: color.scale(vars.$logoO, $lightness: -10%) !important;
+    border-color: vars.$logoO !important;
   }
+}
+
+// Ensure content doesn't hide behind fixed navbar
+body {
+  padding-top: 0;
+  font-family: vars.$body-font;
+  background-color: vars.$bg-color;
+  color: vars.$text-primary;
 }

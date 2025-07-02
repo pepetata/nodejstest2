@@ -33,6 +33,7 @@ function App() {
         <Route index element={<Home source="/" />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
+        <Route path="register-restaurant" element={<Register />} />
       </Route>
 
       {/* Main restaurant routes with common Layout */}

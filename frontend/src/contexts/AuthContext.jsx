@@ -1,45 +1,38 @@
 import React, { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import authService from '../services/authService';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
+function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('token');
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const initAuth = async () => {
-      if (token) {
-        try {
-          // Validate token and get user data
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          // Clear invalid token
-          setToken(null);
-          localStorage.removeItem('token');
-        }
-      }
-      setLoading(false);
-    };
+    // Initialize auth state
+    setLoading(false);
+  }, []);
 
-    initAuth();
-  }, [token]);
-
-  const login = async (email, password) => {
+  const login = async (email, _password) => {
     setError(null);
     try {
-      const data = await authService.login(email, password);
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
+      // Mock login for now - replace with actual API call
+      const mockUser = { id: 1, email, name: 'Test User' };
+      const mockToken = 'mock-token-' + Date.now();
+
+      setToken(mockToken);
+      setUser(mockUser);
+      localStorage.setItem('token', mockToken);
       return true;
-    } catch (error) {
-      setError(error.response?.data?.error || 'Login failed');
+    } catch (err) {
+      setError(err.message || 'Login failed');
       return false;
     }
   };
@@ -47,29 +40,32 @@ export function AuthProvider({ children }) {
   const register = async (userData) => {
     setError(null);
     try {
-      const data = await authService.register(userData);
-      setToken(data.token);
-      setUser(data.user);
-      localStorage.setItem('token', data.token);
+      // Mock registration for now - replace with actual API call
+      const mockUser = {
+        id: Date.now(),
+        email: userData.email,
+        name: userData.ownerName || userData.name,
+        type: userData.type || 'user',
+      };
+      const mockToken = 'mock-token-' + Date.now();
+
+      setToken(mockToken);
+      setUser(mockUser);
+      localStorage.setItem('token', mockToken);
       return true;
-    } catch (error) {
-      setError(error.response?.data?.error || 'Registration failed');
+    } catch (err) {
+      setError(err.message || 'Registration failed');
       return false;
     }
   };
 
-  const logout = async () => {
+  const logout = () => {
+    setUser(null);
+    setToken(null);
     try {
-      if (token) {
-        await authService.logout();
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear user data regardless of API success
-      setUser(null);
-      setToken(null);
       localStorage.removeItem('token');
+    } catch {
+      // Handle localStorage errors gracefully
     }
   };
 
@@ -90,3 +86,5 @@ export function AuthProvider({ children }) {
 AuthProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export { AuthContext, AuthProvider };

@@ -1,0 +1,61 @@
+// Import SCSS modules
+@use 'sass:color';
+@use './variables.scss' as vars;
+
+// Global styles using our color scheme
+body {
+  font-family: vars.$body-font !important;
+  background-color: vars.$bg-color !important;
+  color: vars.$text-primary !important;
+  margin: 0;
+  padding: 0;
+}
+
+// Typography
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: vars.$body-font !important;
+  color: vars.$text-primary !important;
+}
+
+// Container background
+.container {
+  background-color: transparent;
+}
+
+// Override Bootstrap primary colors to use our scheme
+:root {
+  --bs-primary: #{vars.$primary};
+  --bs-primary-rgb:
+    #{color.channel(vars.$primary, 'red', $space: rgb)},
+    #{color.channel(vars.$primary, 'green', $space: rgb)},
+    #{color.channel(vars.$primary, 'blue', $space: rgb)};
+  --bs-secondary: #{vars.$textLabel};
+  --bs-secondary-rgb:
+    #{color.channel(vars.$textLabel, 'red', $space: rgb)},
+    #{color.channel(vars.$textLabel, 'green', $space: rgb)},
+    #{color.channel(vars.$textLabel, 'blue', $space: rgb)};
+  --bs-warning: #{vars.$logoO};
+  --bs-warning-rgb:
+    #{color.channel(vars.$logoO, 'red', $space: rgb)},
+    #{color.channel(vars.$logoO, 'green', $space: rgb)},
+    #{color.channel(vars.$logoO, 'blue', $space: rgb)};
+  --bs-body-bg: #{vars.$bg-color};
+  --bs-body-color: #{vars.$text-primary};
+  --bs-body-font-family: #{vars.$body-font};
+}
+
+// Global link styles
+a {
+  color: vars.$textLabel;
+  text-decoration: none;
+
+  &:hover {
+    color: color.scale(vars.$textLabel, $lightness: -15%);
+    text-decoration: underline;
+  }
+}

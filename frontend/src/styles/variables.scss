@@ -1,0 +1,25 @@
+// Import SCSS modules
+@use 'sass:color';
+
+// Global Color Variables
+$bg-color: #fff4e5;
+$logoO: #ffaa00;
+$logoB: #1650a1;
+$textLabel: #0896ff;
+$header-color: #ffd699;
+$footer-color: #ffd699;
+$body-font: 'Inconsolata', monospace;
+
+// Additional color variables
+$primary: #1650a1; // Using logoB color for primary
+$dark: #212529; // Bootstrap-like dark color
+
+// Derived colors for consistency
+$primary-hover: color.scale($primary, $lightness: -10%);
+$primary-light: color.scale($primary, $lightness: 20%);
+$text-primary: $dark;
+$text-secondary: color.scale($dark, $lightness: 20%);
+
+// Background variations
+$bg-light: color.scale($bg-color, $lightness: 5%);
+$bg-dark: color.scale($bg-color, $lightness: -10%);

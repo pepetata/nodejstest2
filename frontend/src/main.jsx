@@ -7,7 +7,8 @@ import { CartProvider } from './contexts/CartContext';
 
 // Import Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './styles/index.css';
+// Import our global styles with color scheme
+import './styles/global.scss';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

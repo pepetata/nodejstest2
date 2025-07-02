@@ -1,0 +1,57 @@
+// Import SCSS modules and variables
+@use 'sass:color';
+@use './variables.scss' as vars;
+
+// Footer styling using our color scheme
+.footer-bg {
+  background-color: vars.$footer-color !important;
+  color: vars.$text-primary !important;
+  padding: 2rem 0;
+  margin-top: auto;
+}
+
+.footer-title {
+  font-family: vars.$body-font !important;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: vars.$primary !important;
+}
+
+.footer-text {
+  font-family: vars.$body-font !important;
+  color: vars.$text-primary !important;
+  margin-bottom: 0.5rem;
+}
+
+.footer-link {
+  color: vars.$textLabel !important;
+  text-decoration: none;
+  font-family: vars.$body-font !important;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: color.scale(vars.$textLabel, $lightness: -15%) !important;
+    text-decoration: underline;
+  }
+
+  // Social media icon sizing
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+.footer-hours {
+  font-family: vars.$body-font !important;
+  color: vars.$text-primary !important;
+}
+
+.footer-copyright {
+  border-top: 1px solid rgba(vars.$primary, 0.2);
+  padding-top: 1rem;
+  margin-top: 2rem;
+  text-align: center;
+  font-family: vars.$body-font !important;
+  color: vars.$text-secondary !important;
+}
