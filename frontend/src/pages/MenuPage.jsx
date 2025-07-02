@@ -26,12 +26,13 @@ const MenuPage = () => {
   }, []);
 
   // Get unique categories from menu items
-  const categories = ['all', ...new Set(menuItems.map(item => item.category))];
+  const categories = ['all', ...new Set(menuItems.map((item) => item.category))];
 
   // Filter menu items by category
-  const filteredItems = activeCategory === 'all' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+  const filteredItems =
+    activeCategory === 'all'
+      ? menuItems
+      : menuItems.filter((item) => item.category === activeCategory);
 
   const handleAddToCart = (item) => {
     addItem(item);
@@ -50,10 +51,7 @@ const MenuPage = () => {
     return (
       <div className="text-center py-10">
         <p className="text-red-600">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-4 btn btn-primary"
-        >
+        <button onClick={() => window.location.reload()} className="mt-4 btn btn-primary">
           Try Again
         </button>
       </div>
@@ -63,10 +61,10 @@ const MenuPage = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold text-center mb-8">Our Menu</h1>
-      
+
       {/* Category filter */}
       <div className="flex flex-wrap justify-center mb-8">
-        {categories.map(category => (
+        {categories.map((category) => (
           <button
             key={category}
             className={`px-4 py-2 m-1 rounded-full ${
@@ -80,18 +78,14 @@ const MenuPage = () => {
           </button>
         ))}
       </div>
-      
+
       {/* Menu items grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map(item => (
+        {filteredItems.map((item) => (
           <div key={item.id} className="card overflow-hidden">
             <div className="h-48 overflow-hidden">
               {item.image ? (
-                <img 
-                  src={item.image} 
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                   <span className="text-gray-500">No image available</span>

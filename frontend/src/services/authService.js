@@ -17,13 +17,8 @@ class AuthService {
   }
 
   async getCurrentUser() {
-    try {
-      const response = await api.get('/auth/me');
-      return response.data;
-    } catch (error) {
-      // Token validation failed or user not found
-      throw error;
-    }
+    const response = await api.get('/auth/me');
+    return response.data;
   }
 }
 

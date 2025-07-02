@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Logging
 if (process.env.NODE_ENV !== 'test') {
-    app.use(morgan('dev'));
+  app.use(morgan('dev'));
 }
 app.use(requestLogger);
 
@@ -33,7 +33,7 @@ app.use('/api/orders', orderRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy' });
+  res.status(200).json({ status: 'healthy' });
 });
 
 // Error handling middleware
@@ -41,29 +41,29 @@ app.use(errorHandler);
 
 // Start the server
 const startServer = async () => {
-    try {
-        // Test database connection
-        await db.testConnection();
-        
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-        });
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        process.exit(1);
-    }
+  try {
+    // Test database connection
+    await db.testConnection();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 };
 
 // Handle unexpected errors
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
-    process.exit(1);
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (error) => {
-    console.error('Unhandled Rejection:', error);
-    process.exit(1);
+  console.error('Unhandled Rejection:', error);
+  process.exit(1);
 });
 
 startServer();

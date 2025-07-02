@@ -27,7 +27,7 @@ const Navbar = () => {
             <Link to="/" className="text-gray-700 hover:text-primary-600">
               Menu
             </Link>
-            
+
             {isAuthenticated ? (
               <>
                 <Link to="/cart" className="text-gray-700 hover:text-primary-600 relative">
@@ -38,7 +38,7 @@ const Navbar = () => {
                     </span>
                   )}
                 </Link>
-                
+
                 <div className="relative group">
                   <button className="text-gray-700 hover:text-primary-600">
                     {user?.name || 'Account'}
@@ -58,10 +58,7 @@ const Navbar = () => {
                 <Link to="/login" className="text-gray-700 hover:text-primary-600">
                   Login
                 </Link>
-                <Link
-                  to="/register"
-                  className="btn btn-primary"
-                >
+                <Link to="/register" className="btn btn-primary">
                   Sign Up
                 </Link>
               </>

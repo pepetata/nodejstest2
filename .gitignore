@@ -9,6 +9,17 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 
+# Editor and Linter caches
+.eslintcache
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.code-workspace
+.idea/
+.DS_Store
+
 # Environment variables
 .env
 .env.local
@@ -39,3 +50,6 @@ build/
 # Temporary files
 *.tmp
 *.temp
+
+# My custom ignores
+.history/

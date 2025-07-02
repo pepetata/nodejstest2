@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 
 export const CartContext = createContext();
 
@@ -16,22 +17,19 @@ export const CartProvider = ({ children }) => {
     }
   }, []);
 
+  // Calculate total price and item count
+  const calculateTotals = useCallback(() => {
+    const count = items.reduce((sum, item) => sum + item.quantity, 0);
+    const price = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    setItemCount(count);
+    setTotalPrice(price);
+  }, [items]);
+
   // Update localStorage when cart changes
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
     calculateTotals();
-  }, [items]);
-
-  // Calculate total price and item count
-  const calculateTotals = () => {
-    const count = items.reduce((sum, item) => sum + item.quantity, 0);
-    const price = items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    setItemCount(count);
-    setTotalPrice(price);
-  };
+  }, [items, calculateTotals]);
 
   const addItem = (item) => {
     const existingItemIndex = items.findIndex((i) => i.id === item.id);
@@ -58,11 +56,7 @@ export const CartProvider = ({ children }) => {
     if (quantity <= 0) {
       removeItem(itemId);
     } else {
-      setItems(
-        items.map((item) =>
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      );
+      setItems(items.map((item) => (item.id === itemId ? { ...item, quantity } : item)));
     }
   };
 
@@ -81,4 +75,8 @@ export const CartProvider = ({ children }) => {
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
+
+CartProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { useAuth } from './hooks/useAuth';
 import Layout from './components/common/Layout';
 
@@ -21,6 +22,10 @@ function App() {
     return children;
   };
 
+  ProtectedRoute.propTypes = {
+    children: PropTypes.node.isRequired,
+  };
+
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
@@ -28,25 +33,25 @@ function App() {
         <Route index element={<MenuPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
-        
+
         {/* Protected routes */}
-        <Route 
-          path="cart" 
+        <Route
+          path="cart"
           element={
             <ProtectedRoute>
               <CartPage />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="orders/:id" 
+        <Route
+          path="orders/:id"
           element={
             <ProtectedRoute>
               <OrderStatusPage />
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* 404 route */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>

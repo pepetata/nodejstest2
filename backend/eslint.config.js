@@ -1,0 +1,40 @@
+import eslint from '@eslint/js';
+import eslintPluginNode from 'eslint-plugin-node';
+import eslintPluginSecurity from 'eslint-plugin-security';
+import prettierConfig from 'eslint-config-prettier';
+
+export default [
+  eslint.configs.recommended,
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+    },
+    plugins: {
+      node: eslintPluginNode,
+      security: eslintPluginSecurity,
+    },
+    rules: {
+      'no-console': 'warn',
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'node/no-unsupported-features/es-syntax': ['error', { ignores: ['modules'] }],
+      'node/no-unpublished-require': 'off',
+      'security/detect-object-injection': 'warn',
+      'security/detect-non-literal-fs-filename': 'warn',
+      'no-process-exit': 'warn',
+    },
+    ignores: [
+      'node_modules/',
+      'dist/',
+      'coverage/',
+      '.env',
+      '.env.*',
+      '!.env.example',
+      'logs/',
+      '*.log',
+      '.DS_Store',
+    ],
+  },
+  prettierConfig,
+];

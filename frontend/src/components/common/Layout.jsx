@@ -14,4 +14,5 @@ const Layout = () => {
   );
 };
 
+// Layout doesn't need prop-types as it doesn't receive any props
 export default Layout;

@@ -33,12 +33,14 @@ A full-stack web application for a restaurant ordering system with a React front
 ## Getting Started
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/pepetata/nodejstest2.git
    cd nodejstest2
    ```
 
 2. Set up the backend:
+
    ```bash
    cd backend
    npm install
@@ -47,6 +49,7 @@ A full-stack web application for a restaurant ordering system with a React front
    ```
 
 3. Set up the frontend:
+
    ```bash
    cd frontend
    npm install
@@ -62,8 +65,52 @@ A full-stack web application for a restaurant ordering system with a React front
 - **Cart System:** Add items to cart, adjust quantities
 - **Order Processing:** Place orders, track order status
 
-- `index.js` - Main entry point
-- `package.json` - Project configuration and dependencies
+## Code Quality
+
+This project uses ESLint and Prettier to ensure code quality and consistent formatting.
+
+### Backend
+
+```bash
+cd backend
+npm run lint         # Check for linting issues
+npm run lint:fix     # Fix linting issues automatically
+npm run format       # Format code with Prettier
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm run lint         # Check for linting issues
+npm run lint:fix     # Fix linting issues automatically
+npm run format       # Format code with Prettier
+```
+
+### VS Code Extensions
+
+The project includes recommendations for VS Code extensions in `.vscode/extensions.json`. When you open the project in VS Code, it will suggest installing:
+
+- ESLint - For real-time linting feedback
+- Prettier - For code formatting
+
+## Configuration Files
+
+- **Backend**
+
+  - `.eslintrc.json` - ESLint configuration (CommonJS format)
+  - `.prettierrc` - Prettier configuration
+  - `.eslintignore` - Files to be ignored by ESLint
+  - `.prettierignore` - Files to be ignored by Prettier
+
+- **Frontend**
+  - `.eslintrc.json` - ESLint configuration for React
+  - `.prettierrc` - Prettier configuration
+  - `.eslintignore` - Files to be ignored by ESLint
+  - `.prettierignore` - Files to be ignored by Prettier
+  - `vite.config.js` - Vite bundler configuration
+  - `tailwind.config.js` - Tailwind CSS configuration
+  - `tailwind.config.js` - Tailwind CSS configuration
 
 ## Contributing
 
