@@ -1,73 +1,88 @@
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
+import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 import { useAuth } from '../../hooks/useAuth';
-import { useContext } from 'react';
-import { CartContext } from '../../contexts/CartContext';
+import '../../styles/Menu.scss';
 
-const Navbar = () => {
+const AppNavbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { itemCount } = useContext(CartContext);
+  const { restaurantSlug } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  // Check if we're on an admin, waiter, or KDS page
+  const isSpecialPortal =
+    location.pathname.includes('/admin') ||
+    location.pathname.includes('/waiter') ||
+    location.pathname.includes('/kds');
+
+  // Don't show regular navbar on special portals
+  if (isSpecialPortal) {
+    return null;
+  }
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    navigate(restaurantSlug ? `/${restaurantSlug}/login` : '/login');
   };
 
   return (
-    <nav className="bg-white shadow">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-primary-600">
-            RestaurantApp
-          </Link>
+    <Navbar expand="md" fixed="top" className="py-2 navbar-bg-logo">
+      <Container>
+        {/* Home button on the left (tablet/desktop only) */}
+        <Nav className="me-auto d-none d-md-flex">
+          <Nav.Link as={Link} to="/" className="home-btn">
+            Home
+          </Nav.Link>
+        </Nav>
 
-          {/* Navigation Links */}
-          <div className="flex items-center space-x-6">
-            <Link to="/" className="text-gray-700 hover:text-primary-600">
-              Menu
-            </Link>
+        {/* Single Logo - positioned differently based on screen size */}
+        <Navbar.Brand as={Link} to="/" className="navbar-logo">
+          <img src="/images/logo.png" alt="A la carte" className="logo-img" />
+        </Navbar.Brand>
 
-            {isAuthenticated ? (
-              <>
-                <Link to="/cart" className="text-gray-700 hover:text-primary-600 relative">
-                  Cart
-                  {itemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-primary-600 text-white rounded-full text-xs px-2 py-1">
-                      {itemCount}
-                    </span>
-                  )}
-                </Link>
+        {/* Hamburger toggle for mobile only */}
+        <Navbar.Toggle aria-controls="main-navbar-nav" />
 
-                <div className="relative group">
-                  <button className="text-gray-700 hover:text-primary-600">
-                    {user?.name || 'Account'}
-                  </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="text-gray-700 hover:text-primary-600">
-                  Login
-                </Link>
-                <Link to="/register" className="btn btn-primary">
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
+        {/* Collapsible content */}
+        <Navbar.Collapse id="main-navbar-nav">
+          <Nav className="w-100">
+            {/* All buttons on the right side when collapsed */}
+            <div className="ms-auto d-flex flex-column flex-md-row align-items-center gap-2">
+              {/* Home button (mobile only) - include in the right side stack */}
+              <div className="d-md-none">
+                <Nav.Link as={Link} to="/" className="home-btn">
+                  Home
+                </Nav.Link>
+              </div>
+
+              {/* Authentication buttons */}
+              {isAuthenticated ? (
+                <Nav.Link href="#" onClick={handleLogout} className="menu-btn">
+                  Welcome, {user?.name || 'User'} - Logout
+                </Nav.Link>
+              ) : (
+                <>
+                  <Button
+                    variant="outline-primary"
+                    as={Link}
+                    to="/login"
+                    size="sm"
+                    className="menu-btn"
+                  >
+                    Login
+                  </Button>
+                  <Button variant="primary" as={Link} to="/register" size="sm" className="menu-btn">
+                    Register
+                  </Button>
+                </>
+              )}
+            </div>
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   );
 };
 
-export default Navbar;
+export default AppNavbar;

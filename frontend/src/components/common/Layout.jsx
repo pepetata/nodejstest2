@@ -1,14 +1,20 @@
+import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
+import { Container } from 'react-bootstrap';
+import AppNavbar from './Navbar';
 import Footer from './Footer';
 
 const Layout = () => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8">
+    <div className="d-flex flex-column min-vh-100">
+      <AppNavbar />
+      <Container
+        as="main"
+        className="flex-grow-1"
+        style={{ paddingTop: '100px', paddingBottom: '20px' }}
+      >
         <Outlet />
-      </main>
+      </Container>
       <Footer />
     </div>
   );

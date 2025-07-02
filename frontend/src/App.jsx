@@ -4,12 +4,11 @@ import { useAuth } from './hooks/useAuth';
 import Layout from './components/common/Layout';
 
 // Pages
-import MenuPage from './pages/MenuPage';
-import CartPage from './pages/CartPage';
-import OrderStatusPage from './pages/OrderStatusPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import NotFoundPage from './pages/NotFoundPage';
+import Home from './pages/Home.jsx';
+import MenuPage from './pages/MenuPage.jsx';
+import Register from './pages/Register.jsx';
+import NotFound from './pages/NotFound.jsx';
+import Login from './pages/Login.jsx';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -28,33 +27,78 @@ function App() {
 
   return (
     <Routes>
+      {/* Routes that use the Layout (with navbar) */}
       <Route path="/" element={<Layout />}>
+        {/* Restaurant selection landing page */}
+        <Route index element={<Home source="/" />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+      </Route>
+
+      {/* Main restaurant routes with common Layout */}
+      <Route path="/:restaurantSlug" element={<Layout />}>
         {/* Public routes */}
-        <Route index element={<MenuPage />} />
-        <Route path="login" element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
+        <Route index element={<Navigate to="menu" replace />} />
+        <Route path="menu" element={<MenuPage />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
 
         {/* Protected routes */}
         <Route
-          path="cart"
+          path="order"
           element={
             <ProtectedRoute>
-              <CartPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="orders/:id"
-          element={
-            <ProtectedRoute>
-              <OrderStatusPage />
+              {/* <OrderPage /> */}
+              <Home source="/order" />
             </ProtectedRoute>
           }
         />
 
-        {/* 404 route */}
-        <Route path="*" element={<NotFoundPage />} />
+        {/* 404 for restaurant pages */}
+        <Route path="*" element={<NotFound />} />
       </Route>
+
+      {/* Admin portal */}
+      <Route
+        path="/:restaurantSlug/admin"
+        element={
+          <ProtectedRoute>
+            {/* <AdminLayout /> */}
+            <Home source="/:restaurantSlug/admin" />
+          </ProtectedRoute>
+        }
+      >
+        {/* Admin routes will go here */}
+        {/* <Route index element={<AdminDashboard />} /> */}
+      </Route>
+
+      {/* Waiter portal */}
+      <Route
+        path="/:restaurantSlug/waiter"
+        element={
+          <ProtectedRoute>
+            {/* <WaiterLayout /> */}
+            <Home source="/:restaurantSlug/waiter" />
+          </ProtectedRoute>
+        }
+      >
+        {/* Waiter routes will go here */}
+        {/* <Route index element={<WaiterDashboard />} /> */}
+      </Route>
+
+      {/* Kitchen Display System (KDS) */}
+      <Route
+        path="/:restaurantSlug/kds/:area"
+        element={
+          <ProtectedRoute>
+            {/* <KDSLayout /> */}
+            <Home source="/:restaurantSlug/kds/:area" />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Global 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

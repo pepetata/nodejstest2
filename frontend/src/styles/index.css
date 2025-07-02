@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+
+$bg-color: #fff4e5;
+$logoO: #ffaa00;
+$logoB: #1650a1;
+$textLabel: #0896ff;
+$header-color: #ffd699;
+$footer-color: #ffd699;
+$body-font: "Inconsolata", monospace;
+
+// Additional color variables
+$primary: #1650a1; // Using logoB color for primary
+$dark: #212529; // Bootstrap-like dark color
+
+
 /* Custom global styles */
 @layer base {
   body {
