@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/Auth.scss';
+import '../styles/register.scss';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -9,11 +10,12 @@ function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     // Step 1: Account Information
-    ownerName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
+    ownerName: 'Flavio Ferreira',
+    email: 'flavio_luiz_ferreira@hotmail.com',
+    password: '12345678',
+    confirmPassword: '12345678',
+    phone: '11234567890',
+    whatsapp: '',
 
     // Step 2: Restaurant Details
     restaurantName: '',
@@ -37,6 +39,7 @@ function RegisterPage() {
       friday: { open: '09:00', close: '22:00', closed: false },
       saturday: { open: '09:00', close: '22:00', closed: false },
       sunday: { open: '09:00', close: '22:00', closed: false },
+      holidays: { open: '10:00', close: '20:00', closed: false },
     },
 
     // Step 4: Features & Plan Selection
@@ -60,6 +63,8 @@ function RegisterPage() {
     marketingConsent: false,
   });
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
 
   const cuisineTypes = [
     'American',
@@ -90,57 +95,57 @@ function RegisterPage() {
   const features = [
     {
       id: 'digital_menu',
-      name: 'Digital Menu & QR Ordering',
+      name: 'Menu Digital e Pedidos QR',
       required: true,
-      description: 'Essential baseline feature',
+      description: 'Recurso essencial básico',
     },
     {
       id: 'waiter_portal',
-      name: 'Waiter Portal',
-      description: 'Staff ordering interface',
+      name: 'Portal do Garçom',
+      description: 'Interface de pedidos para funcionários',
     },
     {
       id: 'seat_ordering',
-      name: 'Seat-Based Ordering',
-      description: 'Per-seat item tagging',
+      name: 'Pedidos por Mesa',
+      description: 'Identificação de itens por assento',
     },
     {
       id: 'payment_integration',
-      name: 'Payment Integration',
-      description: 'In-app payment processing',
+      name: 'Integração de Pagamento',
+      description: 'Processamento de pagamento no app',
     },
     {
       id: 'kitchen_printer',
-      name: 'Kitchen Printer Integration',
-      description: 'Direct printer connectivity',
+      name: 'Integração Impressora Cozinha',
+      description: 'Conectividade direta com impressora',
     },
     {
       id: 'loyalty_program',
-      name: 'Customer Loyalty Program',
-      description: 'Points and rewards system',
+      name: 'Programa de Fidelidade',
+      description: 'Sistema de pontos e recompensas',
     },
     {
       id: 'analytics',
-      name: 'Advanced Analytics',
-      description: 'Detailed reporting and insights',
+      name: 'Análises Avançadas',
+      description: 'Relatórios detalhados e insights',
     },
   ];
 
   const subscriptionPlans = {
     starter: {
-      name: 'Starter Plan',
+      name: 'Plano Inicial',
       price: 29,
-      description: 'Basic features for single locations',
+      description: 'Recursos básicos para localizações únicas',
     },
     professional: {
-      name: 'Professional Plan',
+      name: 'Plano Profissional',
       price: 79,
-      description: 'Enhanced features for busy restaurants',
+      description: 'Recursos aprimorados para restaurantes movimentados',
     },
     enterprise: {
-      name: 'Enterprise Plan',
+      name: 'Plano Empresarial',
       price: 149,
-      description: 'Complete solution for restaurant chains',
+      description: 'Solução completa para redes de restaurantes',
     },
   };
 
@@ -152,6 +157,107 @@ function RegisterPage() {
     if (isMultiLocation || featureCount >= 6) return 'enterprise';
     if (featureCount >= 4) return 'professional';
     return 'starter';
+  };
+
+  // Enhanced validation functions
+  const validateEmail = (email) => {
+    // More comprehensive email validation
+    const emailRegex =
+      /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    if (!emailRegex.test(email)) {
+      return false;
+    }
+
+    // Additional validation to ensure proper domain structure
+    const domain = email.split('@')[1];
+
+    // Domain must have at least one dot and valid TLD
+    if (!domain || !domain.includes('.')) {
+      return false;
+    }
+
+    // Domain parts validation
+    const domainParts = domain.split('.');
+
+    // Must have at least 2 parts (domain.tld)
+    if (domainParts.length < 2) {
+      return false;
+    }
+
+    // Each part must be at least 1 character and contain valid characters
+    for (const part of domainParts) {
+      if (!part || part.length < 1 || !/^[a-zA-Z0-9-]+$/.test(part)) {
+        return false;
+      }
+      // Parts cannot start or end with hyphen
+      if (part.startsWith('-') || part.endsWith('-')) {
+        return false;
+      }
+    }
+
+    // TLD (last part) should be at least 2 characters and only letters
+    const tld = domainParts[domainParts.length - 1];
+    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateBrazilianPhone = (phone) => {
+    // Remove all non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+
+    // Brazilian phone patterns:
+    // Mobile: 11 digits (11 9 8888-7777) - with 9th digit
+    // Mobile: 11 digits (11 1 2345-1234) - old format still valid in some areas
+    // Landline: 10 digits (11 3333-4444)
+    // With country code: +55 11 9 8888-7777 (13 digits) or +55 11 3333-4444 (12 digits)
+
+    if (cleaned.length === 10) {
+      // Landline: XX XXXX-XXXX (area code + 8 digits)
+      return /^[1-9][1-9]\d{8}$/.test(cleaned);
+    } else if (cleaned.length === 11) {
+      // Mobile: XX XXXXX-XXXX (area code + 9 digits)
+      // Can start with 9 (new format) or 1-8 (old format still valid)
+      return /^[1-9][1-9][1-9]\d{8}$/.test(cleaned);
+    } else if (cleaned.length === 12 && cleaned.startsWith('55')) {
+      // International landline: +55 XX XXXX-XXXX
+      const withoutCountryCode = cleaned.substring(2);
+      return /^[1-9][1-9]\d{8}$/.test(withoutCountryCode);
+    } else if (cleaned.length === 13 && cleaned.startsWith('55')) {
+      // International mobile: +55 XX XXXXX-XXXX
+      const withoutCountryCode = cleaned.substring(2);
+      return /^[1-9][1-9][1-9]\d{8}$/.test(withoutCountryCode);
+    }
+
+    return false;
+  };
+
+  const validateWebsite = (url) => {
+    if (!url) return true; // Optional field
+
+    try {
+      const urlObj = new URL(url);
+      // Check if it's http or https and has a valid domain
+      return (
+        (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') &&
+        urlObj.hostname.includes('.')
+      );
+    } catch {
+      // Try with https prefix if no protocol provided
+      try {
+        const urlWithHttps = url.startsWith('http') ? url : `https://${url}`;
+        const urlObj = new URL(urlWithHttps);
+        return (
+          (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') &&
+          urlObj.hostname.includes('.')
+        );
+      } catch {
+        return false;
+      }
+    }
   };
 
   const handleChange = (e) => {
@@ -172,6 +278,148 @@ function RegisterPage() {
         [name]: type === 'checkbox' ? checked : value,
       }));
     }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+
+    // Mark field as touched
+    setTouchedFields((prev) => ({
+      ...prev,
+      [name]: true,
+    }));
+
+    // Validate the specific field
+    validateField(name);
+  };
+
+  const validateField = (fieldName) => {
+    const errors = { ...fieldErrors };
+
+    // Clear previous error for this field
+    delete errors[fieldName];
+
+    // Validate based on field name
+    switch (fieldName) {
+      case 'ownerName':
+        if (!formData.ownerName?.trim()) {
+          errors.ownerName = 'Nome completo é obrigatório';
+        }
+        break;
+      case 'email':
+        if (!formData.email?.trim()) {
+          errors.email = 'Email é obrigatório';
+        } else if (!validateEmail(formData.email)) {
+          errors.email = 'Email deve ter um formato válido (ex: usuario@dominio.com)';
+        }
+        break;
+      case 'password':
+        if (!formData.password) {
+          errors.password = 'Senha é obrigatória';
+        } else if (formData.password.length < 8) {
+          errors.password = 'A senha deve ter pelo menos 8 caracteres';
+        }
+        break;
+      case 'confirmPassword':
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Confirmação de senha é obrigatória';
+        } else if (formData.password !== formData.confirmPassword) {
+          errors.confirmPassword = 'As senhas não coincidem';
+        }
+        break;
+      case 'phone':
+        if (!formData.phone?.trim()) {
+          errors.phone = 'Número de telefone é obrigatório';
+        } else if (!validateBrazilianPhone(formData.phone)) {
+          errors.phone =
+            'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        }
+        break;
+      case 'whatsapp':
+        if (formData.whatsapp?.trim() && !validateBrazilianPhone(formData.whatsapp)) {
+          errors.whatsapp = 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        }
+        break;
+      case 'restaurantName':
+        if (!formData.restaurantName?.trim()) {
+          errors.restaurantName = 'Nome do restaurante é obrigatório';
+        }
+        break;
+      case 'cuisineType':
+        if (!formData.cuisineType) {
+          errors.cuisineType = 'Tipo de culinária é obrigatório';
+        }
+        break;
+      case 'website':
+        if (formData.website?.trim() && !validateWebsite(formData.website)) {
+          errors.website = 'Website deve ter formato válido (ex: https://www.exemplo.com)';
+        }
+        break;
+      case 'address.street':
+        if (!formData.address.street?.trim()) {
+          errors['address.street'] = 'Endereço é obrigatório';
+        }
+        break;
+      case 'address.city':
+        if (!formData.address.city?.trim()) {
+          errors['address.city'] = 'Cidade é obrigatória';
+        }
+        break;
+      case 'address.state':
+        if (!formData.address.state?.trim()) {
+          errors['address.state'] = 'Estado é obrigatório';
+        }
+        break;
+      case 'address.zipCode':
+        if (!formData.address.zipCode?.trim()) {
+          errors['address.zipCode'] = 'CEP é obrigatório';
+        }
+        break;
+      case 'paymentInfo.cardNumber':
+        if (!formData.paymentInfo.cardNumber?.trim()) {
+          errors['paymentInfo.cardNumber'] = 'Número do cartão é obrigatório';
+        }
+        break;
+      case 'paymentInfo.expiryDate':
+        if (!formData.paymentInfo.expiryDate?.trim()) {
+          errors['paymentInfo.expiryDate'] = 'Data de vencimento é obrigatória';
+        }
+        break;
+      case 'paymentInfo.cvv':
+        if (!formData.paymentInfo.cvv?.trim()) {
+          errors['paymentInfo.cvv'] = 'CVV é obrigatório';
+        }
+        break;
+      case 'paymentInfo.cardholderName':
+        if (!formData.paymentInfo.cardholderName?.trim()) {
+          errors['paymentInfo.cardholderName'] = 'Nome do portador é obrigatório';
+        }
+        break;
+      case 'billingAddress.street':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.street?.trim()) {
+          errors['billingAddress.street'] = 'Endereço de cobrança é obrigatório';
+        }
+        break;
+      case 'billingAddress.city':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.city?.trim()) {
+          errors['billingAddress.city'] = 'Cidade de cobrança é obrigatória';
+        }
+        break;
+      case 'billingAddress.state':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.state?.trim()) {
+          errors['billingAddress.state'] = 'Estado de cobrança é obrigatório';
+        }
+        break;
+      case 'billingAddress.zipCode':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.zipCode?.trim()) {
+          errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
+        }
+        break;
+      default:
+        break;
+    }
+
+    setFieldErrors(errors);
   };
 
   const handleOperatingHoursChange = (day, field, value) => {
@@ -204,65 +452,115 @@ function RegisterPage() {
   };
 
   const validateStep = (step) => {
+    const errors = {};
+
     switch (step) {
       case 1:
-        if (!formData.ownerName || !formData.email || !formData.password || !formData.phone) {
-          setError('All fields are required');
-          return false;
+        if (!formData.ownerName?.trim()) {
+          errors.ownerName = 'Nome completo é obrigatório';
         }
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          return false;
+        if (!formData.email?.trim()) {
+          errors.email = 'Email é obrigatório';
+        } else if (!validateEmail(formData.email)) {
+          errors.email = 'Email deve ter um formato válido (ex: usuario@dominio.com)';
         }
-        if (formData.password.length < 8) {
-          setError('Password must be at least 8 characters long');
-          return false;
+        if (!formData.password) {
+          errors.password = 'Senha é obrigatória';
+        } else if (formData.password.length < 8) {
+          errors.password = 'A senha deve ter pelo menos 8 caracteres';
+        }
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Confirmação de senha é obrigatória';
+        } else if (formData.password !== formData.confirmPassword) {
+          errors.confirmPassword = 'As senhas não coincidem';
+        }
+        if (!formData.phone?.trim()) {
+          errors.phone = 'Número de telefone é obrigatório';
+        } else if (!validateBrazilianPhone(formData.phone)) {
+          errors.phone =
+            'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        }
+        if (formData.whatsapp?.trim() && !validateBrazilianPhone(formData.whatsapp)) {
+          errors.whatsapp = 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
         }
         break;
+
       case 2:
-        if (!formData.restaurantName || !formData.cuisineType) {
-          setError('Restaurant name and cuisine type are required');
-          return false;
+        if (!formData.restaurantName?.trim()) {
+          errors.restaurantName = 'Nome do restaurante é obrigatório';
+        }
+        if (!formData.cuisineType) {
+          errors.cuisineType = 'Tipo de culinária é obrigatório';
+        }
+        if (formData.website?.trim() && !validateWebsite(formData.website)) {
+          errors.website = 'Website deve ter formato válido (ex: https://www.exemplo.com)';
         }
         break;
+
       case 3:
-        if (
-          !formData.address.street ||
-          !formData.address.city ||
-          !formData.address.state ||
-          !formData.address.zipCode
-        ) {
-          setError('Complete address is required');
-          return false;
+        if (!formData.address.street?.trim()) {
+          errors['address.street'] = 'Endereço é obrigatório';
+        }
+        if (!formData.address.city?.trim()) {
+          errors['address.city'] = 'Cidade é obrigatória';
+        }
+        if (!formData.address.state?.trim()) {
+          errors['address.state'] = 'Estado é obrigatório';
+        }
+        if (!formData.address.zipCode?.trim()) {
+          errors['address.zipCode'] = 'CEP é obrigatório';
         }
         break;
+
       case 4:
         // Features validation is handled automatically
         break;
+
       case 5:
-        if (
-          !formData.paymentInfo.cardNumber ||
-          !formData.paymentInfo.expiryDate ||
-          !formData.paymentInfo.cvv ||
-          !formData.paymentInfo.cardholderName
-        ) {
-          setError('Complete payment information is required');
-          return false;
+        if (!formData.paymentInfo.cardNumber?.trim()) {
+          errors['paymentInfo.cardNumber'] = 'Número do cartão é obrigatório';
         }
-        if (
-          !formData.billingAddress.sameAsRestaurant &&
-          (!formData.billingAddress.street ||
-            !formData.billingAddress.city ||
-            !formData.billingAddress.state ||
-            !formData.billingAddress.zipCode)
-        ) {
-          setError('Complete billing address is required');
-          return false;
+        if (!formData.paymentInfo.expiryDate?.trim()) {
+          errors['paymentInfo.expiryDate'] = 'Data de vencimento é obrigatória';
+        }
+        if (!formData.paymentInfo.cvv?.trim()) {
+          errors['paymentInfo.cvv'] = 'CVV é obrigatório';
+        }
+        if (!formData.paymentInfo.cardholderName?.trim()) {
+          errors['paymentInfo.cardholderName'] = 'Nome do portador é obrigatório';
+        }
+
+        if (!formData.billingAddress.sameAsRestaurant) {
+          if (!formData.billingAddress.street?.trim()) {
+            errors['billingAddress.street'] = 'Endereço de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.city?.trim()) {
+            errors['billingAddress.city'] = 'Cidade de cobrança é obrigatória';
+          }
+          if (!formData.billingAddress.state?.trim()) {
+            errors['billingAddress.state'] = 'Estado de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.zipCode?.trim()) {
+            errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
+          }
         }
         break;
+
       default:
         break;
     }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // Set a general error message
+      const errorCount = Object.keys(errors).length;
+      setError(
+        `Por favor, corrija ${errorCount} campo${errorCount > 1 ? 's' : ''} obrigatório${errorCount > 1 ? 's' : ''}`
+      );
+      return false;
+    }
+
     setError('');
     return true;
   };
@@ -276,6 +574,20 @@ function RegisterPage() {
   const prevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     setError('');
+    setFieldErrors({});
+    setTouchedFields({});
+  };
+
+  // Helper function to check if a field has an error and has been touched
+  const hasFieldError = (fieldName) => {
+    return (
+      fieldErrors[fieldName] && (touchedFields[fieldName] || Object.keys(fieldErrors).length > 0)
+    );
+  };
+
+  // Helper function to get error class for form elements
+  const getFieldErrorClass = (fieldName) => {
+    return hasFieldError(fieldName) ? 'error' : '';
   };
 
   const handleSubmit = async (e) => {
@@ -293,22 +605,22 @@ function RegisterPage() {
       });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || 'Falha no registro. Por favor, tente novamente.');
     }
   };
 
   const renderProgressBar = () => (
     <div className="progress-container mb-4">
-      <div className="progress-bar">
+      <div className="progress-bar" style={{ '--progress': currentStep }}>
         {[1, 2, 3, 4, 5].map((step) => (
           <div key={step} className={`progress-step ${currentStep >= step ? 'active' : ''}`}>
             <div className="step-number">{step}</div>
             <div className="step-label">
-              {step === 1 && 'Account'}
-              {step === 2 && 'Restaurant'}
-              {step === 3 && 'Location'}
-              {step === 4 && 'Features'}
-              {step === 5 && 'Payment'}
+              {step === 1 && 'Conta'}
+              {step === 2 && 'Restaurante'}
+              {step === 3 && 'Localização'}
+              {step === 4 && 'Recursos'}
+              {step === 5 && 'Pagamento'}
             </div>
           </div>
         ))}
@@ -318,12 +630,12 @@ function RegisterPage() {
 
   const renderStep1 = () => (
     <div>
-      <h3 className="step-title">Account Information</h3>
-      <p className="step-description">Let&apos;s start with your personal information</p>
+      <h3 className="step-title">Informações da Conta</h3>
+      <p className="step-description">Vamos começar com suas informações pessoais</p>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('ownerName')}`}>
         <label htmlFor="ownerName" className="form-label">
-          Full Name *
+          Nome Completo *
         </label>
         <input
           type="text"
@@ -331,15 +643,17 @@ function RegisterPage() {
           name="ownerName"
           value={formData.ownerName}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Enter your full name"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('ownerName')}`}
+          placeholder="Digite seu nome completo"
           required
         />
+        {hasFieldError('ownerName') && <div className="field-error">{fieldErrors.ownerName}</div>}
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('email')}`}>
         <label htmlFor="email" className="form-label">
-          Email Address *
+          Endereço de Email *
         </label>
         <input
           type="email"
@@ -347,15 +661,17 @@ function RegisterPage() {
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Enter your email"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('email')}`}
+          placeholder="Digite seu email"
           required
         />
+        {hasFieldError('email') && <div className="field-error">{fieldErrors.email}</div>}
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('phone')}`}>
         <label htmlFor="phone" className="form-label">
-          Phone Number *
+          Número de Telefone *
         </label>
         <input
           type="tel"
@@ -363,15 +679,34 @@ function RegisterPage() {
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Enter your phone number"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('phone')}`}
+          placeholder="(11) 99999-9999 ou 11 12345-1234"
           required
         />
+        {hasFieldError('phone') && <div className="field-error">{fieldErrors.phone}</div>}
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('whatsapp')}`}>
+        <label htmlFor="whatsapp" className="form-label">
+          WhatsApp (Opcional)
+        </label>
+        <input
+          type="tel"
+          id="whatsapp"
+          name="whatsapp"
+          value={formData.whatsapp}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('whatsapp')}`}
+          placeholder="(11) 99999-9999 ou 11 12345-1234"
+        />
+        {hasFieldError('whatsapp') && <div className="field-error">{fieldErrors.whatsapp}</div>}
+      </div>
+
+      <div className={`form-group ${getFieldErrorClass('password')}`}>
         <label htmlFor="password" className="form-label">
-          Password *
+          Senha *
         </label>
         <input
           type="password"
@@ -379,15 +714,17 @@ function RegisterPage() {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Enter your password"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('password')}`}
+          placeholder="Digite sua senha"
           required
         />
+        {hasFieldError('password') && <div className="field-error">{fieldErrors.password}</div>}
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('confirmPassword')}`}>
         <label htmlFor="confirmPassword" className="form-label">
-          Confirm Password *
+          Confirmar Senha *
         </label>
         <input
           type="password"
@@ -395,22 +732,26 @@ function RegisterPage() {
           name="confirmPassword"
           value={formData.confirmPassword}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Confirm your password"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('confirmPassword')}`}
+          placeholder="Confirme sua senha"
           required
         />
+        {hasFieldError('confirmPassword') && (
+          <div className="field-error">{fieldErrors.confirmPassword}</div>
+        )}
       </div>
     </div>
   );
 
   const renderStep2 = () => (
     <div>
-      <h3 className="step-title">Restaurant Details</h3>
-      <p className="step-description">Tell us about your restaurant</p>
+      <h3 className="step-title">Detalhes do Restaurante</h3>
+      <p className="step-description">Conte-nos sobre seu restaurante</p>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('restaurantName')}`}>
         <label htmlFor="restaurantName" className="form-label">
-          Restaurant Name *
+          Nome do Restaurante *
         </label>
         <input
           type="text"
@@ -418,15 +759,19 @@ function RegisterPage() {
           name="restaurantName"
           value={formData.restaurantName}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Enter your restaurant name"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('restaurantName')}`}
+          placeholder="Digite o nome do seu restaurante"
           required
         />
+        {hasFieldError('restaurantName') && (
+          <div className="field-error">{fieldErrors.restaurantName}</div>
+        )}
       </div>
 
       <div className="form-group">
         <label htmlFor="businessType" className="form-label">
-          Business Type *
+          Tipo de Negócio *
         </label>
         <select
           id="businessType"
@@ -436,35 +781,39 @@ function RegisterPage() {
           className="form-input"
           required
         >
-          <option value="single">Single Location</option>
-          <option value="multi">Multi-Location Chain</option>
+          <option value="single">Localização Única</option>
+          <option value="multi">Rede Multi-Localização</option>
         </select>
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('cuisineType')}`}>
         <label htmlFor="cuisineType" className="form-label">
-          Cuisine Type *
+          Tipo de Culinária *
         </label>
         <select
           id="cuisineType"
           name="cuisineType"
           value={formData.cuisineType}
           onChange={handleChange}
-          className="form-input"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('cuisineType')}`}
           required
         >
-          <option value="">Select cuisine type</option>
+          <option value="">Selecione o tipo de culinária</option>
           {cuisineTypes.map((cuisine) => (
             <option key={cuisine} value={cuisine}>
               {cuisine}
             </option>
           ))}
         </select>
+        {hasFieldError('cuisineType') && (
+          <div className="field-error">{fieldErrors.cuisineType}</div>
+        )}
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('website')}`}>
         <label htmlFor="website" className="form-label">
-          Website (Optional)
+          Website (Opcional)
         </label>
         <input
           type="url"
@@ -472,14 +821,16 @@ function RegisterPage() {
           name="website"
           value={formData.website}
           onChange={handleChange}
-          className="form-input"
-          placeholder="https://www.yourrestaurant.com"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('website')}`}
+          placeholder="https://www.seurestaurante.com"
         />
+        {hasFieldError('website') && <div className="field-error">{fieldErrors.website}</div>}
       </div>
 
       <div className="form-group">
         <label htmlFor="description" className="form-label">
-          Restaurant Description
+          Descrição do Restaurante
         </label>
         <textarea
           id="description"
@@ -487,7 +838,7 @@ function RegisterPage() {
           value={formData.description}
           onChange={handleChange}
           className="form-input"
-          placeholder="Brief description of your restaurant (helps with SEO and customer discovery)"
+          placeholder="Breve descrição do seu restaurante (ajuda com SEO e descoberta de clientes)"
           rows="3"
         />
       </div>
@@ -496,12 +847,12 @@ function RegisterPage() {
 
   const renderStep3 = () => (
     <div>
-      <h3 className="step-title">Location & Hours</h3>
-      <p className="step-description">Where are you located and when are you open?</p>
+      <h3 className="step-title">Localização e Horários</h3>
+      <p className="step-description">Onde você está localizado e quando funciona?</p>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('address.street')}`}>
         <label htmlFor="address.street" className="form-label">
-          Street Address *
+          Endereço *
         </label>
         <input
           type="text"
@@ -509,16 +860,20 @@ function RegisterPage() {
           name="address.street"
           value={formData.address.street}
           onChange={handleChange}
-          className="form-input"
-          placeholder="123 Main Street"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('address.street')}`}
+          placeholder="Rua Principal, 123"
           required
         />
+        {hasFieldError('address.street') && (
+          <div className="field-error">{fieldErrors['address.street']}</div>
+        )}
       </div>
 
       <div className="form-row">
-        <div className="form-group">
+        <div className={`form-group ${getFieldErrorClass('address.city')}`}>
           <label htmlFor="address.city" className="form-label">
-            City *
+            Cidade *
           </label>
           <input
             type="text"
@@ -526,15 +881,19 @@ function RegisterPage() {
             name="address.city"
             value={formData.address.city}
             onChange={handleChange}
-            className="form-input"
-            placeholder="City"
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('address.city')}`}
+            placeholder="Cidade"
             required
           />
+          {hasFieldError('address.city') && (
+            <div className="field-error">{fieldErrors['address.city']}</div>
+          )}
         </div>
 
-        <div className="form-group">
+        <div className={`form-group ${getFieldErrorClass('address.state')}`}>
           <label htmlFor="address.state" className="form-label">
-            State *
+            Estado *
           </label>
           <input
             type="text"
@@ -542,15 +901,19 @@ function RegisterPage() {
             name="address.state"
             value={formData.address.state}
             onChange={handleChange}
-            className="form-input"
-            placeholder="State"
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('address.state')}`}
+            placeholder="Estado"
             required
           />
+          {hasFieldError('address.state') && (
+            <div className="field-error">{fieldErrors['address.state']}</div>
+          )}
         </div>
 
-        <div className="form-group">
+        <div className={`form-group ${getFieldErrorClass('address.zipCode')}`}>
           <label htmlFor="address.zipCode" className="form-label">
-            ZIP Code *
+            CEP *
           </label>
           <input
             type="text"
@@ -558,54 +921,71 @@ function RegisterPage() {
             name="address.zipCode"
             value={formData.address.zipCode}
             onChange={handleChange}
-            className="form-input"
-            placeholder="12345"
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('address.zipCode')}`}
+            placeholder="12345-678"
             required
           />
+          {hasFieldError('address.zipCode') && (
+            <div className="field-error">{fieldErrors['address.zipCode']}</div>
+          )}
         </div>
       </div>
 
       <div className="operating-hours">
-        <h4 className="form-label">Operating Hours</h4>
-        {Object.keys(formData.operatingHours).map((day) => (
-          <div key={day} className="hours-row">
-            <div className="day-label">{day.charAt(0).toUpperCase() + day.slice(1)}</div>
-            <div className="hours-inputs">
-              <input
-                type="checkbox"
-                id={`${day}-closed`}
-                checked={formData.operatingHours[day].closed}
-                onChange={(e) => handleOperatingHoursChange(day, 'closed', e.target.checked)}
-              />
-              <label htmlFor={`${day}-closed`}>Closed</label>
-              {!formData.operatingHours[day].closed && (
-                <>
-                  <input
-                    type="time"
-                    value={formData.operatingHours[day].open}
-                    onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
-                    className="form-input time-input"
-                  />
-                  <span>to</span>
-                  <input
-                    type="time"
-                    value={formData.operatingHours[day].close}
-                    onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
-                    className="form-input time-input"
-                  />
-                </>
-              )}
+        <h4 className="form-label">Horários de Funcionamento</h4>
+        {Object.keys(formData.operatingHours).map((day) => {
+          const dayTranslations = {
+            monday: 'Segunda-feira',
+            tuesday: 'Terça-feira',
+            wednesday: 'Quarta-feira',
+            thursday: 'Quinta-feira',
+            friday: 'Sexta-feira',
+            saturday: 'Sábado',
+            sunday: 'Domingo',
+            holidays: 'Feriados',
+          };
+
+          return (
+            <div key={day} className="hours-row">
+              <div className="day-label">{dayTranslations[day]}</div>
+              <div className="hours-inputs">
+                <input
+                  type="checkbox"
+                  id={`${day}-closed`}
+                  checked={formData.operatingHours[day].closed}
+                  onChange={(e) => handleOperatingHoursChange(day, 'closed', e.target.checked)}
+                />
+                <label htmlFor={`${day}-closed`}>Fechado</label>
+                {!formData.operatingHours[day].closed && (
+                  <>
+                    <input
+                      type="time"
+                      value={formData.operatingHours[day].open}
+                      onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
+                      className="form-input time-input"
+                    />
+                    <span>até</span>
+                    <input
+                      type="time"
+                      value={formData.operatingHours[day].close}
+                      onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
+                      className="form-input time-input"
+                    />
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 
   const renderStep4 = () => (
     <div>
-      <h3 className="step-title">Features & Plan Selection</h3>
-      <p className="step-description">Choose the features you need</p>
+      <h3 className="step-title">Recursos e Seleção de Plano</h3>
+      <p className="step-description">Escolha os recursos que você precisa</p>
 
       <div className="features-grid">
         {features.map((feature) => (
@@ -625,7 +1005,7 @@ function RegisterPage() {
               />
               <label htmlFor={feature.id} className="feature-name">
                 {feature.name}
-                {feature.required && <span className="required-badge">Required</span>}
+                {feature.required && <span className="required-badge"> (Required)</span>}
               </label>
             </div>
             <p className="feature-description">{feature.description}</p>
@@ -634,10 +1014,10 @@ function RegisterPage() {
       </div>
 
       <div className="plan-recommendation">
-        <h4>Recommended Plan</h4>
+        <h4>Plano Recomendado</h4>
         <div className="plan-card recommended">
           <h5>{subscriptionPlans[getRecommendedPlan()].name}</h5>
-          <div className="plan-price">${subscriptionPlans[getRecommendedPlan()].price}/month</div>
+          <div className="plan-price">R${subscriptionPlans[getRecommendedPlan()].price}/mês</div>
           <p>{subscriptionPlans[getRecommendedPlan()].description}</p>
         </div>
       </div>
@@ -646,12 +1026,12 @@ function RegisterPage() {
 
   const renderStep5 = () => (
     <div>
-      <h3 className="step-title">Payment & Billing</h3>
-      <p className="step-description">Secure payment setup for your subscription</p>
+      <h3 className="step-title">Pagamento e Cobrança</h3>
+      <p className="step-description">Configuração segura de pagamento para sua assinatura</p>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('paymentInfo.cardholderName')}`}>
         <label htmlFor="paymentInfo.cardholderName" className="form-label">
-          Cardholder Name *
+          Nome no Cartão *
         </label>
         <input
           type="text"
@@ -659,15 +1039,19 @@ function RegisterPage() {
           name="paymentInfo.cardholderName"
           value={formData.paymentInfo.cardholderName}
           onChange={handleChange}
-          className="form-input"
-          placeholder="Name on card"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('paymentInfo.cardholderName')}`}
+          placeholder="Nome no cartão"
           required
         />
+        {hasFieldError('paymentInfo.cardholderName') && (
+          <div className="field-error">{fieldErrors['paymentInfo.cardholderName']}</div>
+        )}
       </div>
 
-      <div className="form-group">
+      <div className={`form-group ${getFieldErrorClass('paymentInfo.cardNumber')}`}>
         <label htmlFor="paymentInfo.cardNumber" className="form-label">
-          Card Number *
+          Número do Cartão *
         </label>
         <input
           type="text"
@@ -675,16 +1059,20 @@ function RegisterPage() {
           name="paymentInfo.cardNumber"
           value={formData.paymentInfo.cardNumber}
           onChange={handleChange}
-          className="form-input"
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('paymentInfo.cardNumber')}`}
           placeholder="1234 5678 9012 3456"
           required
         />
+        {hasFieldError('paymentInfo.cardNumber') && (
+          <div className="field-error">{fieldErrors['paymentInfo.cardNumber']}</div>
+        )}
       </div>
 
       <div className="form-row">
-        <div className="form-group">
+        <div className={`form-group ${getFieldErrorClass('paymentInfo.expiryDate')}`}>
           <label htmlFor="paymentInfo.expiryDate" className="form-label">
-            Expiry Date *
+            Data de Validade *
           </label>
           <input
             type="text"
@@ -692,13 +1080,17 @@ function RegisterPage() {
             name="paymentInfo.expiryDate"
             value={formData.paymentInfo.expiryDate}
             onChange={handleChange}
-            className="form-input"
-            placeholder="MM/YY"
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('paymentInfo.expiryDate')}`}
+            placeholder="MM/AA"
             required
           />
+          {hasFieldError('paymentInfo.expiryDate') && (
+            <div className="field-error">{fieldErrors['paymentInfo.expiryDate']}</div>
+          )}
         </div>
 
-        <div className="form-group">
+        <div className={`form-group ${getFieldErrorClass('paymentInfo.cvv')}`}>
           <label htmlFor="paymentInfo.cvv" className="form-label">
             CVV *
           </label>
@@ -708,10 +1100,14 @@ function RegisterPage() {
             name="paymentInfo.cvv"
             value={formData.paymentInfo.cvv}
             onChange={handleChange}
-            className="form-input"
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('paymentInfo.cvv')}`}
             placeholder="123"
             required
           />
+          {hasFieldError('paymentInfo.cvv') && (
+            <div className="field-error">{fieldErrors['paymentInfo.cvv']}</div>
+          )}
         </div>
       </div>
 
@@ -725,17 +1121,17 @@ function RegisterPage() {
             onChange={handleChange}
           />
           <label htmlFor="billingAddress.sameAsRestaurant">
-            Billing address same as restaurant address
+            Endereço de cobrança igual ao endereço do restaurante
           </label>
         </div>
       </div>
 
       {!formData.billingAddress.sameAsRestaurant && (
         <>
-          <h4>Billing Address</h4>
-          <div className="form-group">
+          <h4>Endereço de Cobrança</h4>
+          <div className={`form-group ${getFieldErrorClass('billingAddress.street')}`}>
             <label htmlFor="billingAddress.street" className="form-label">
-              Street Address *
+              Endereço *
             </label>
             <input
               type="text"
@@ -743,16 +1139,20 @@ function RegisterPage() {
               name="billingAddress.street"
               value={formData.billingAddress.street}
               onChange={handleChange}
-              className="form-input"
-              placeholder="123 Billing Street"
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('billingAddress.street')}`}
+              placeholder="Rua da Cobrança, 123"
               required
             />
+            {hasFieldError('billingAddress.street') && (
+              <div className="field-error">{fieldErrors['billingAddress.street']}</div>
+            )}
           </div>
 
           <div className="form-row">
-            <div className="form-group">
+            <div className={`form-group ${getFieldErrorClass('billingAddress.city')}`}>
               <label htmlFor="billingAddress.city" className="form-label">
-                City *
+                Cidade *
               </label>
               <input
                 type="text"
@@ -760,15 +1160,19 @@ function RegisterPage() {
                 name="billingAddress.city"
                 value={formData.billingAddress.city}
                 onChange={handleChange}
-                className="form-input"
-                placeholder="City"
+                onBlur={handleBlur}
+                className={`form-input ${getFieldErrorClass('billingAddress.city')}`}
+                placeholder="Cidade"
                 required
               />
+              {hasFieldError('billingAddress.city') && (
+                <div className="field-error">{fieldErrors['billingAddress.city']}</div>
+              )}
             </div>
 
-            <div className="form-group">
+            <div className={`form-group ${getFieldErrorClass('billingAddress.state')}`}>
               <label htmlFor="billingAddress.state" className="form-label">
-                State *
+                Estado *
               </label>
               <input
                 type="text"
@@ -776,15 +1180,19 @@ function RegisterPage() {
                 name="billingAddress.state"
                 value={formData.billingAddress.state}
                 onChange={handleChange}
-                className="form-input"
-                placeholder="State"
+                onBlur={handleBlur}
+                className={`form-input ${getFieldErrorClass('billingAddress.state')}`}
+                placeholder="Estado"
                 required
               />
+              {hasFieldError('billingAddress.state') && (
+                <div className="field-error">{fieldErrors['billingAddress.state']}</div>
+              )}
             </div>
 
-            <div className="form-group">
+            <div className={`form-group ${getFieldErrorClass('billingAddress.zipCode')}`}>
               <label htmlFor="billingAddress.zipCode" className="form-label">
-                ZIP Code *
+                CEP *
               </label>
               <input
                 type="text"
@@ -792,10 +1200,14 @@ function RegisterPage() {
                 name="billingAddress.zipCode"
                 value={formData.billingAddress.zipCode}
                 onChange={handleChange}
-                className="form-input"
-                placeholder="12345"
+                onBlur={handleBlur}
+                className={`form-input ${getFieldErrorClass('billingAddress.zipCode')}`}
+                placeholder="12345-678"
                 required
               />
+              {hasFieldError('billingAddress.zipCode') && (
+                <div className="field-error">{fieldErrors['billingAddress.zipCode']}</div>
+              )}
             </div>
           </div>
         </>
@@ -811,26 +1223,26 @@ function RegisterPage() {
             onChange={handleChange}
           />
           <label htmlFor="marketingConsent">
-            I'd like to receive marketing updates and special offers
+            Gostaria de receber atualizações de marketing e ofertas especiais
           </label>
         </div>
       </div>
 
       <div className="plan-summary">
-        <h4>Plan Summary</h4>
+        <h4>Resumo do Plano</h4>
         <div className="summary-item">
-          <span>Plan: {subscriptionPlans[getRecommendedPlan()].name}</span>
-          <span>${subscriptionPlans[getRecommendedPlan()].price}/month</span>
+          <span>Plano: {subscriptionPlans[getRecommendedPlan()].name}</span>
+          <span>R$ {subscriptionPlans[getRecommendedPlan()].price}/mês</span>
         </div>
         <div className="summary-item">
-          <span>Features: {formData.selectedFeatures.length} selected</span>
+          <span>Recursos: {formData.selectedFeatures.length} selecionados</span>
         </div>
       </div>
 
       <div className="security-notice">
         <p>
-          🔒 Your payment information is encrypted and secure. We use industry-standard PCI
-          compliance.
+          🔒 Suas informações de pagamento são criptografadas e seguras. Usamos conformidade PCI
+          padrão da indústria.
         </p>
       </div>
     </div>
@@ -838,9 +1250,9 @@ function RegisterPage() {
   return (
     <div className="auth-container">
       <div className="auth-card restaurant-registration">
-        <h2 className="auth-title">Register Your Restaurant</h2>
+        <h2 className="auth-title">Registre Seu Restaurante</h2>
         <p className="subtitle">
-          Join the à la carte platform and modernize your restaurant experience
+          Junte-se à plataforma à la carte e modernize a experiência do seu restaurante
         </p>
 
         {renderProgressBar()}
@@ -857,17 +1269,17 @@ function RegisterPage() {
           <div className="form-actions">
             {currentStep > 1 && (
               <button type="button" onClick={prevStep} className="auth-button secondary">
-                Previous
+                Anterior
               </button>
             )}
 
             {currentStep < 5 ? (
               <button type="button" onClick={nextStep} className="auth-button primary">
-                Next Step
+                Próximo Passo
               </button>
             ) : (
               <button type="submit" className="auth-button primary">
-                Complete Registration
+                Concluir Registro
               </button>
             )}
           </div>
@@ -875,9 +1287,9 @@ function RegisterPage() {
           {currentStep === 1 && (
             <div className="auth-footer">
               <p>
-                Already have an account?{' '}
+                Já tem uma conta?{' '}
                 <Link to="/login" className="auth-link">
-                  Sign In
+                  Entrar
                 </Link>
               </p>
             </div>

@@ -1,8 +1,0 @@
-/*
-   This file is now deprecated - all global styles and variables have been moved to:
-   - /src/styles/variables.scss (for color/font variables)
-   - /src/styles/global.scss (for global styles)
-
-   This file is kept for reference but should not be imported anywhere.
-   If you need to add global styles, use global.scss instead.
-*/
