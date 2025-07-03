@@ -83,8 +83,9 @@ function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const cepAsyncError = useRef('');
 
-  // Scroll to top when component mounts
+  // Set document title and scroll to top when component mounts
   useEffect(() => {
+    document.title = 'Registre seu Restaurante';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Load saved form data from localStorage
