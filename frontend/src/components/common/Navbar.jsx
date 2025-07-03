@@ -72,9 +72,18 @@ const AppNavbar = () => {
                   >
                     Entrar
                   </Button>
-                  <Button variant="primary" as={Link} to="/register" size="sm" className="menu-btn">
-                    Registrar
-                  </Button>
+                  {/* Hide Registrar button on register page */}
+                  {!location.pathname.includes('/register') && (
+                    <Button
+                      variant="primary"
+                      as={Link}
+                      to="/register"
+                      size="sm"
+                      className="menu-btn"
+                    >
+                      Registrar
+                    </Button>
+                  )}
                 </>
               )}
             </div>

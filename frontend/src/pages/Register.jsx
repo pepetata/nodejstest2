@@ -32,6 +32,8 @@ function RegisterPage() {
         id: 1,
         name: 'Localização Principal',
         urlName: 'aaa', // URL-safe name for location
+        phone: '', // Location-specific phone
+        whatsapp: '', // Location-specific WhatsApp
         address: {
           zipCode: '',
           street: '',
@@ -177,12 +179,184 @@ function RegisterPage() {
     return 'starter';
   };
 
+  // Check if current location has validation errors
+  const hasCurrentLocationErrors = () => {
+    const currentLocation = formData.locations[currentLocationIndex];
+    if (!currentLocation) return false;
+
+    // Check required fields for the current location
+    const errors = [];
+
+    // Validate location name (for multi-location)
+    if (formData.businessType === 'multi' && !currentLocation.name?.trim()) {
+      errors.push('Nome da localização é obrigatório');
+    }
+
+    // Validate location URL name (for multi-location)
+    if (formData.businessType === 'multi' && !currentLocation.urlName?.trim()) {
+      errors.push('Nome da localização para URL é obrigatório');
+    }
+
+    // Validate phone
+    if (!currentLocation.phone?.trim()) {
+      errors.push('Telefone da localização é obrigatório');
+    } else if (!validateBrazilianPhone(currentLocation.phone)) {
+      errors.push('Telefone da localização deve estar em formato válido');
+    }
+
+    // Validate WhatsApp (if provided)
+    if (currentLocation.whatsapp?.trim() && !validateBrazilianPhone(currentLocation.whatsapp)) {
+      errors.push('WhatsApp da localização deve estar em formato válido');
+    }
+
+    // Validate address fields
+    if (!currentLocation.address?.zipCode?.trim()) {
+      errors.push('CEP é obrigatório');
+    }
+    if (!currentLocation.address?.street?.trim()) {
+      errors.push('Logradouro é obrigatório');
+    }
+    if (!currentLocation.address?.streetNumber?.trim()) {
+      errors.push('Número é obrigatório');
+    }
+    if (!currentLocation.address?.city?.trim()) {
+      errors.push('Cidade é obrigatória');
+    }
+    if (!currentLocation.address?.state?.trim()) {
+      errors.push('Estado é obrigatório');
+    }
+
+    return errors.length > 0;
+  };
+
+  // Validate all fields for the current location and highlight errors
+  const validateCurrentLocationFields = () => {
+    const fieldsToValidate = [
+      'location.phone',
+      'location.whatsapp',
+      'address.zipCode',
+      'address.street',
+      'address.streetNumber',
+      'address.city',
+      'address.state',
+    ];
+
+    // For multi-location business, also validate location name and URL
+    if (formData.businessType === 'multi') {
+      fieldsToValidate.push('location.name', 'location.urlName');
+    }
+
+    // Mark all fields as touched and validate them simultaneously
+    const newTouchedFields = { ...touchedFields };
+    fieldsToValidate.forEach((fieldName) => {
+      newTouchedFields[fieldName] = true;
+    });
+    setTouchedFields(newTouchedFields);
+
+    // Validate all fields and collect errors
+    const currentLocation = formData.locations[currentLocationIndex];
+    const errors = { ...fieldErrors };
+
+    fieldsToValidate.forEach((fieldName) => {
+      // Clear previous error for this field
+      delete errors[fieldName];
+
+      // Validate based on field name
+      switch (fieldName) {
+        case 'location.name': {
+          if (formData.businessType === 'multi' && !currentLocation?.name?.trim()) {
+            errors['location.name'] = 'Nome da localização é obrigatório';
+          }
+          break;
+        }
+        case 'location.phone': {
+          if (!currentLocation?.phone?.trim()) {
+            errors['location.phone'] = 'Telefone da localização é obrigatório';
+          } else if (!validateBrazilianPhone(currentLocation.phone)) {
+            errors['location.phone'] =
+              'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+          }
+          break;
+        }
+        case 'location.whatsapp': {
+          if (
+            currentLocation?.whatsapp?.trim() &&
+            !validateBrazilianPhone(currentLocation.whatsapp)
+          ) {
+            errors['location.whatsapp'] =
+              'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+          }
+          break;
+        }
+        case 'location.urlName': {
+          if (formData.businessType === 'multi' && !currentLocation?.urlName?.trim()) {
+            errors['location.urlName'] = 'Nome da localização para URL é obrigatório';
+          } else if (
+            currentLocation?.urlName &&
+            !validateRestaurantUrlName(currentLocation.urlName)
+          ) {
+            errors['location.urlName'] =
+              'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+          }
+          break;
+        }
+        case 'address.street': {
+          if (!currentLocation?.address.street?.trim()) {
+            errors['address.street'] = 'Endereço é obrigatório';
+          }
+          break;
+        }
+        case 'address.streetNumber': {
+          if (!currentLocation?.address.streetNumber?.trim()) {
+            errors['address.streetNumber'] = 'Número é obrigatório';
+          }
+          break;
+        }
+        case 'address.city': {
+          if (!currentLocation?.address.city?.trim()) {
+            errors['address.city'] = 'Cidade é obrigatória';
+          }
+          break;
+        }
+        case 'address.state': {
+          if (!currentLocation?.address.state?.trim()) {
+            errors['address.state'] = 'Estado é obrigatório';
+          }
+          break;
+        }
+        case 'address.zipCode': {
+          if (!currentLocation?.address.zipCode?.trim()) {
+            errors['address.zipCode'] = 'CEP é obrigatório';
+          } else if (!validateCEP(currentLocation.address.zipCode)) {
+            errors['address.zipCode'] = 'CEP deve ter 8 dígitos (ex: 12345-123)';
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    });
+
+    setFieldErrors(errors);
+  };
+
   // Location management functions
   const addNewLocation = () => {
+    // Validate current location and highlight any errors
+    validateCurrentLocationFields();
+
+    // Prevent adding new location if current location has errors
+    if (hasCurrentLocationErrors()) {
+      setError('Por favor, corrija os erros da localização atual antes de adicionar uma nova.');
+      return;
+    }
+
     const newLocation = {
       id: Date.now(), // Simple ID generation
       name: `Localização ${formData.locations.length + 1}`,
       urlName: '', // URL-safe name for location
+      phone: '', // Location-specific phone
+      whatsapp: '', // Location-specific WhatsApp
       address: {
         zipCode: '',
         street: '',
@@ -208,6 +382,9 @@ function RegisterPage() {
       ...prev,
       locations: [...prev.locations, newLocation],
     }));
+
+    // Clear any previous error message
+    setError('');
 
     // Switch to the new location
     setCurrentLocationIndex(formData.locations.length);
@@ -692,6 +869,47 @@ function RegisterPage() {
           errors.website = 'Website deve ter formato válido (ex: https://www.exemplo.com)';
         }
         break;
+      case 'location.name': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (formData.businessType === 'multi' && !currentLocation?.name?.trim()) {
+          errors['location.name'] = 'Nome da localização é obrigatório';
+        }
+        break;
+      }
+      case 'location.phone': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.phone?.trim()) {
+          errors['location.phone'] = 'Telefone da localização é obrigatório';
+        } else if (!validateBrazilianPhone(currentLocation.phone)) {
+          errors['location.phone'] =
+            'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        }
+        break;
+      }
+      case 'location.whatsapp': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (
+          currentLocation?.whatsapp?.trim() &&
+          !validateBrazilianPhone(currentLocation.whatsapp)
+        ) {
+          errors['location.whatsapp'] =
+            'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        }
+        break;
+      }
+      case 'location.urlName': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (formData.businessType === 'multi' && !currentLocation?.urlName?.trim()) {
+          errors['location.urlName'] = 'Nome da localização para URL é obrigatório';
+        } else if (
+          currentLocation?.urlName &&
+          !validateRestaurantUrlName(currentLocation.urlName)
+        ) {
+          errors['location.urlName'] =
+            'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+        }
+        break;
+      }
       case 'address.street': {
         const currentLocation = formData.locations[currentLocationIndex];
         if (!currentLocation?.address.street?.trim()) {
@@ -777,17 +995,7 @@ function RegisterPage() {
           errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
         }
         break;
-      case 'location.urlName':
-        if (formData.businessType === 'multi') {
-          const currentLocation = formData.locations[currentLocationIndex];
-          if (!currentLocation?.urlName?.trim()) {
-            errors['location.urlName'] = 'Nome para URL da localização é obrigatório';
-          } else if (!validateRestaurantUrlName(currentLocation.urlName)) {
-            errors['location.urlName'] =
-              'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
-          }
-        }
-        break;
+
       default:
         break;
     }
@@ -1392,6 +1600,48 @@ function RegisterPage() {
           </div>
         )}
 
+        {/* Location Contact Fields */}
+        <div className="form-row">
+          <div className={`form-group ${getFieldErrorClass('location.phone')}`}>
+            <label htmlFor="location-phone" className="form-label">
+              Telefone da Localização *
+            </label>
+            <input
+              type="tel"
+              id="location-phone"
+              name="location.phone"
+              value={currentLocation.phone}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('location.phone')}`}
+              placeholder="(11) 99999-9999 ou 11 12345-1234"
+              required
+            />
+            {hasFieldError('location.phone') && (
+              <div className="field-error">{fieldErrors['location.phone']}</div>
+            )}
+          </div>
+
+          <div className={`form-group ${getFieldErrorClass('location.whatsapp')}`}>
+            <label htmlFor="location-whatsapp" className="form-label">
+              WhatsApp da Localização (Opcional)
+            </label>
+            <input
+              type="tel"
+              id="location-whatsapp"
+              name="location.whatsapp"
+              value={currentLocation.whatsapp}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('location.whatsapp')}`}
+              placeholder="(11) 99999-9999 ou 11 12345-1234"
+            />
+            {hasFieldError('location.whatsapp') && (
+              <div className="field-error">{fieldErrors['location.whatsapp']}</div>
+            )}
+          </div>
+        </div>
+
         {/* CEP Field - First Field */}
         <div className={`form-group ${getFieldErrorClass('address.zipCode')}`}>
           <label htmlFor="address.zipCode" className="form-label">
@@ -1926,13 +2176,9 @@ function RegisterPage() {
               </button>
             )}
 
-            {currentStep < 5 ? (
+            {currentStep < 5 && (
               <button type="button" onClick={nextStep} className="auth-button primary">
                 Próximo Passo
-              </button>
-            ) : (
-              <button type="submit" className="auth-button primary">
-                Concluir Registro
               </button>
             )}
           </div>

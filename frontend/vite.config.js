@@ -35,4 +35,10 @@ export default defineConfig({
     sourcemap: true,
     outDir: 'dist',
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    include: ['tests/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    setupFiles: './tests/setup.js',
+  },
 });
