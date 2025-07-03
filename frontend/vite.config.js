@@ -38,6 +38,22 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/setupTests.js'],
+    setupFiles: ['./tests/setupTests.js'],
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'tests/setupTests.js',
+        '**/*.{test,spec}.{js,jsx}',
+        '**/tests/**',
+        'dist/',
+        'coverage/',
+        'vite.config.js',
+        'tailwind.config.js',
+        'eslint.config.js',
+      ],
+      include: ['src/**/*.{js,jsx}'],
+      all: false, // Only show coverage for tested files
+    },
   },
 });
