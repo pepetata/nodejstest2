@@ -8,6 +8,7 @@ function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
+  const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [formData, setFormData] = useState({
     // Step 1: Account Information
     ownerName: 'Flavio Ferreira',
@@ -19,34 +20,41 @@ function RegisterPage() {
 
     // Step 2: Restaurant Details
     restaurantName: 'a',
-    restaurantUrlName: '',
+    restaurantUrlName: 'aaa',
     businessType: 'single', // single or multi-location
     cuisineType: 'American',
     website: '',
     description: '',
 
-    // Step 3: Location & Hours
-    address: {
-      zipCode: '',
-      street: '',
-      streetNumber: '',
-      complement: '',
-      city: '',
-      state: '',
-    },
-    operatingHours: {
-      monday: { open: '09:00', close: '22:00', closed: false },
-      tuesday: { open: '09:00', close: '22:00', closed: false },
-      wednesday: { open: '09:00', close: '22:00', closed: false },
-      thursday: { open: '09:00', close: '22:00', closed: false },
-      friday: { open: '09:00', close: '22:00', closed: false },
-      saturday: { open: '09:00', close: '22:00', closed: false },
-      sunday: { open: '09:00', close: '22:00', closed: false },
-      holidays: { open: '10:00', close: '20:00', closed: false },
-    },
+    // Step 3: Locations & Hours (array for multi-location support)
+    locations: [
+      {
+        id: 1,
+        name: 'Localização Principal',
+        urlName: 'aaa', // URL-safe name for location
+        address: {
+          zipCode: '',
+          street: '',
+          streetNumber: '',
+          complement: '',
+          city: '',
+          state: '',
+        },
+        operatingHours: {
+          monday: { open: '09:00', close: '22:00', closed: false },
+          tuesday: { open: '09:00', close: '22:00', closed: false },
+          wednesday: { open: '09:00', close: '22:00', closed: false },
+          thursday: { open: '09:00', close: '22:00', closed: false },
+          friday: { open: '09:00', close: '22:00', closed: false },
+          saturday: { open: '09:00', close: '22:00', closed: false },
+          sunday: { open: '09:00', close: '22:00', closed: false },
+          holidays: { open: '10:00', close: '20:00', closed: false },
+        },
+        selectedFeatures: ['digital_menu'], // Features per location
+      },
+    ],
 
-    // Step 4: Features & Plan Selection
-    selectedFeatures: ['digital_menu'], // Core feature always included
+    // Step 4: Features & Plan Selection (now handled per location)
     subscriptionPlan: 'starter',
 
     // Step 5: Payment & Billing
@@ -157,12 +165,95 @@ function RegisterPage() {
 
   // Calculate recommended plan based on features and business type
   const getRecommendedPlan = () => {
-    const featureCount = formData.selectedFeatures.length;
+    // Calculate total features across all locations
+    const totalFeatures = formData.locations.reduce((total, location) => {
+      return total + location.selectedFeatures.length;
+    }, 0);
     const isMultiLocation = formData.businessType === 'multi';
+    const locationCount = formData.locations.length;
 
-    if (isMultiLocation || featureCount >= 6) return 'enterprise';
-    if (featureCount >= 4) return 'professional';
+    if (isMultiLocation || locationCount > 1 || totalFeatures >= 6) return 'enterprise';
+    if (totalFeatures >= 4) return 'professional';
     return 'starter';
+  };
+
+  // Location management functions
+  const addNewLocation = () => {
+    const newLocation = {
+      id: Date.now(), // Simple ID generation
+      name: `Localização ${formData.locations.length + 1}`,
+      urlName: '', // URL-safe name for location
+      address: {
+        zipCode: '',
+        street: '',
+        streetNumber: '',
+        complement: '',
+        city: '',
+        state: '',
+      },
+      operatingHours: {
+        monday: { open: '09:00', close: '22:00', closed: false },
+        tuesday: { open: '09:00', close: '22:00', closed: false },
+        wednesday: { open: '09:00', close: '22:00', closed: false },
+        thursday: { open: '09:00', close: '22:00', closed: false },
+        friday: { open: '09:00', close: '22:00', closed: false },
+        saturday: { open: '09:00', close: '22:00', closed: false },
+        sunday: { open: '09:00', close: '22:00', closed: false },
+        holidays: { open: '10:00', close: '20:00', closed: false },
+      },
+      selectedFeatures: ['digital_menu'], // Core feature always included
+    };
+
+    setFormData((prev) => ({
+      ...prev,
+      locations: [...prev.locations, newLocation],
+    }));
+
+    // Switch to the new location
+    setCurrentLocationIndex(formData.locations.length);
+  };
+
+  const removeLocation = (locationId) => {
+    if (formData.locations.length <= 1) return; // Can't remove the last location
+
+    setFormData((prev) => ({
+      ...prev,
+      locations: prev.locations.filter((loc) => loc.id !== locationId),
+    }));
+
+    // Adjust current location index if needed
+    if (currentLocationIndex >= formData.locations.length - 1) {
+      setCurrentLocationIndex(Math.max(0, formData.locations.length - 2));
+    }
+  };
+
+  const updateLocationName = (locationId, newName) => {
+    setFormData((prev) => ({
+      ...prev,
+      locations: prev.locations.map((loc) =>
+        loc.id === locationId ? { ...loc, name: newName } : loc
+      ),
+    }));
+  };
+
+  const updateLocationUrlName = (locationId, newUrlName) => {
+    const formattedUrlName = formatRestaurantUrlName(newUrlName);
+    setFormData((prev) => ({
+      ...prev,
+      locations: prev.locations.map((loc) =>
+        loc.id === locationId ? { ...loc, urlName: formattedUrlName } : loc
+      ),
+    }));
+  };
+
+  const cleanupLocationUrlName = (locationId, urlName) => {
+    const cleanedUrlName = urlName.replace(/^-+|-+$/g, '');
+    setFormData((prev) => ({
+      ...prev,
+      locations: prev.locations.map((loc) =>
+        loc.id === locationId ? { ...loc, urlName: cleanedUrlName } : loc
+      ),
+    }));
   };
 
   // Enhanced validation functions
@@ -329,17 +420,24 @@ function RegisterPage() {
         const data = await Promise.race([fetchPromise, timeoutPromise]);
 
         if (!data.erro) {
-          // Auto-fill address fields
+          // Auto-fill address fields for current location
           setFormData((prev) => ({
             ...prev,
-            address: {
-              ...prev.address,
-              street: data.logradouro || '',
-              city: data.localidade || '',
-              state: data.uf || '',
-              streetNumber: '', // Clear street number when CEP changes
-              complement: '', // Clear complement when CEP changes
-            },
+            locations: prev.locations.map((loc, index) =>
+              index === currentLocationIndex
+                ? {
+                    ...loc,
+                    address: {
+                      ...loc.address,
+                      street: data.logradouro || '',
+                      city: data.localidade || '',
+                      state: data.uf || '',
+                      // streetNumber: '', // Clear street number when CEP changes
+                      // complement: '', // Clear complement when CEP changes
+                    },
+                  }
+                : loc
+            ),
           }));
 
           // Clear error
@@ -397,10 +495,17 @@ function RegisterPage() {
       const formattedValue = formatCEP(value);
       setFormData((prev) => ({
         ...prev,
-        address: {
-          ...prev.address,
-          zipCode: formattedValue,
-        },
+        locations: prev.locations.map((loc, index) =>
+          index === currentLocationIndex
+            ? {
+                ...loc,
+                address: {
+                  ...loc.address,
+                  zipCode: formattedValue,
+                },
+              }
+            : loc
+        ),
       }));
       return;
     }
@@ -415,7 +520,60 @@ function RegisterPage() {
       return;
     }
 
-    if (name.includes('.')) {
+    // Handle location-specific fields
+    if (name.startsWith('location.')) {
+      const fieldPath = name.substring(9); // Remove 'location.' prefix
+
+      if (fieldPath.includes('.')) {
+        const [parent, child] = fieldPath.split('.');
+        setFormData((prev) => ({
+          ...prev,
+          locations: prev.locations.map((loc, index) =>
+            index === currentLocationIndex
+              ? {
+                  ...loc,
+                  [parent]: {
+                    ...loc[parent],
+                    [child]: type === 'checkbox' ? checked : value,
+                  },
+                }
+              : loc
+          ),
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          locations: prev.locations.map((loc, index) =>
+            index === currentLocationIndex
+              ? {
+                  ...loc,
+                  [fieldPath]: type === 'checkbox' ? checked : value,
+                }
+              : loc
+          ),
+        }));
+      }
+      return;
+    }
+
+    // Handle legacy address fields (for backward compatibility)
+    if (name.includes('.') && name.startsWith('address.')) {
+      const [parent, child] = name.split('.');
+      setFormData((prev) => ({
+        ...prev,
+        locations: prev.locations.map((loc, index) =>
+          index === currentLocationIndex
+            ? {
+                ...loc,
+                [parent]: {
+                  ...loc[parent],
+                  [child]: type === 'checkbox' ? checked : value,
+                },
+              }
+            : loc
+        ),
+      }));
+    } else if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData((prev) => ({
         ...prev,
@@ -534,33 +692,43 @@ function RegisterPage() {
           errors.website = 'Website deve ter formato válido (ex: https://www.exemplo.com)';
         }
         break;
-      case 'address.street':
-        if (!formData.address.street?.trim()) {
+      case 'address.street': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.street?.trim()) {
           errors['address.street'] = 'Endereço é obrigatório';
         }
         break;
-      case 'address.streetNumber':
-        if (!formData.address.streetNumber?.trim()) {
+      }
+      case 'address.streetNumber': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.streetNumber?.trim()) {
           errors['address.streetNumber'] = 'Número é obrigatório';
         }
         break;
-      case 'address.city':
-        if (!formData.address.city?.trim()) {
+      }
+      case 'address.city': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.city?.trim()) {
           errors['address.city'] = 'Cidade é obrigatória';
         }
         break;
-      case 'address.state':
-        if (!formData.address.state?.trim()) {
+      }
+      case 'address.state': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.state?.trim()) {
           errors['address.state'] = 'Estado é obrigatório';
         }
         break;
-      case 'address.zipCode':
-        if (!formData.address.zipCode?.trim()) {
+      }
+      case 'address.zipCode': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.zipCode?.trim()) {
           errors['address.zipCode'] = 'CEP é obrigatório';
-        } else if (!validateCEP(formData.address.zipCode)) {
+        } else if (!validateCEP(currentLocation.address.zipCode)) {
           errors['address.zipCode'] = 'CEP deve ter 8 dígitos (ex: 12345-123)';
         }
         break;
+      }
       case 'paymentInfo.cardNumber':
         if (!formData.paymentInfo.cardNumber?.trim()) {
           errors['paymentInfo.cardNumber'] = 'Número do cartão é obrigatório';
@@ -609,6 +777,17 @@ function RegisterPage() {
           errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
         }
         break;
+      case 'location.urlName':
+        if (formData.businessType === 'multi') {
+          const currentLocation = formData.locations[currentLocationIndex];
+          if (!currentLocation?.urlName?.trim()) {
+            errors['location.urlName'] = 'Nome para URL da localização é obrigatório';
+          } else if (!validateRestaurantUrlName(currentLocation.urlName)) {
+            errors['location.urlName'] =
+              'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+          }
+        }
+        break;
       default:
         break;
     }
@@ -619,13 +798,20 @@ function RegisterPage() {
   const handleOperatingHoursChange = (day, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      operatingHours: {
-        ...prev.operatingHours,
-        [day]: {
-          ...prev.operatingHours[day],
-          [field]: value,
-        },
-      },
+      locations: prev.locations.map((loc, index) =>
+        index === currentLocationIndex
+          ? {
+              ...loc,
+              operatingHours: {
+                ...loc.operatingHours,
+                [day]: {
+                  ...loc.operatingHours[day],
+                  [field]: value,
+                },
+              },
+            }
+          : loc
+      ),
     }));
   };
 
@@ -633,13 +819,23 @@ function RegisterPage() {
     if (featureId === 'digital_menu') return; // Can't uncheck required feature
 
     setFormData((prev) => {
-      const newFeatures = prev.selectedFeatures.includes(featureId)
-        ? prev.selectedFeatures.filter((f) => f !== featureId)
-        : [...prev.selectedFeatures, featureId];
+      const updatedLocations = prev.locations.map((loc, index) => {
+        if (index === currentLocationIndex) {
+          const newFeatures = loc.selectedFeatures.includes(featureId)
+            ? loc.selectedFeatures.filter((f) => f !== featureId)
+            : [...loc.selectedFeatures, featureId];
+
+          return {
+            ...loc,
+            selectedFeatures: newFeatures,
+          };
+        }
+        return loc;
+      });
 
       return {
         ...prev,
-        selectedFeatures: newFeatures,
+        locations: updatedLocations,
         subscriptionPlan: getRecommendedPlan(),
       };
     });
@@ -697,23 +893,41 @@ function RegisterPage() {
         }
         break;
 
-      case 3:
-        if (!formData.address.zipCode?.trim()) {
+      case 3: {
+        // Validate current location
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation) {
+          errors.location = 'Localização é obrigatória';
+          break;
+        }
+
+        // Validate location URL name for multi-location restaurants
+        if (formData.businessType === 'multi') {
+          if (!currentLocation.urlName?.trim()) {
+            errors['location.urlName'] = 'Nome para URL da localização é obrigatório';
+          } else if (!validateRestaurantUrlName(currentLocation.urlName)) {
+            errors['location.urlName'] =
+              'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+          }
+        }
+
+        if (!currentLocation.address.zipCode?.trim()) {
           errors['address.zipCode'] = 'CEP é obrigatório';
         }
-        if (!formData.address.street?.trim()) {
+        if (!currentLocation.address.street?.trim()) {
           errors['address.street'] = 'Endereço é obrigatório';
         }
-        if (!formData.address.streetNumber?.trim()) {
+        if (!currentLocation.address.streetNumber?.trim()) {
           errors['address.streetNumber'] = 'Número é obrigatório';
         }
-        if (!formData.address.city?.trim()) {
+        if (!currentLocation.address.city?.trim()) {
           errors['address.city'] = 'Cidade é obrigatória';
         }
-        if (!formData.address.state?.trim()) {
+        if (!currentLocation.address.state?.trim()) {
           errors['address.state'] = 'Estado é obrigatório';
         }
         break;
+      }
 
       case 4:
         // Features validation is handled automatically
@@ -777,6 +991,8 @@ function RegisterPage() {
   const nextStep = () => {
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, 5));
+      // Scroll to top when moving to next step
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -785,6 +1001,8 @@ function RegisterPage() {
     setError('');
     setFieldErrors({});
     setTouchedFields({});
+    // Scroll to top when moving to previous step
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Helper function to check if a field has an error and has been touched
@@ -1080,238 +1298,377 @@ function RegisterPage() {
     </div>
   );
 
-  const renderStep3 = () => (
-    <div>
-      <h3 className="step-title">Localização e Horários</h3>
-      <p className="step-description">Comece inserindo seu CEP para preenchimento automático</p>
+  const renderStep3 = () => {
+    const currentLocation = formData.locations[currentLocationIndex] || formData.locations[0];
 
-      {/* CEP Field - First Field */}
-      <div className={`form-group ${getFieldErrorClass('address.zipCode')}`}>
-        <label htmlFor="address.zipCode" className="form-label">
-          CEP *
-        </label>
-        <input
-          type="text"
-          id="address.zipCode"
-          name="address.zipCode"
-          value={formData.address.zipCode}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className={`form-input ${getFieldErrorClass('address.zipCode')}`}
-          placeholder="12345-123"
-          maxLength="9"
-          required
-        />
-        {hasFieldError('address.zipCode') && (
-          <div className="field-error">{fieldErrors['address.zipCode']}</div>
+    return (
+      <div>
+        <h3 className="step-title">Localizações e Horários</h3>
+        <p className="step-description">
+          {formData.businessType === 'multi'
+            ? 'Configure cada localização do seu restaurante'
+            : 'Comece inserindo seu CEP para preenchimento automático'}
+        </p>
+
+        {/* Location Tabs for Multi-location */}
+        {formData.businessType === 'multi' && (
+          <div className="location-tabs">
+            <div className="tabs-header">
+              {formData.locations.map((location, index) => (
+                <button
+                  key={location.id}
+                  type="button"
+                  className={`tab-button ${index === currentLocationIndex ? 'active' : ''}`}
+                  onClick={() => setCurrentLocationIndex(index)}
+                >
+                  {location.name}
+                  {formData.locations.length > 1 && (
+                    <button
+                      type="button"
+                      className="remove-location-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeLocation(location.id);
+                      }}
+                      title="Remover localização"
+                    >
+                      ×
+                    </button>
+                  )}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="add-location-btn"
+                onClick={addNewLocation}
+                title="Adicionar nova localização"
+              >
+                + Adicionar Localização
+              </button>
+            </div>
+
+            {/* Location Name Input */}
+            <div className="form-group">
+              <label htmlFor="location-name" className="form-label">
+                Nome da Localização *
+              </label>
+              <input
+                type="text"
+                id="location-name"
+                value={currentLocation.name}
+                onChange={(e) => updateLocationName(currentLocation.id, e.target.value)}
+                className="form-input"
+                placeholder="Ex: Centro, Shopping, Filial Norte"
+                required
+              />
+            </div>
+
+            {/* Location URL Name Input */}
+            <div className={`form-group ${getFieldErrorClass('location.urlName')}`}>
+              <label htmlFor="location-url-name" className="form-label">
+                Nome da Localização para URL do Menu *
+              </label>
+              <input
+                type="text"
+                id="location-url-name"
+                value={currentLocation.urlName}
+                onChange={(e) => updateLocationUrlName(currentLocation.id, e.target.value)}
+                onBlur={(e) => cleanupLocationUrlName(currentLocation.id, e.target.value)}
+                className={`form-input ${getFieldErrorClass('location.urlName')}`}
+                placeholder="centro, shopping, filial-norte"
+                required
+              />
+              <div className="field-help">
+                Seus clientes acessarão o menu desta localização através do QR Code na URL:{' '}
+                <strong>
+                  {currentLocation.urlName || '[nome-da-localização]'}.
+                  {formData.restaurantUrlName || '[nome-do-restaurante]'}.alacarteapp.com/menu
+                </strong>
+              </div>
+              {hasFieldError('location.urlName') && (
+                <div className="field-error">{fieldErrors['location.urlName']}</div>
+              )}
+            </div>
+          </div>
         )}
-      </div>
 
-      {/* Street, Number and Complement */}
-      <div className="form-row">
-        <div className={`form-group ${getFieldErrorClass('address.street')}`} style={{ flex: '3' }}>
-          <label htmlFor="address.street" className="form-label">
-            Logradouro *
+        {/* CEP Field - First Field */}
+        <div className={`form-group ${getFieldErrorClass('address.zipCode')}`}>
+          <label htmlFor="address.zipCode" className="form-label">
+            CEP *
           </label>
           <input
             type="text"
-            id="address.street"
-            name="address.street"
-            value={formData.address.street}
+            id="address.zipCode"
+            name="address.zipCode"
+            value={currentLocation.address.zipCode}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`form-input ${getFieldErrorClass('address.street')}`}
-            placeholder="Nome da rua/avenida"
-            readOnly={!!formData.address.zipCode && !hasFieldError('address.zipCode')}
-            tabIndex={!!formData.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0}
+            className={`form-input ${getFieldErrorClass('address.zipCode')}`}
+            placeholder="12345-123"
+            maxLength="9"
             required
           />
-          {hasFieldError('address.street') && (
-            <div className="field-error">{fieldErrors['address.street']}</div>
+          {hasFieldError('address.zipCode') && (
+            <div className="field-error">{fieldErrors['address.zipCode']}</div>
           )}
         </div>
 
-        <div
-          className={`form-group ${getFieldErrorClass('address.streetNumber')}`}
-          style={{ flex: '1' }}
-        >
-          <label htmlFor="address.streetNumber" className="form-label">
-            Número *
+        {/* Street, Number and Complement */}
+        <div className="form-row">
+          <div
+            className={`form-group ${getFieldErrorClass('address.street')}`}
+            style={{ flex: '3' }}
+          >
+            <label htmlFor="address.street" className="form-label">
+              Logradouro *
+            </label>
+            <input
+              type="text"
+              id="address.street"
+              name="address.street"
+              value={currentLocation.address.street}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('address.street')}`}
+              placeholder="Nome da rua/avenida"
+              readOnly={!!currentLocation.address.zipCode && !hasFieldError('address.zipCode')}
+              tabIndex={
+                !!currentLocation.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0
+              }
+              required
+            />
+            {hasFieldError('address.street') && (
+              <div className="field-error">{fieldErrors['address.street']}</div>
+            )}
+          </div>
+
+          <div
+            className={`form-group ${getFieldErrorClass('address.streetNumber')}`}
+            style={{ flex: '1' }}
+          >
+            <label htmlFor="address.streetNumber" className="form-label">
+              Número *
+            </label>
+            <input
+              type="text"
+              id="address.streetNumber"
+              name="address.streetNumber"
+              value={currentLocation.address.streetNumber}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('address.streetNumber')}`}
+              placeholder="123"
+              required
+            />
+            {hasFieldError('address.streetNumber') && (
+              <div className="field-error">{fieldErrors['address.streetNumber']}</div>
+            )}
+          </div>
+        </div>
+
+        <div className={`form-group ${getFieldErrorClass('address.complement')}`}>
+          <label htmlFor="address.complement" className="form-label">
+            Complemento (Opcional)
           </label>
           <input
             type="text"
-            id="address.streetNumber"
-            name="address.streetNumber"
-            value={formData.address.streetNumber}
+            id="address.complement"
+            name="address.complement"
+            value={currentLocation.address.complement}
             onChange={handleChange}
             onBlur={handleBlur}
-            className={`form-input ${getFieldErrorClass('address.streetNumber')}`}
-            placeholder="123"
-            required
+            className={`form-input ${getFieldErrorClass('address.complement')}`}
+            placeholder="Apartamento, bloco, sala, etc."
           />
-          {hasFieldError('address.streetNumber') && (
-            <div className="field-error">{fieldErrors['address.streetNumber']}</div>
+          {hasFieldError('address.complement') && (
+            <div className="field-error">{fieldErrors['address.complement']}</div>
           )}
         </div>
-      </div>
 
-      <div className={`form-group ${getFieldErrorClass('address.complement')}`}>
-        <label htmlFor="address.complement" className="form-label">
-          Complemento (Opcional)
-        </label>
-        <input
-          type="text"
-          id="address.complement"
-          name="address.complement"
-          value={formData.address.complement}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          className={`form-input ${getFieldErrorClass('address.complement')}`}
-          placeholder="Apartamento, bloco, sala, etc."
-        />
-        {hasFieldError('address.complement') && (
-          <div className="field-error">{fieldErrors['address.complement']}</div>
+        {/* City and State - Read-only after CEP lookup */}
+        <div className="form-row">
+          <div className={`form-group ${getFieldErrorClass('address.city')}`}>
+            <label htmlFor="address.city" className="form-label">
+              Cidade *
+            </label>
+            <input
+              type="text"
+              id="address.city"
+              name="address.city"
+              value={currentLocation.address.city}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('address.city')}`}
+              placeholder="Cidade"
+              readOnly={!!currentLocation.address.zipCode && !hasFieldError('address.zipCode')}
+              tabIndex={
+                !!currentLocation.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0
+              }
+              required
+            />
+            {hasFieldError('address.city') && (
+              <div className="field-error">{fieldErrors['address.city']}</div>
+            )}
+          </div>
+
+          <div className={`form-group ${getFieldErrorClass('address.state')}`}>
+            <label htmlFor="address.state" className="form-label">
+              Estado *
+            </label>
+            <input
+              type="text"
+              id="address.state"
+              name="address.state"
+              value={currentLocation.address.state}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={`form-input ${getFieldErrorClass('address.state')}`}
+              placeholder="Estado"
+              readOnly={!!currentLocation.address.zipCode && !hasFieldError('address.zipCode')}
+              tabIndex={
+                !!currentLocation.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0
+              }
+              required
+            />
+            {hasFieldError('address.state') && (
+              <div className="field-error">{fieldErrors['address.state']}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="operating-hours">
+          <h4 className="form-label">Horários de Funcionamento</h4>
+          {Object.keys(currentLocation.operatingHours).map((day) => {
+            const dayTranslations = {
+              monday: 'Segunda-feira',
+              tuesday: 'Terça-feira',
+              wednesday: 'Quarta-feira',
+              thursday: 'Quinta-feira',
+              friday: 'Sexta-feira',
+              saturday: 'Sábado',
+              sunday: 'Domingo',
+              holidays: 'Feriados',
+            };
+
+            return (
+              <div key={day} className="hours-row">
+                <div className="day-label">{dayTranslations[day]}</div>
+                <div className="hours-inputs">
+                  <input
+                    type="checkbox"
+                    id={`${day}-closed`}
+                    checked={currentLocation.operatingHours[day].closed}
+                    onChange={(e) => handleOperatingHoursChange(day, 'closed', e.target.checked)}
+                  />
+                  <label htmlFor={`${day}-closed`}>Fechado</label>
+                  {!currentLocation.operatingHours[day].closed && (
+                    <>
+                      <input
+                        type="time"
+                        value={currentLocation.operatingHours[day].open}
+                        onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
+                        className="form-input time-input"
+                      />
+                      <span>até</span>
+                      <input
+                        type="time"
+                        value={currentLocation.operatingHours[day].close}
+                        onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
+                        className="form-input time-input"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep4 = () => {
+    const currentLocation = formData.locations[currentLocationIndex] || formData.locations[0];
+
+    return (
+      <div>
+        <h3 className="step-title">Recursos e Seleção de Plano</h3>
+        <p className="step-description">
+          {formData.businessType === 'multi'
+            ? `Escolha os recursos para: ${currentLocation.name}`
+            : 'Escolha os recursos que você precisa'}
+        </p>
+
+        {/* Location Tabs for Multi-location */}
+        {formData.businessType === 'multi' && (
+          <div className="location-tabs">
+            <div className="tabs-header">
+              {formData.locations.map((location, index) => (
+                <button
+                  key={location.id}
+                  type="button"
+                  className={`tab-button ${index === currentLocationIndex ? 'active' : ''}`}
+                  onClick={() => setCurrentLocationIndex(index)}
+                >
+                  {location.name}
+                  <span className="feature-count">
+                    ({location.selectedFeatures.length} recursos)
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         )}
-      </div>
 
-      {/* City and State - Read-only after CEP lookup */}
-      <div className="form-row">
-        <div className={`form-group ${getFieldErrorClass('address.city')}`}>
-          <label htmlFor="address.city" className="form-label">
-            Cidade *
-          </label>
-          <input
-            type="text"
-            id="address.city"
-            name="address.city"
-            value={formData.address.city}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={`form-input ${getFieldErrorClass('address.city')}`}
-            placeholder="Cidade"
-            readOnly={!!formData.address.zipCode && !hasFieldError('address.zipCode')}
-            tabIndex={!!formData.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0}
-            required
-          />
-          {hasFieldError('address.city') && (
-            <div className="field-error">{fieldErrors['address.city']}</div>
-          )}
-        </div>
-
-        <div className={`form-group ${getFieldErrorClass('address.state')}`}>
-          <label htmlFor="address.state" className="form-label">
-            Estado *
-          </label>
-          <input
-            type="text"
-            id="address.state"
-            name="address.state"
-            value={formData.address.state}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={`form-input ${getFieldErrorClass('address.state')}`}
-            placeholder="Estado"
-            readOnly={!!formData.address.zipCode && !hasFieldError('address.zipCode')}
-            tabIndex={!!formData.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0}
-            required
-          />
-          {hasFieldError('address.state') && (
-            <div className="field-error">{fieldErrors['address.state']}</div>
-          )}
-        </div>
-      </div>
-
-      <div className="operating-hours">
-        <h4 className="form-label">Horários de Funcionamento</h4>
-        {Object.keys(formData.operatingHours).map((day) => {
-          const dayTranslations = {
-            monday: 'Segunda-feira',
-            tuesday: 'Terça-feira',
-            wednesday: 'Quarta-feira',
-            thursday: 'Quinta-feira',
-            friday: 'Sexta-feira',
-            saturday: 'Sábado',
-            sunday: 'Domingo',
-            holidays: 'Feriados',
-          };
-
-          return (
-            <div key={day} className="hours-row">
-              <div className="day-label">{dayTranslations[day]}</div>
-              <div className="hours-inputs">
+        <div className="features-grid">
+          {features.map((feature) => (
+            <div
+              key={feature.id}
+              className={`feature-card ${
+                currentLocation.selectedFeatures.includes(feature.id) ? 'selected' : ''
+              } ${feature.required ? 'required' : ''}`}
+            >
+              <div className="feature-header">
                 <input
                   type="checkbox"
-                  id={`${day}-closed`}
-                  checked={formData.operatingHours[day].closed}
-                  onChange={(e) => handleOperatingHoursChange(day, 'closed', e.target.checked)}
+                  id={feature.id}
+                  checked={currentLocation.selectedFeatures.includes(feature.id)}
+                  onChange={() => handleFeatureToggle(feature.id)}
+                  disabled={feature.required}
                 />
-                <label htmlFor={`${day}-closed`}>Fechado</label>
-                {!formData.operatingHours[day].closed && (
-                  <>
-                    <input
-                      type="time"
-                      value={formData.operatingHours[day].open}
-                      onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
-                      className="form-input time-input"
-                    />
-                    <span>até</span>
-                    <input
-                      type="time"
-                      value={formData.operatingHours[day].close}
-                      onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
-                      className="form-input time-input"
-                    />
-                  </>
-                )}
+                <label htmlFor={feature.id} className="feature-name">
+                  {feature.name}
+                  {feature.required && <span className="required-badge"> (Obrigatório)</span>}
+                </label>
               </div>
+              <p className="feature-description">{feature.description}</p>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+          ))}
+        </div>
 
-  const renderStep4 = () => (
-    <div>
-      <h3 className="step-title">Recursos e Seleção de Plano</h3>
-      <p className="step-description">Escolha os recursos que você precisa</p>
-
-      <div className="features-grid">
-        {features.map((feature) => (
-          <div
-            key={feature.id}
-            className={`feature-card ${
-              formData.selectedFeatures.includes(feature.id) ? 'selected' : ''
-            } ${feature.required ? 'required' : ''}`}
-          >
-            <div className="feature-header">
-              <input
-                type="checkbox"
-                id={feature.id}
-                checked={formData.selectedFeatures.includes(feature.id)}
-                onChange={() => handleFeatureToggle(feature.id)}
-                disabled={feature.required}
-              />
-              <label htmlFor={feature.id} className="feature-name">
-                {feature.name}
-                {feature.required && <span className="required-badge"> (Required)</span>}
-              </label>
-            </div>
-            <p className="feature-description">{feature.description}</p>
+        <div className="plan-recommendation">
+          <h4>Plano Recomendado</h4>
+          <div className="plan-card recommended">
+            <h5>{subscriptionPlans[getRecommendedPlan()].name}</h5>
+            <div className="plan-price">R${subscriptionPlans[getRecommendedPlan()].price}/mês</div>
+            <p>{subscriptionPlans[getRecommendedPlan()].description}</p>
+            {formData.businessType === 'multi' && (
+              <div className="location-summary">
+                <p>
+                  Total de recursos em todas as localizações:{' '}
+                  {formData.locations.reduce(
+                    (total, loc) => total + loc.selectedFeatures.length,
+                    0
+                  )}
+                </p>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      <div className="plan-recommendation">
-        <h4>Plano Recomendado</h4>
-        <div className="plan-card recommended">
-          <h5>{subscriptionPlans[getRecommendedPlan()].name}</h5>
-          <div className="plan-price">R${subscriptionPlans[getRecommendedPlan()].price}/mês</div>
-          <p>{subscriptionPlans[getRecommendedPlan()].description}</p>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep5 = () => (
     <div>
@@ -1524,7 +1881,14 @@ function RegisterPage() {
           <span>R$ {subscriptionPlans[getRecommendedPlan()].price}/mês</span>
         </div>
         <div className="summary-item">
-          <span>Recursos: {formData.selectedFeatures.length} selecionados</span>
+          <span>
+            Recursos:{' '}
+            {formData.locations.reduce(
+              (total, location) => total + location.selectedFeatures.length,
+              0
+            )}{' '}
+            selecionados
+          </span>
         </div>
       </div>
 
