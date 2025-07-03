@@ -299,10 +299,12 @@
     background: linear-gradient(135deg, rgba(vars.$logoO, 0.08) 0%, rgba(vars.$logoO, 0.05) 100%);
 
     &::after {
-      content: 'Required';
+      content: '✓';
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 1rem;
+      right: 1rem;
+      width: 24px;
+      height: 24px;
       background: vars.$logoO;
       color: white;
       font-size: 0.7rem;

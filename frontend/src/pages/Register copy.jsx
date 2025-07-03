@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/Auth.scss';
@@ -11,16 +11,16 @@ function RegisterPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [formData, setFormData] = useState({
     // Step 1: Account Information
-    ownerName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
+    ownerName: 'Flavio Ferreira',
+    email: 'flavio_luiz_ferreira@hotmail.com',
+    password: '12345678',
+    confirmPassword: '12345678',
+    phone: '11234567890',
     whatsapp: '',
 
     // Step 2: Restaurant Details
-    restaurantName: '',
-    restaurantUrlName: '',
+    restaurantName: 'a',
+    restaurantUrlName: 'aaa',
     businessType: 'single', // single or multi-location
     cuisineType: 'American',
     website: '',
@@ -31,7 +31,7 @@ function RegisterPage() {
       {
         id: 1,
         name: 'Localização Principal',
-        urlName: '', // URL-safe name for location
+        urlName: 'aaa', // URL-safe name for location
         phone: '', // Location-specific phone
         whatsapp: '', // Location-specific WhatsApp
         address: {
@@ -81,11 +81,6 @@ function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
   const cepAsyncError = useRef('');
-
-  // Scroll to top when component mounts
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
 
   const cuisineTypes = [
     'American',
@@ -240,7 +235,10 @@ function RegisterPage() {
       'location.phone',
       'location.whatsapp',
       'address.zipCode',
+      'address.street',
       'address.streetNumber',
+      'address.city',
+      'address.state',
     ];
 
     // For multi-location business, also validate location name and URL
@@ -248,21 +246,94 @@ function RegisterPage() {
       fieldsToValidate.push('location.name', 'location.urlName');
     }
 
-    // Mark all fields as touched
+    // Mark all fields as touched and validate them simultaneously
     const newTouchedFields = { ...touchedFields };
     fieldsToValidate.forEach((fieldName) => {
       newTouchedFields[fieldName] = true;
     });
     setTouchedFields(newTouchedFields);
 
-    // Validate all fields using centralized validation
+    // Validate all fields and collect errors
+    const currentLocation = formData.locations[currentLocationIndex];
     const errors = { ...fieldErrors };
+
     fieldsToValidate.forEach((fieldName) => {
-      const error = validateSingleField(fieldName);
-      if (error) {
-        errors[fieldName] = error;
-      } else {
-        delete errors[fieldName];
+      // Clear previous error for this field
+      delete errors[fieldName];
+
+      // Validate based on field name
+      switch (fieldName) {
+        case 'location.name': {
+          if (formData.businessType === 'multi' && !currentLocation?.name?.trim()) {
+            errors['location.name'] = 'Nome da localização é obrigatório';
+          }
+          break;
+        }
+        case 'location.phone': {
+          if (!currentLocation?.phone?.trim()) {
+            errors['location.phone'] = 'Telefone da localização é obrigatório';
+          } else if (!validateBrazilianPhone(currentLocation.phone)) {
+            errors['location.phone'] =
+              'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+          }
+          break;
+        }
+        case 'location.whatsapp': {
+          if (
+            currentLocation?.whatsapp?.trim() &&
+            !validateBrazilianPhone(currentLocation.whatsapp)
+          ) {
+            errors['location.whatsapp'] =
+              'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+          }
+          break;
+        }
+        case 'location.urlName': {
+          if (formData.businessType === 'multi' && !currentLocation?.urlName?.trim()) {
+            errors['location.urlName'] = 'Nome da localização para URL é obrigatório';
+          } else if (
+            currentLocation?.urlName &&
+            !validateRestaurantUrlName(currentLocation.urlName)
+          ) {
+            errors['location.urlName'] =
+              'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+          }
+          break;
+        }
+        // case 'address.street': {
+        //   if (!currentLocation?.address.street?.trim()) {
+        //     errors['address.street'] = 'Endereço é obrigatório';
+        //   }
+        //   break;
+        // }
+        case 'address.streetNumber': {
+          if (!currentLocation?.address.streetNumber?.trim()) {
+            errors['address.streetNumber'] = 'Número é obrigatório';
+          }
+          break;
+        }
+        // case 'address.city': {
+        //   if (!currentLocation?.address.city?.trim()) {
+        //     errors['address.city'] = 'Cidade é obrigatória';
+        //   }
+        //   break;
+        // }
+        // case 'address.state': {
+        //   if (!currentLocation?.address.state?.trim()) {
+        //     errors['address.state'] = 'Estado é obrigatório';
+        //   }
+        //   break;
+        // }
+        case 'address.zipCode': {
+          if (!currentLocation?.address.zipCode?.trim()) {
+            errors['address.zipCode'] = 'CEP é obrigatório';
+          } else if (!validateCEP(currentLocation.address.zipCode)) {
+            errors['address.zipCode'] = 'CEP deve ter 8 dígitos (ex: 12345-123)';
+          }
+          break;
+        }
+        default:
+          break;
       }
     });
 
@@ -361,236 +432,6 @@ function RegisterPage() {
         loc.id === locationId ? { ...loc, urlName: cleanedUrlName } : loc
       ),
     }));
-  };
-
-  // Centralized validation rules
-  const validationRules = {
-    ownerName: {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Nome completo é obrigatório';
-        return null;
-      },
-    },
-    email: {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Email é obrigatório';
-        if (!validateEmail(value))
-          return 'Email deve ter um formato válido (ex: usuario@dominio.com)';
-        return null;
-      },
-    },
-    password: {
-      required: true,
-      validate: (value) => {
-        if (!value) return 'Senha é obrigatória';
-        if (value.length < 8) return 'A senha deve ter pelo menos 8 caracteres';
-        return null;
-      },
-    },
-    confirmPassword: {
-      required: true,
-      validate: (value) => {
-        if (!value) return 'Confirmação de senha é obrigatória';
-        if (formData.password !== value) return 'As senhas não coincidem';
-        return null;
-      },
-    },
-    phone: {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Número de telefone é obrigatório';
-        if (!validateBrazilianPhone(value))
-          return 'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
-        return null;
-      },
-    },
-    whatsapp: {
-      required: false,
-      validate: (value) => {
-        if (value?.trim() && !validateBrazilianPhone(value))
-          return 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
-        return null;
-      },
-    },
-    restaurantName: {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Nome do restaurante é obrigatório';
-        return null;
-      },
-    },
-    restaurantUrlName: {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Nome para URL é obrigatório';
-        if (!validateRestaurantUrlName(value))
-          return 'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
-        return null;
-      },
-    },
-    cuisineType: {
-      required: true,
-      validate: (value) => {
-        if (!value) return 'Tipo de culinária é obrigatório';
-        return null;
-      },
-    },
-    website: {
-      required: false,
-      validate: (value) => {
-        if (value?.trim() && !validateWebsite(value))
-          return 'Website deve ter formato válido (ex: https://www.exemplo.com)';
-        return null;
-      },
-    },
-    'location.name': {
-      required: true,
-      validate: (value) => {
-        if (formData.businessType === 'multi' && !value?.trim())
-          return 'Nome da localização é obrigatório';
-        return null;
-      },
-    },
-    'location.phone': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Telefone da localização é obrigatório';
-        if (!validateBrazilianPhone(value))
-          return 'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
-        return null;
-      },
-    },
-    'location.whatsapp': {
-      required: false,
-      validate: (value) => {
-        if (value?.trim() && !validateBrazilianPhone(value))
-          return 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
-        return null;
-      },
-    },
-    'location.urlName': {
-      required: true,
-      validate: (value) => {
-        if (formData.businessType === 'multi' && !value?.trim())
-          return 'Nome da localização para URL é obrigatório';
-        if (value && !validateRestaurantUrlName(value))
-          return 'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
-        return null;
-      },
-    },
-    'address.zipCode': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'CEP é obrigatório';
-        if (!validateCEP(value)) return 'CEP deve ter 8 dígitos (ex: 12345-123)';
-        return null;
-      },
-    },
-    'address.streetNumber': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Número é obrigatório';
-        return null;
-      },
-    },
-    'paymentInfo.cardNumber': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Número do cartão é obrigatório';
-        return null;
-      },
-    },
-    'paymentInfo.expiryDate': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Data de vencimento é obrigatória';
-        return null;
-      },
-    },
-    'paymentInfo.cvv': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'CVV é obrigatório';
-        return null;
-      },
-    },
-    'paymentInfo.cardholderName': {
-      required: true,
-      validate: (value) => {
-        if (!value?.trim()) return 'Nome do portador é obrigatório';
-        return null;
-      },
-    },
-    'billingAddress.street': {
-      required: true,
-      validate: (value) => {
-        if (!formData.billingAddress.sameAsRestaurant && !value?.trim())
-          return 'Endereço de cobrança é obrigatório';
-        return null;
-      },
-    },
-    'billingAddress.streetNumber': {
-      required: true,
-      validate: (value) => {
-        if (!formData.billingAddress.sameAsRestaurant && !value?.trim())
-          return 'Número de cobrança é obrigatório';
-        return null;
-      },
-    },
-    'billingAddress.city': {
-      required: true,
-      validate: (value) => {
-        if (!formData.billingAddress.sameAsRestaurant && !value?.trim())
-          return 'Cidade de cobrança é obrigatória';
-        return null;
-      },
-    },
-    'billingAddress.state': {
-      required: true,
-      validate: (value) => {
-        if (!formData.billingAddress.sameAsRestaurant && !value?.trim())
-          return 'Estado de cobrança é obrigatório';
-        return null;
-      },
-    },
-    'billingAddress.zipCode': {
-      required: true,
-      validate: (value) => {
-        if (!formData.billingAddress.sameAsRestaurant && !value?.trim())
-          return 'CEP de cobrança é obrigatório';
-        return null;
-      },
-    },
-  };
-
-  // Helper function to get field value
-  const getFieldValue = (fieldName) => {
-    if (fieldName.startsWith('location.')) {
-      const fieldPath = fieldName.substring(9);
-      const currentLocation = formData.locations[currentLocationIndex];
-      return currentLocation?.[fieldPath];
-    }
-    if (fieldName.startsWith('address.')) {
-      const fieldPath = fieldName.substring(8);
-      const currentLocation = formData.locations[currentLocationIndex];
-      return currentLocation?.address?.[fieldPath];
-    }
-    if (fieldName.includes('.')) {
-      const [parent, child] = fieldName.split('.');
-      return formData[parent]?.[child];
-    }
-    return formData[fieldName];
-  };
-
-  // Centralized validation function
-  const validateSingleField = (fieldName) => {
-    const rule = validationRules[fieldName];
-    if (!rule) return null;
-
-    const value = getFieldValue(fieldName);
-    return rule.validate(value);
   };
 
   // Enhanced validation functions
@@ -960,13 +801,204 @@ function RegisterPage() {
   };
 
   const validateField = (fieldName) => {
-    const error = validateSingleField(fieldName);
     const errors = { ...fieldErrors };
 
-    if (error) {
-      errors[fieldName] = error;
-    } else {
-      delete errors[fieldName];
+    // Clear previous error for this field
+    delete errors[fieldName];
+
+    // Validate based on field name
+    switch (fieldName) {
+      case 'ownerName':
+        if (!formData.ownerName?.trim()) {
+          errors.ownerName = 'Nome completo é obrigatório';
+        }
+        break;
+      case 'email':
+        if (!formData.email?.trim()) {
+          errors.email = 'Email é obrigatório';
+        } else if (!validateEmail(formData.email)) {
+          errors.email = 'Email deve ter um formato válido (ex: usuario@dominio.com)';
+        }
+        break;
+      case 'password':
+        if (!formData.password) {
+          errors.password = 'Senha é obrigatória';
+        } else if (formData.password.length < 8) {
+          errors.password = 'A senha deve ter pelo menos 8 caracteres';
+        }
+        break;
+      case 'confirmPassword':
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Confirmação de senha é obrigatória';
+        } else if (formData.password !== formData.confirmPassword) {
+          errors.confirmPassword = 'As senhas não coincidem';
+        }
+        break;
+      case 'phone':
+        if (!formData.phone?.trim()) {
+          errors.phone = 'Número de telefone é obrigatório';
+        } else if (!validateBrazilianPhone(formData.phone)) {
+          errors.phone =
+            'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        }
+        break;
+      case 'whatsapp':
+        if (formData.whatsapp?.trim() && !validateBrazilianPhone(formData.whatsapp)) {
+          errors.whatsapp = 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        }
+        break;
+      case 'restaurantName':
+        if (!formData.restaurantName?.trim()) {
+          errors.restaurantName = 'Nome do restaurante é obrigatório';
+        }
+        break;
+      case 'restaurantUrlName':
+        if (!formData.restaurantUrlName?.trim()) {
+          errors.restaurantUrlName = 'Nome para URL é obrigatório';
+        } else if (!validateRestaurantUrlName(formData.restaurantUrlName)) {
+          errors.restaurantUrlName =
+            'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+        }
+        break;
+      case 'cuisineType':
+        if (!formData.cuisineType) {
+          errors.cuisineType = 'Tipo de culinária é obrigatório';
+        }
+        break;
+      case 'website':
+        if (formData.website?.trim() && !validateWebsite(formData.website)) {
+          errors.website = 'Website deve ter formato válido (ex: https://www.exemplo.com)';
+        }
+        break;
+      case 'location.name': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (formData.businessType === 'multi' && !currentLocation?.name?.trim()) {
+          errors['location.name'] = 'Nome da localização é obrigatório';
+        }
+        break;
+      }
+      case 'location.phone': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.phone?.trim()) {
+          errors['location.phone'] = 'Telefone da localização é obrigatório';
+        } else if (!validateBrazilianPhone(currentLocation.phone)) {
+          errors['location.phone'] =
+            'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        }
+        break;
+      }
+      case 'location.whatsapp': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (
+          currentLocation?.whatsapp?.trim() &&
+          !validateBrazilianPhone(currentLocation.whatsapp)
+        ) {
+          errors['location.whatsapp'] =
+            'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        }
+        break;
+      }
+      case 'location.urlName': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (formData.businessType === 'multi' && !currentLocation?.urlName?.trim()) {
+          errors['location.urlName'] = 'Nome da localização para URL é obrigatório';
+        } else if (
+          currentLocation?.urlName &&
+          !validateRestaurantUrlName(currentLocation.urlName)
+        ) {
+          errors['location.urlName'] =
+            'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+        }
+        break;
+      }
+      // case 'address.street': {
+      //   const currentLocation = formData.locations[currentLocationIndex];
+      //   if (!currentLocation?.address.street?.trim()) {
+      //     errors['address.street'] = 'Endereço é obrigatório';
+      //   }
+      //   break;
+      // }
+      case 'address.streetNumber': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.streetNumber?.trim()) {
+          errors['address.streetNumber'] = 'Número é obrigatório';
+        }
+        break;
+      }
+      // case 'address.city': {
+      //   const currentLocation = formData.locations[currentLocationIndex];
+      //   if (!currentLocation?.address.city?.trim()) {
+      //     errors['address.city'] = 'Cidade é obrigatória';
+      //   }
+      //   break;
+      // }
+      // case 'address.state': {
+      //   const currentLocation = formData.locations[currentLocationIndex];
+      //   if (!currentLocation?.address.state?.trim()) {
+      //     errors['address.state'] = 'Estado é obrigatório';
+      //   }
+      //   break;
+      // }
+      case 'address.zipCode': {
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation?.address.zipCode?.trim()) {
+          errors['address.zipCode'] = 'CEP é obrigatório';
+        } else if (!validateCEP(currentLocation.address.zipCode)) {
+          errors['address.zipCode'] = 'CEP deve ter 8 dígitos (ex: 12345-123)';
+        }
+        break;
+      }
+      case 'paymentInfo.cardNumber':
+        if (!formData.paymentInfo.cardNumber?.trim()) {
+          errors['paymentInfo.cardNumber'] = 'Número do cartão é obrigatório';
+        }
+        break;
+      case 'paymentInfo.expiryDate':
+        if (!formData.paymentInfo.expiryDate?.trim()) {
+          errors['paymentInfo.expiryDate'] = 'Data de vencimento é obrigatória';
+        }
+        break;
+      case 'paymentInfo.cvv':
+        if (!formData.paymentInfo.cvv?.trim()) {
+          errors['paymentInfo.cvv'] = 'CVV é obrigatório';
+        }
+        break;
+      case 'paymentInfo.cardholderName':
+        if (!formData.paymentInfo.cardholderName?.trim()) {
+          errors['paymentInfo.cardholderName'] = 'Nome do portador é obrigatório';
+        }
+        break;
+      case 'billingAddress.street':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.street?.trim()) {
+          errors['billingAddress.street'] = 'Endereço de cobrança é obrigatório';
+        }
+        break;
+      case 'billingAddress.streetNumber':
+        if (
+          !formData.billingAddress.sameAsRestaurant &&
+          !formData.billingAddress.streetNumber?.trim()
+        ) {
+          errors['billingAddress.streetNumber'] = 'Número de cobrança é obrigatório';
+        }
+        break;
+      case 'billingAddress.city':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.city?.trim()) {
+          errors['billingAddress.city'] = 'Cidade de cobrança é obrigatória';
+        }
+        break;
+      case 'billingAddress.state':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.state?.trim()) {
+          errors['billingAddress.state'] = 'Estado de cobrança é obrigatório';
+        }
+        break;
+      case 'billingAddress.zipCode':
+        if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.zipCode?.trim()) {
+          errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
+        }
+        break;
+
+      default:
+        break;
     }
 
     setFieldErrors(errors);
@@ -1019,71 +1051,140 @@ function RegisterPage() {
   };
 
   const validateStep = (step) => {
-    // Define which fields to validate for each step
-    const stepFields = {
-      1: ['ownerName', 'email', 'password', 'confirmPassword', 'phone', 'whatsapp'],
-      2: ['restaurantName', 'restaurantUrlName', 'cuisineType', 'website'],
-      3: (() => {
-        const fields = ['location.phone', 'address.zipCode', 'address.streetNumber'];
-        if (formData.businessType === 'multi') {
-          fields.push('location.name', 'location.urlName');
-        }
-        return fields;
-      })(),
-      4: [], // Features validation is handled automatically
-      5: (() => {
-        const fields = [
-          'paymentInfo.cardNumber',
-          'paymentInfo.expiryDate',
-          'paymentInfo.cvv',
-          'paymentInfo.cardholderName',
-        ];
-        if (!formData.billingAddress.sameAsRestaurant) {
-          fields.push(
-            'billingAddress.zipCode',
-            'billingAddress.street',
-            'billingAddress.streetNumber',
-            'billingAddress.city',
-            'billingAddress.state'
-          );
-        }
-        return fields;
-      })(),
-    };
-
-    const fieldsToValidate = stepFields[step] || [];
     const errors = {};
 
-    // Special handling for step 3 - check if current location exists
-    if (step === 3) {
-      const currentLocation = formData.locations[currentLocationIndex];
-      if (!currentLocation) {
-        errors.location = 'Localização é obrigatória';
-        setFieldErrors(errors);
-        setError('Por favor, corrija 1 campo obrigatório');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return false;
-      }
-    }
+    switch (step) {
+      case 1:
+        if (!formData.ownerName?.trim()) {
+          errors.ownerName = 'Nome completo é obrigatório';
+        }
+        if (!formData.email?.trim()) {
+          errors.email = 'Email é obrigatório';
+        } else if (!validateEmail(formData.email)) {
+          errors.email = 'Email deve ter um formato válido (ex: usuario@dominio.com)';
+        }
+        if (!formData.password) {
+          errors.password = 'Senha é obrigatória';
+        } else if (formData.password.length < 8) {
+          errors.password = 'A senha deve ter pelo menos 8 caracteres';
+        }
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Confirmação de senha é obrigatória';
+        } else if (formData.password !== formData.confirmPassword) {
+          errors.confirmPassword = 'As senhas não coincidem';
+        }
+        if (!formData.phone?.trim()) {
+          errors.phone = 'Número de telefone é obrigatório';
+        } else if (!validateBrazilianPhone(formData.phone)) {
+          errors.phone =
+            'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        }
+        if (formData.whatsapp?.trim() && !validateBrazilianPhone(formData.whatsapp)) {
+          errors.whatsapp = 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        }
+        break;
 
-    // Validate each field using centralized validation
-    fieldsToValidate.forEach((fieldName) => {
-      const error = validateSingleField(fieldName);
-      if (error) {
-        errors[fieldName] = error;
+      case 2:
+        if (!formData.restaurantName?.trim()) {
+          errors.restaurantName = 'Nome do restaurante é obrigatório';
+        }
+        if (!formData.restaurantUrlName?.trim()) {
+          errors.restaurantUrlName = 'Nome para URL é obrigatório';
+        } else if (!validateRestaurantUrlName(formData.restaurantUrlName)) {
+          errors.restaurantUrlName =
+            'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+        }
+        if (!formData.cuisineType) {
+          errors.cuisineType = 'Tipo de culinária é obrigatório';
+        }
+        if (formData.website?.trim() && !validateWebsite(formData.website)) {
+          errors.website = 'Website deve ter formato válido (ex: https://www.exemplo.com)';
+        }
+        break;
+
+      case 3: {
+        // Validate current location
+        const currentLocation = formData.locations[currentLocationIndex];
+        if (!currentLocation) {
+          errors.location = 'Localização é obrigatória';
+          break;
+        }
+
+        // Validate location URL name for multi-location restaurants
+        if (formData.businessType === 'multi') {
+          if (!currentLocation.urlName?.trim()) {
+            errors['location.urlName'] = 'Nome para URL da localização é obrigatório';
+          } else if (!validateRestaurantUrlName(currentLocation.urlName)) {
+            errors['location.urlName'] =
+              'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
+          }
+        }
+
+        if (!currentLocation.address.zipCode?.trim()) {
+          errors['address.zipCode'] = 'CEP é obrigatório';
+        }
+        // if (!currentLocation.address.street?.trim()) {
+        //   errors['address.street'] = 'Endereço é obrigatório';
+        // }
+        if (!currentLocation.address.streetNumber?.trim()) {
+          errors['address.streetNumber'] = 'Número é obrigatório';
+        }
+        // if (!currentLocation.address.city?.trim()) {
+        //   errors['address.city'] = 'Cidade é obrigatória';
+        // }
+        // if (!currentLocation.address.state?.trim()) {
+        //   errors['address.state'] = 'Estado é obrigatório';
+        // }
+        break;
       }
-    });
+
+      case 4:
+        // Features validation is handled automatically
+        break;
+
+      case 5:
+        if (!formData.paymentInfo.cardNumber?.trim()) {
+          errors['paymentInfo.cardNumber'] = 'Número do cartão é obrigatório';
+        }
+        if (!formData.paymentInfo.expiryDate?.trim()) {
+          errors['paymentInfo.expiryDate'] = 'Data de vencimento é obrigatória';
+        }
+        if (!formData.paymentInfo.cvv?.trim()) {
+          errors['paymentInfo.cvv'] = 'CVV é obrigatório';
+        }
+        if (!formData.paymentInfo.cardholderName?.trim()) {
+          errors['paymentInfo.cardholderName'] = 'Nome do portador é obrigatório';
+        }
+
+        if (!formData.billingAddress.sameAsRestaurant) {
+          if (!formData.billingAddress.zipCode?.trim()) {
+            errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.street?.trim()) {
+            errors['billingAddress.street'] = 'Endereço de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.streetNumber?.trim()) {
+            errors['billingAddress.streetNumber'] = 'Número de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.city?.trim()) {
+            errors['billingAddress.city'] = 'Cidade de cobrança é obrigatória';
+          }
+          if (!formData.billingAddress.state?.trim()) {
+            errors['billingAddress.state'] = 'Estado de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.zipCode?.trim()) {
+            errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
 
     setFieldErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      // Mark all error fields as touched so they show highlighting
-      const newTouchedFields = { ...touchedFields };
-      Object.keys(errors).forEach((fieldName) => {
-        newTouchedFields[fieldName] = true;
-      });
-      setTouchedFields(newTouchedFields);
-
       // Set a general error message
       const errorCount = Object.keys(errors).length;
       setError(

@@ -4,13 +4,21 @@ import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import RegisterPage from '../../src/pages/Register';
 
-// Mock the AuthContext
+// Mock the AuthContext and useAuth hook
 const mockRegister = vi.fn();
 const mockNavigate = vi.fn();
 
 vi.mock('../../src/contexts/AuthContext', () => ({
+  AuthContext: React.createContext(),
+  AuthProvider: ({ children }) => children,
+}));
+
+vi.mock('../../src/hooks/useAuth', () => ({
   useAuth: () => ({
     register: mockRegister,
+    user: null,
+    loading: false,
+    error: null,
   }),
 }));
 
@@ -20,12 +28,6 @@ vi.mock('react-router-dom', async () => {
     ...actual,
     useNavigate: () => mockNavigate,
   };
-});
-
-// Mock window.scrollTo
-Object.defineProperty(window, 'scrollTo', {
-  value: vi.fn(),
-  writable: true,
 });
 
 // Mock fetch for CEP lookup
