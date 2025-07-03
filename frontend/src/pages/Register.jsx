@@ -80,12 +80,40 @@ function RegisterPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const cepAsyncError = useRef('');
 
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Load saved form data from localStorage
+    const savedFormData = localStorage.getItem('registerFormData');
+    if (savedFormData) {
+      try {
+        const parsedData = JSON.parse(savedFormData);
+        setFormData(parsedData);
+
+        // Also restore current step if saved
+        const savedStep = localStorage.getItem('registerCurrentStep');
+        if (savedStep) {
+          setCurrentStep(parseInt(savedStep, 10));
+        }
+      } catch (error) {
+        console.warn('Failed to load saved form data:', error);
+      }
+    }
   }, []);
+
+  // Auto-save form data to localStorage
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('registerFormData', JSON.stringify(formData));
+      localStorage.setItem('registerCurrentStep', currentStep.toString());
+    }, 1000); // Debounce for 1 second
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, currentStep]);
 
   const cuisineTypes = [
     'American',
@@ -205,12 +233,12 @@ function RegisterPage() {
     // Validate phone
     if (!currentLocation.phone?.trim()) {
       errors.push('Telefone da localização é obrigatório');
-    } else if (!validateBrazilianPhone(currentLocation.phone)) {
+    } else if (!validateInternationalPhone(currentLocation.phone)) {
       errors.push('Telefone da localização deve estar em formato válido');
     }
 
     // Validate WhatsApp (if provided)
-    if (currentLocation.whatsapp?.trim() && !validateBrazilianPhone(currentLocation.whatsapp)) {
+    if (currentLocation.whatsapp?.trim() && !validateInternationalPhone(currentLocation.whatsapp)) {
       errors.push('WhatsApp da localização deve estar em formato válido');
     }
 
@@ -401,16 +429,16 @@ function RegisterPage() {
       required: true,
       validate: (value) => {
         if (!value?.trim()) return 'Número de telefone é obrigatório';
-        if (!validateBrazilianPhone(value))
-          return 'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        if (!validateInternationalPhone(value))
+          return 'Telefone deve ter formato válido (ex: (11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234)';
         return null;
       },
     },
     whatsapp: {
       required: false,
       validate: (value) => {
-        if (value?.trim() && !validateBrazilianPhone(value))
-          return 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        if (value?.trim() && !validateInternationalPhone(value))
+          return 'WhatsApp deve ter formato válido (ex: (11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234)';
         return null;
       },
     },
@@ -457,16 +485,16 @@ function RegisterPage() {
       required: true,
       validate: (value) => {
         if (!value?.trim()) return 'Telefone da localização é obrigatório';
-        if (!validateBrazilianPhone(value))
-          return 'Telefone deve ter formato válido (ex: 11 99999-9999, 11 12345-1234, (11) 3333-4444)';
+        if (!validateInternationalPhone(value))
+          return 'Telefone deve ter formato válido (ex: (11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234)';
         return null;
       },
     },
     'location.whatsapp': {
       required: false,
       validate: (value) => {
-        if (value?.trim() && !validateBrazilianPhone(value))
-          return 'WhatsApp deve ter formato válido (ex: 11 99999-9999, 11 12345-1234)';
+        if (value?.trim() && !validateInternationalPhone(value))
+          return 'WhatsApp deve ter formato válido (ex: (11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234)';
         return null;
       },
     },
@@ -639,34 +667,101 @@ function RegisterPage() {
     return true;
   };
 
-  const validateBrazilianPhone = (phone) => {
-    // Remove all non-digit characters
-    const cleaned = phone.replace(/\D/g, '');
+  const validateInternationalPhone = (phone) => {
+    // Remove all non-digit characters except + at the beginning
+    const cleaned = phone.replace(/[^\d+]/g, '');
 
-    // Brazilian phone patterns:
-    // Mobile: 11 digits (11 9 8888-7777) - with 9th digit
-    // Mobile: 11 digits (11 1 2345-1234) - old format still valid in some areas
-    // Landline: 10 digits (11 3333-4444)
-    // With country code: +55 11 9 8888-7777 (13 digits) or +55 11 3333-4444 (12 digits)
+    // Handle various international phone formats
+    if (cleaned.startsWith('+')) {
+      // International format with country code
+      const numbersOnly = cleaned.substring(1);
 
-    if (cleaned.length === 10) {
-      // Landline: XX XXXX-XXXX (area code + 8 digits)
-      return /^[1-9][1-9]\d{8}$/.test(cleaned);
-    } else if (cleaned.length === 11) {
-      // Mobile: XX XXXXX-XXXX (area code + 9 digits)
-      // Can start with 9 (new format) or 1-8 (old format still valid)
-      return /^[1-9][1-9][1-9]\d{8}$/.test(cleaned);
-    } else if (cleaned.length === 12 && cleaned.startsWith('55')) {
-      // International landline: +55 XX XXXX-XXXX
-      const withoutCountryCode = cleaned.substring(2);
-      return /^[1-9][1-9]\d{8}$/.test(withoutCountryCode);
-    } else if (cleaned.length === 13 && cleaned.startsWith('55')) {
-      // International mobile: +55 XX XXXXX-XXXX
-      const withoutCountryCode = cleaned.substring(2);
-      return /^[1-9][1-9][1-9]\d{8}$/.test(withoutCountryCode);
+      // Common international patterns:
+      // +1 (US/Canada): 10-11 digits after country code
+      // +55 (Brazil): 10-11 digits after country code
+      // +52 (Mexico): 10-12 digits after country code
+      // +44 (UK): 10-11 digits after country code
+      // +49 (Germany): 10-12 digits after country code
+      // +33 (France): 9-10 digits after country code
+      // +34 (Spain): 9 digits after country code
+      // +39 (Italy): 9-11 digits after country code
+      // +81 (Japan): 10-11 digits after country code
+      // +86 (China): 11 digits after country code
+      // +91 (India): 10 digits after country code
+
+      if (numbersOnly.length < 7 || numbersOnly.length > 15) {
+        return false; // ITU-T E.164 standard: max 15 digits total
+      }
+
+      // Validate specific country codes with their patterns
+      if (numbersOnly.startsWith('1')) {
+        // US/Canada: +1 XXX XXX XXXX (10 digits after country code)
+        return numbersOnly.length === 11 && /^1[2-9]\d{9}$/.test(numbersOnly);
+      } else if (numbersOnly.startsWith('55')) {
+        // Brazil: +55 XX XXXXX-XXXX or +55 XX XXXX-XXXX
+        const withoutCountryCode = numbersOnly.substring(2);
+        return (
+          (withoutCountryCode.length === 10 && /^[1-9][1-9]\d{8}$/.test(withoutCountryCode)) ||
+          (withoutCountryCode.length === 11 && /^[1-9][1-9][1-9]\d{8}$/.test(withoutCountryCode))
+        );
+      } else if (numbersOnly.startsWith('52')) {
+        // Mexico: +52 XX XXXX XXXX (10 digits after country code) or +52 1 XX XXXX XXXX (11 digits)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return (
+          (withoutCountryCode.length === 10 && /^[1-9]\d{9}$/.test(withoutCountryCode)) ||
+          (withoutCountryCode.length === 11 && /^1[1-9]\d{9}$/.test(withoutCountryCode))
+        );
+      } else if (numbersOnly.startsWith('44')) {
+        // UK: +44 XXXX XXXXXX (10-11 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length >= 10 && withoutCountryCode.length <= 11;
+      } else if (numbersOnly.startsWith('49')) {
+        // Germany: +49 XXX XXXXXXXX (10-12 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length >= 10 && withoutCountryCode.length <= 12;
+      } else if (numbersOnly.startsWith('33')) {
+        // France: +33 X XX XX XX XX (9-10 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length >= 9 && withoutCountryCode.length <= 10;
+      } else if (numbersOnly.startsWith('34')) {
+        // Spain: +34 XXX XXX XXX (9 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length === 9;
+      } else if (numbersOnly.startsWith('39')) {
+        // Italy: +39 XXX XXX XXXX (9-11 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length >= 9 && withoutCountryCode.length <= 11;
+      } else if (numbersOnly.startsWith('81')) {
+        // Japan: +81 XX XXXX XXXX (10-11 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length >= 10 && withoutCountryCode.length <= 11;
+      } else if (numbersOnly.startsWith('86')) {
+        // China: +86 XXX XXXX XXXX (11 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length === 11;
+      } else if (numbersOnly.startsWith('91')) {
+        // India: +91 XXXXX XXXXX (10 digits after country code)
+        const withoutCountryCode = numbersOnly.substring(2);
+        return withoutCountryCode.length === 10;
+      } else {
+        // Generic international number validation (ITU-T E.164 compliant)
+        return numbersOnly.length >= 7 && numbersOnly.length <= 15;
+      }
+    } else {
+      // Local format (no country code) - assume Brazilian format for backwards compatibility
+      const numbersOnly = cleaned;
+
+      if (numbersOnly.length === 10) {
+        // Brazilian landline: XX XXXX-XXXX (area code + 8 digits)
+        return /^[1-9][1-9]\d{8}$/.test(numbersOnly);
+      } else if (numbersOnly.length === 11) {
+        // Brazilian mobile: XX XXXXX-XXXX (area code + 9 digits)
+        return /^[1-9][1-9][1-9]\d{8}$/.test(numbersOnly);
+      } else {
+        // For other local formats, allow 7-15 digits
+        return numbersOnly.length >= 7 && numbersOnly.length <= 15 && /^\d+$/.test(numbersOnly);
+      }
     }
-
-    return false;
   };
 
   const validateWebsite = (url) => {
@@ -815,8 +910,73 @@ function RegisterPage() {
     }
   };
 
+  const formatPhoneNumber = (value) => {
+    // Handle international format with + prefix
+    if (value.startsWith('+')) {
+      // Keep the + and format only the numbers
+      const numbers = value.substring(1).replace(/\D/g, '');
+      if (numbers.length === 0) return '+';
+
+      // For international numbers, apply minimal formatting to preserve readability
+      if (numbers.length <= 3) {
+        return `+${numbers}`;
+      } else if (numbers.length <= 6) {
+        return `+${numbers.slice(0, 2)} ${numbers.slice(2)}`;
+      } else if (numbers.length <= 10) {
+        return `+${numbers.slice(0, 2)} ${numbers.slice(2, 4)} ${numbers.slice(4)}`;
+      } else {
+        return `+${numbers.slice(0, 2)} ${numbers.slice(2, 4)} ${numbers.slice(4, 8)}-${numbers.slice(8, 12)}`;
+      }
+    }
+
+    // Remove all non-digits for local numbers
+    const numbers = value.replace(/\D/g, '');
+
+    // Apply Brazilian phone formatting for local numbers
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    } else if (numbers.length <= 10) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // Handle phone fields with formatting
+    if (
+      name === 'phone' ||
+      name === 'whatsapp' ||
+      name === 'location.phone' ||
+      name === 'location.whatsapp'
+    ) {
+      const formattedValue = formatPhoneNumber(value);
+
+      if (name.startsWith('location.')) {
+        const fieldPath = name.substring(9);
+        setFormData((prev) => ({
+          ...prev,
+          locations: prev.locations.map((loc, index) =>
+            index === currentLocationIndex
+              ? {
+                  ...loc,
+                  [fieldPath]: formattedValue,
+                }
+              : loc
+          ),
+        }));
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: formattedValue,
+        }));
+      }
+      return;
+    }
 
     // Handle CEP field specially to clear async errors and format
     if (name === 'address.zipCode') {
@@ -1090,6 +1250,10 @@ function RegisterPage() {
         `Por favor, corrija ${errorCount} campo${errorCount > 1 ? 's' : ''} obrigatório${errorCount > 1 ? 's' : ''}`
       );
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Focus on first error field after a brief delay
+      setTimeout(focusFirstErrorField, 300);
+
       return false;
     }
 
@@ -1126,11 +1290,27 @@ function RegisterPage() {
     return hasFieldError(fieldName) ? 'error' : '';
   };
 
+  // Helper function to focus on first error field
+  const focusFirstErrorField = () => {
+    const firstErrorFieldName = Object.keys(fieldErrors)[0];
+    if (firstErrorFieldName) {
+      // Convert field name to DOM ID
+      const fieldId = firstErrorFieldName.replace('.', '\\.');
+      const fieldElement = document.getElementById(fieldId);
+      if (fieldElement) {
+        fieldElement.focus();
+        fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (!validateStep(5)) return;
+
+    setIsSubmitting(true);
 
     try {
       // Call the register function from AuthContext with restaurant data
@@ -1139,10 +1319,34 @@ function RegisterPage() {
         ...formData,
         subscriptionPlan: getRecommendedPlan(),
       });
+
+      // Clear saved form data on successful registration
+      localStorage.removeItem('registerFormData');
+      localStorage.removeItem('registerCurrentStep');
+
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Falha no registro. Por favor, tente novamente.');
+      console.error('Registration error:', err);
+
+      // Enhanced error handling for different scenarios
+      let errorMessage = 'Falha no registro. Por favor, tente novamente.';
+
+      if (err.message) {
+        if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
+        } else if (err.message.includes('email') && err.message.includes('exists')) {
+          errorMessage = 'Este email já está em uso. Tente fazer login ou use outro email.';
+        } else if (err.message.includes('validation')) {
+          errorMessage = 'Dados inválidos. Verifique os campos e tente novamente.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1218,7 +1422,7 @@ function RegisterPage() {
           onChange={handleChange}
           onBlur={handleBlur}
           className={`form-input ${getFieldErrorClass('phone')}`}
-          placeholder="(11) 99999-9999 ou 11 12345-1234"
+          placeholder="(11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234"
           required
         />
         {hasFieldError('phone') && <div className="field-error">{fieldErrors.phone}</div>}
@@ -1236,7 +1440,7 @@ function RegisterPage() {
           onChange={handleChange}
           onBlur={handleBlur}
           className={`form-input ${getFieldErrorClass('whatsapp')}`}
-          placeholder="(11) 99999-9999 ou 11 12345-1234"
+          placeholder="(11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234"
         />
         {hasFieldError('whatsapp') && <div className="field-error">{fieldErrors.whatsapp}</div>}
       </div>
@@ -1516,7 +1720,7 @@ function RegisterPage() {
               onChange={handleChange}
               onBlur={handleBlur}
               className={`form-input ${getFieldErrorClass('location.phone')}`}
-              placeholder="(11) 99999-9999 ou 11 12345-1234"
+              placeholder="(11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234"
               required
             />
             {hasFieldError('location.phone') && (
@@ -1536,7 +1740,7 @@ function RegisterPage() {
               onChange={handleChange}
               onBlur={handleBlur}
               className={`form-input ${getFieldErrorClass('location.whatsapp')}`}
-              placeholder="(11) 99999-9999 ou 11 12345-1234"
+              placeholder="(11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234"
             />
             {hasFieldError('location.whatsapp') && (
               <div className="field-error">{fieldErrors['location.whatsapp']}</div>
@@ -2082,6 +2286,12 @@ function RegisterPage() {
             {currentStep < 5 && (
               <button type="button" onClick={nextStep} className="auth-button primary">
                 Próximo Passo
+              </button>
+            )}
+
+            {currentStep === 5 && (
+              <button type="submit" className="auth-button primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Processando...' : 'Finalizar Registro'}
               </button>
             )}
           </div>
