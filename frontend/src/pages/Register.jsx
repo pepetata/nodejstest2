@@ -19,6 +19,7 @@ function RegisterPage() {
 
     // Step 2: Restaurant Details
     restaurantName: 'a',
+    restaurantUrlName: '',
     businessType: 'single', // single or multi-location
     cuisineType: 'American',
     website: '',
@@ -265,6 +266,31 @@ function RegisterPage() {
     }
   };
 
+  const validateRestaurantUrlName = (urlName) => {
+    if (!urlName) return false;
+
+    // URL name should be lowercase, alphanumeric, and hyphens only
+    // Must start and end with alphanumeric character
+    // Length between 3-50 characters
+    const urlPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
+
+    return (
+      urlName.length >= 3 &&
+      urlName.length <= 50 &&
+      urlPattern.test(urlName) &&
+      !urlName.includes('--') // No consecutive hyphens
+    );
+  };
+
+  const formatRestaurantUrlName = (value) => {
+    // Convert to lowercase and replace invalid characters
+    return value
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-') // Replace non-alphanumeric with hyphens
+      .replace(/-+/g, '-'); // Replace multiple consecutive hyphens with single hyphen
+    // Note: Don't remove leading/trailing hyphens during typing - only validate on blur
+  };
+
   const validateCEP = (cep) => {
     // Remove all non-digit characters
     const cleaned = cep.replace(/\D/g, '');
@@ -379,6 +405,16 @@ function RegisterPage() {
       return;
     }
 
+    // Handle restaurant URL name formatting
+    if (name === 'restaurantUrlName') {
+      const formattedValue = formatRestaurantUrlName(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formattedValue,
+      }));
+      return;
+    }
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData((prev) => ({
@@ -404,6 +440,18 @@ function RegisterPage() {
       ...prev,
       [name]: true,
     }));
+
+    // Handle restaurant URL name cleanup on blur
+    if (name === 'restaurantUrlName' && value) {
+      // Clean up leading/trailing hyphens only on blur
+      const cleanedValue = value.replace(/^-+|-+$/g, '');
+      if (cleanedValue !== value) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: cleanedValue,
+        }));
+      }
+    }
 
     // Handle CEP lookup for zipCode field
     if (name === 'address.zipCode' && value) {
@@ -466,6 +514,14 @@ function RegisterPage() {
       case 'restaurantName':
         if (!formData.restaurantName?.trim()) {
           errors.restaurantName = 'Nome do restaurante é obrigatório';
+        }
+        break;
+      case 'restaurantUrlName':
+        if (!formData.restaurantUrlName?.trim()) {
+          errors.restaurantUrlName = 'Nome para URL é obrigatório';
+        } else if (!validateRestaurantUrlName(formData.restaurantUrlName)) {
+          errors.restaurantUrlName =
+            'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
         }
         break;
       case 'cuisineType':
@@ -626,6 +682,12 @@ function RegisterPage() {
       case 2:
         if (!formData.restaurantName?.trim()) {
           errors.restaurantName = 'Nome do restaurante é obrigatório';
+        }
+        if (!formData.restaurantUrlName?.trim()) {
+          errors.restaurantUrlName = 'Nome para URL é obrigatório';
+        } else if (!validateRestaurantUrlName(formData.restaurantUrlName)) {
+          errors.restaurantUrlName =
+            'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
         }
         if (!formData.cuisineType) {
           errors.cuisineType = 'Tipo de culinária é obrigatório';
@@ -913,6 +975,32 @@ function RegisterPage() {
         />
         {hasFieldError('restaurantName') && (
           <div className="field-error">{fieldErrors.restaurantName}</div>
+        )}
+      </div>
+
+      <div className={`form-group ${getFieldErrorClass('restaurantUrlName')}`}>
+        <label htmlFor="restaurantUrlName" className="form-label">
+          Nome para URL do Menu *
+        </label>
+        <input
+          type="text"
+          id="restaurantUrlName"
+          name="restaurantUrlName"
+          value={formData.restaurantUrlName}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('restaurantUrlName')}`}
+          placeholder="nome-do-restaurante"
+          required
+        />
+        <div className="field-help">
+          Seus clientes acessarão o menu através do QR Code na URL:{' '}
+          <strong>
+            {formData.restaurantUrlName || '[nome-do-restaurante]'}.alacarteapp.com/menu
+          </strong>
+        </div>
+        {hasFieldError('restaurantUrlName') && (
+          <div className="field-error">{fieldErrors.restaurantUrlName}</div>
         )}
       </div>
 
