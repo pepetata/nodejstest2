@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/Auth.scss';
@@ -18,18 +18,20 @@ function RegisterPage() {
     whatsapp: '',
 
     // Step 2: Restaurant Details
-    restaurantName: '',
+    restaurantName: 'a',
     businessType: 'single', // single or multi-location
-    cuisineType: '',
+    cuisineType: 'American',
     website: '',
     description: '',
 
     // Step 3: Location & Hours
     address: {
+      zipCode: '',
       street: '',
+      streetNumber: '',
+      complement: '',
       city: '',
       state: '',
-      zipCode: '',
     },
     operatingHours: {
       monday: { open: '09:00', close: '22:00', closed: false },
@@ -54,10 +56,12 @@ function RegisterPage() {
       cardholderName: '',
     },
     billingAddress: {
+      zipCode: '',
       street: '',
+      streetNumber: '',
+      complement: '',
       city: '',
       state: '',
-      zipCode: '',
       sameAsRestaurant: true,
     },
     marketingConsent: false,
@@ -65,6 +69,7 @@ function RegisterPage() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
+  const cepAsyncError = useRef('');
 
   const cuisineTypes = [
     'American',
@@ -260,8 +265,119 @@ function RegisterPage() {
     }
   };
 
+  const validateCEP = (cep) => {
+    // Remove all non-digit characters
+    const cleaned = cep.replace(/\D/g, '');
+    // Brazilian CEP has exactly 8 digits
+    return cleaned.length === 8 && /^\d{8}$/.test(cleaned);
+  };
+
+  const handleCEPLookup = async (cep) => {
+    const cleanedCEP = cep.replace(/\D/g, '');
+
+    if (cleanedCEP.length === 8) {
+      let timeoutId;
+      cepAsyncError.current = 'Buscando CEP...';
+
+      // Mark field as touched and show loading message
+      setTouchedFields((prev) => ({
+        ...prev,
+        'address.zipCode': true,
+      }));
+
+      setFieldErrors((prev) => ({
+        ...prev,
+        'address.zipCode': 'Buscando CEP...',
+      }));
+
+      try {
+        const timeoutPromise = new Promise(
+          (_, reject) =>
+            (timeoutId = setTimeout(() => reject(new Error('Tempo de resposta excedido')), 5000))
+        );
+
+        const fetchPromise = fetch(`https://viacep.com.br/ws/${cleanedCEP}/json/`).then((res) =>
+          res.json()
+        );
+
+        const data = await Promise.race([fetchPromise, timeoutPromise]);
+
+        if (!data.erro) {
+          // Auto-fill address fields
+          setFormData((prev) => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              street: data.logradouro || '',
+              city: data.localidade || '',
+              state: data.uf || '',
+              streetNumber: '', // Clear street number when CEP changes
+              complement: '', // Clear complement when CEP changes
+            },
+          }));
+
+          // Clear error
+          cepAsyncError.current = '';
+          setFieldErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors['address.zipCode'];
+            return newErrors;
+          });
+        } else {
+          cepAsyncError.current = 'CEP não encontrado';
+          setFieldErrors((prev) => ({
+            ...prev,
+            'address.zipCode': 'CEP não encontrado',
+          }));
+        }
+      } catch (err) {
+        cepAsyncError.current = 'Erro ao buscar CEP';
+        setFieldErrors((prev) => ({
+          ...prev,
+          'address.zipCode': 'Erro ao buscar CEP',
+        }));
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+  };
+
+  const formatCEP = (value) => {
+    // Remove all non-digits
+    const numbers = value.replace(/\D/g, '');
+
+    // Apply CEP mask: 12345-123 (8 digits total)
+    if (numbers.length <= 5) {
+      return numbers;
+    } else {
+      return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`;
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // Handle CEP field specially to clear async errors and format
+    if (name === 'address.zipCode') {
+      cepAsyncError.current = '';
+      // Clear CEP error when user starts typing
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors['address.zipCode'];
+        return newErrors;
+      });
+
+      // Format CEP as user types
+      const formattedValue = formatCEP(value);
+      setFormData((prev) => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          zipCode: formattedValue,
+        },
+      }));
+      return;
+    }
 
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
@@ -280,8 +396,8 @@ function RegisterPage() {
     }
   };
 
-  const handleBlur = (e) => {
-    const { name } = e.target;
+  const handleBlur = async (e) => {
+    const { name, value } = e.target;
 
     // Mark field as touched
     setTouchedFields((prev) => ({
@@ -289,8 +405,15 @@ function RegisterPage() {
       [name]: true,
     }));
 
-    // Validate the specific field
-    validateField(name);
+    // Handle CEP lookup for zipCode field
+    if (name === 'address.zipCode' && value) {
+      // Clear any previous CEP error when user starts typing
+      cepAsyncError.current = '';
+      await handleCEPLookup(value);
+    } else {
+      // Validate the specific field for other fields
+      validateField(name);
+    }
   };
 
   const validateField = (fieldName) => {
@@ -360,6 +483,11 @@ function RegisterPage() {
           errors['address.street'] = 'Endereço é obrigatório';
         }
         break;
+      case 'address.streetNumber':
+        if (!formData.address.streetNumber?.trim()) {
+          errors['address.streetNumber'] = 'Número é obrigatório';
+        }
+        break;
       case 'address.city':
         if (!formData.address.city?.trim()) {
           errors['address.city'] = 'Cidade é obrigatória';
@@ -373,6 +501,8 @@ function RegisterPage() {
       case 'address.zipCode':
         if (!formData.address.zipCode?.trim()) {
           errors['address.zipCode'] = 'CEP é obrigatório';
+        } else if (!validateCEP(formData.address.zipCode)) {
+          errors['address.zipCode'] = 'CEP deve ter 8 dígitos (ex: 12345-123)';
         }
         break;
       case 'paymentInfo.cardNumber':
@@ -398,6 +528,14 @@ function RegisterPage() {
       case 'billingAddress.street':
         if (!formData.billingAddress.sameAsRestaurant && !formData.billingAddress.street?.trim()) {
           errors['billingAddress.street'] = 'Endereço de cobrança é obrigatório';
+        }
+        break;
+      case 'billingAddress.streetNumber':
+        if (
+          !formData.billingAddress.sameAsRestaurant &&
+          !formData.billingAddress.streetNumber?.trim()
+        ) {
+          errors['billingAddress.streetNumber'] = 'Número de cobrança é obrigatório';
         }
         break;
       case 'billingAddress.city':
@@ -498,17 +636,20 @@ function RegisterPage() {
         break;
 
       case 3:
+        if (!formData.address.zipCode?.trim()) {
+          errors['address.zipCode'] = 'CEP é obrigatório';
+        }
         if (!formData.address.street?.trim()) {
           errors['address.street'] = 'Endereço é obrigatório';
+        }
+        if (!formData.address.streetNumber?.trim()) {
+          errors['address.streetNumber'] = 'Número é obrigatório';
         }
         if (!formData.address.city?.trim()) {
           errors['address.city'] = 'Cidade é obrigatória';
         }
         if (!formData.address.state?.trim()) {
           errors['address.state'] = 'Estado é obrigatório';
-        }
-        if (!formData.address.zipCode?.trim()) {
-          errors['address.zipCode'] = 'CEP é obrigatório';
         }
         break;
 
@@ -531,8 +672,14 @@ function RegisterPage() {
         }
 
         if (!formData.billingAddress.sameAsRestaurant) {
+          if (!formData.billingAddress.zipCode?.trim()) {
+            errors['billingAddress.zipCode'] = 'CEP de cobrança é obrigatório';
+          }
           if (!formData.billingAddress.street?.trim()) {
             errors['billingAddress.street'] = 'Endereço de cobrança é obrigatório';
+          }
+          if (!formData.billingAddress.streetNumber?.trim()) {
+            errors['billingAddress.streetNumber'] = 'Número de cobrança é obrigatório';
           }
           if (!formData.billingAddress.city?.trim()) {
             errors['billingAddress.city'] = 'Cidade de cobrança é obrigatória';
@@ -848,28 +995,98 @@ function RegisterPage() {
   const renderStep3 = () => (
     <div>
       <h3 className="step-title">Localização e Horários</h3>
-      <p className="step-description">Onde você está localizado e quando funciona?</p>
+      <p className="step-description">Comece inserindo seu CEP para preenchimento automático</p>
 
-      <div className={`form-group ${getFieldErrorClass('address.street')}`}>
-        <label htmlFor="address.street" className="form-label">
-          Endereço *
+      {/* CEP Field - First Field */}
+      <div className={`form-group ${getFieldErrorClass('address.zipCode')}`}>
+        <label htmlFor="address.zipCode" className="form-label">
+          CEP *
         </label>
         <input
           type="text"
-          id="address.street"
-          name="address.street"
-          value={formData.address.street}
+          id="address.zipCode"
+          name="address.zipCode"
+          value={formData.address.zipCode}
           onChange={handleChange}
           onBlur={handleBlur}
-          className={`form-input ${getFieldErrorClass('address.street')}`}
-          placeholder="Rua Principal, 123"
+          className={`form-input ${getFieldErrorClass('address.zipCode')}`}
+          placeholder="12345-123"
+          maxLength="9"
           required
         />
-        {hasFieldError('address.street') && (
-          <div className="field-error">{fieldErrors['address.street']}</div>
+        {hasFieldError('address.zipCode') && (
+          <div className="field-error">{fieldErrors['address.zipCode']}</div>
         )}
       </div>
 
+      {/* Street, Number and Complement */}
+      <div className="form-row">
+        <div className={`form-group ${getFieldErrorClass('address.street')}`} style={{ flex: '3' }}>
+          <label htmlFor="address.street" className="form-label">
+            Logradouro *
+          </label>
+          <input
+            type="text"
+            id="address.street"
+            name="address.street"
+            value={formData.address.street}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('address.street')}`}
+            placeholder="Nome da rua/avenida"
+            readOnly={!!formData.address.zipCode && !hasFieldError('address.zipCode')}
+            tabIndex={!!formData.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0}
+            required
+          />
+          {hasFieldError('address.street') && (
+            <div className="field-error">{fieldErrors['address.street']}</div>
+          )}
+        </div>
+
+        <div
+          className={`form-group ${getFieldErrorClass('address.streetNumber')}`}
+          style={{ flex: '1' }}
+        >
+          <label htmlFor="address.streetNumber" className="form-label">
+            Número *
+          </label>
+          <input
+            type="text"
+            id="address.streetNumber"
+            name="address.streetNumber"
+            value={formData.address.streetNumber}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={`form-input ${getFieldErrorClass('address.streetNumber')}`}
+            placeholder="123"
+            required
+          />
+          {hasFieldError('address.streetNumber') && (
+            <div className="field-error">{fieldErrors['address.streetNumber']}</div>
+          )}
+        </div>
+      </div>
+
+      <div className={`form-group ${getFieldErrorClass('address.complement')}`}>
+        <label htmlFor="address.complement" className="form-label">
+          Complemento (Opcional)
+        </label>
+        <input
+          type="text"
+          id="address.complement"
+          name="address.complement"
+          value={formData.address.complement}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={`form-input ${getFieldErrorClass('address.complement')}`}
+          placeholder="Apartamento, bloco, sala, etc."
+        />
+        {hasFieldError('address.complement') && (
+          <div className="field-error">{fieldErrors['address.complement']}</div>
+        )}
+      </div>
+
+      {/* City and State - Read-only after CEP lookup */}
       <div className="form-row">
         <div className={`form-group ${getFieldErrorClass('address.city')}`}>
           <label htmlFor="address.city" className="form-label">
@@ -884,6 +1101,8 @@ function RegisterPage() {
             onBlur={handleBlur}
             className={`form-input ${getFieldErrorClass('address.city')}`}
             placeholder="Cidade"
+            readOnly={!!formData.address.zipCode && !hasFieldError('address.zipCode')}
+            tabIndex={!!formData.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0}
             required
           />
           {hasFieldError('address.city') && (
@@ -904,30 +1123,12 @@ function RegisterPage() {
             onBlur={handleBlur}
             className={`form-input ${getFieldErrorClass('address.state')}`}
             placeholder="Estado"
+            readOnly={!!formData.address.zipCode && !hasFieldError('address.zipCode')}
+            tabIndex={!!formData.address.zipCode && !hasFieldError('address.zipCode') ? -1 : 0}
             required
           />
           {hasFieldError('address.state') && (
             <div className="field-error">{fieldErrors['address.state']}</div>
-          )}
-        </div>
-
-        <div className={`form-group ${getFieldErrorClass('address.zipCode')}`}>
-          <label htmlFor="address.zipCode" className="form-label">
-            CEP *
-          </label>
-          <input
-            type="text"
-            id="address.zipCode"
-            name="address.zipCode"
-            value={formData.address.zipCode}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={`form-input ${getFieldErrorClass('address.zipCode')}`}
-            placeholder="12345-678"
-            required
-          />
-          {hasFieldError('address.zipCode') && (
-            <div className="field-error">{fieldErrors['address.zipCode']}</div>
           )}
         </div>
       </div>
