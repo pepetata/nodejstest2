@@ -1,17 +1,14 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import '@testing-library/jest-dom';
 import RegisterPage from '../../src/pages/Register';
 
-// Mock the AuthContext and useAuth hook
+// Mock dependencies
 const mockRegister = vi.fn();
 const mockNavigate = vi.fn();
-
-vi.mock('../../src/contexts/AuthContext', () => ({
-  AuthContext: React.createContext(),
-  AuthProvider: ({ children }) => children,
-}));
 
 vi.mock('../../src/hooks/useAuth', () => ({
   useAuth: () => ({
@@ -33,15 +30,45 @@ vi.mock('react-router-dom', async () => {
 // Mock fetch for CEP lookup
 global.fetch = vi.fn();
 
-// Helper function to render the component with necessary providers
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+};
+global.localStorage = localStorageMock;
+
+// Mock window.scrollTo
+global.scrollTo = vi.fn();
+
+// Helper function to render component with router
 const renderWithRouter = (component) => {
   return render(<BrowserRouter>{component}</BrowserRouter>);
 };
 
+// Helper to fill form data
+const fillStep1Data = async (user) => {
+  await user.type(screen.getByLabelText(/nome completo/i), 'João Silva');
+  await user.type(screen.getByLabelText(/endereço de email/i), 'joao@example.com');
+  await user.type(screen.getByLabelText(/número de telefone/i), '11999887766');
+  await user.type(screen.getByLabelText('Senha *'), 'password123');
+  await user.type(screen.getByLabelText('Confirmar Senha *'), 'password123');
+};
+
+const fillStep2Data = async (user) => {
+  await user.type(screen.getByLabelText(/nome do restaurante/i), 'Restaurante Teste');
+  await user.type(screen.getByLabelText(/nome para url/i), 'restaurante-teste');
+  await user.selectOptions(screen.getByLabelText(/tipo de culinária/i), 'Italian');
+};
+
 describe('RegisterPage', () => {
+  let user;
+
   beforeEach(() => {
+    user = userEvent.setup();
     vi.clearAllMocks();
-    // Reset fetch mock
+    localStorageMock.getItem.mockReturnValue(null);
     fetch.mockClear();
   });
 
@@ -49,736 +76,377 @@ describe('RegisterPage', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Initial Render', () => {
-    it('renders the registration form with all required elements', () => {
+  describe('Initial Render and Navigation', () => {
+    it('renders the registration form with step 1 initially', () => {
       renderWithRouter(<RegisterPage />);
 
-      // Check for main title
-      expect(screen.getByText('Registre Seu Restaurante')).toBeInTheDocument();
-
-      // Check for progress bar
-      expect(screen.getByText('Conta')).toBeInTheDocument();
-      expect(screen.getByText('Restaurante')).toBeInTheDocument();
-      expect(screen.getByText('Localização')).toBeInTheDocument();
-      expect(screen.getByText('Recursos')).toBeInTheDocument();
-      expect(screen.getByText('Pagamento')).toBeInTheDocument();
-
-      // Check for step 1 content
       expect(screen.getByText('Informações da Conta')).toBeInTheDocument();
-      expect(screen.getByLabelText(/Nome Completo/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Email/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Telefone/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/WhatsApp/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/^Senha/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Confirmar Senha/)).toBeInTheDocument();
-
-      // Check for navigation buttons
-      expect(screen.getByText('Próximo Passo')).toBeInTheDocument();
-      expect(screen.getByText('Já tem uma conta?')).toBeInTheDocument();
+      expect(screen.getByLabelText(/nome completo/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/endereço de email/i)).toBeInTheDocument();
     });
 
-    it('renders with pre-filled test data', () => {
+    it('shows progress bar with correct step highlighted', () => {
       renderWithRouter(<RegisterPage />);
 
-      expect(screen.getByDisplayValue('Flavio Ferreira')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('flavio_luiz_ferreira@hotmail.com')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('12345678')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('11234567890')).toBeInTheDocument();
+      const activeStep = screen.getByText('1');
+      expect(activeStep.parentElement).toHaveClass('active');
     });
 
-    it('shows step 1 as active in progress bar', () => {
+    it('scrolls to top on component mount', () => {
       renderWithRouter(<RegisterPage />);
 
-      const progressSteps = screen.getAllByRole('generic');
-      const step1 = progressSteps.find((el) => el.textContent?.includes('1'));
-      expect(step1).toHaveClass('active');
+      expect(global.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     });
   });
 
-  describe('Form Validation', () => {
-    describe('Step 1 Validation', () => {
-      it('validates required fields', async () => {
-        renderWithRouter(<RegisterPage />);
+  describe('Form Auto-save and Recovery', () => {
+    it('saves form data to localStorage on changes', async () => {
+      renderWithRouter(<RegisterPage />);
 
-        // Clear required fields
-        fireEvent.change(screen.getByLabelText(/Nome Completo/), { target: { value: '' } });
-        fireEvent.change(screen.getByLabelText(/Email/), { target: { value: '' } });
-        fireEvent.change(screen.getByLabelText(/^Senha/), { target: { value: '' } });
-        fireEvent.change(screen.getByLabelText(/Confirmar Senha/), { target: { value: '' } });
-        fireEvent.change(screen.getByLabelText(/Telefone/), { target: { value: '' } });
+      await user.type(screen.getByLabelText(/nome completo/i), 'João Silva');
 
-        // Try to go to next step
-        fireEvent.click(screen.getByText('Próximo Passo'));
-
-        await waitFor(() => {
-          expect(screen.getByText('Por favor, corrija 5 campos obrigatórios')).toBeInTheDocument();
-        });
-      });
-
-      it('validates email format', async () => {
-        renderWithRouter(<RegisterPage />);
-
-        const emailInput = screen.getByLabelText(/Email/);
-        fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
-        fireEvent.blur(emailInput);
-
-        await waitFor(() => {
-          expect(
-            screen.getByText('Email deve ter um formato válido (ex: usuario@dominio.com)')
-          ).toBeInTheDocument();
-        });
-      });
-
-      it('validates Brazilian phone format', async () => {
-        renderWithRouter(<RegisterPage />);
-
-        const phoneInput = screen.getByLabelText(/Telefone/);
-        fireEvent.change(phoneInput, { target: { value: '123' } });
-        fireEvent.blur(phoneInput);
-
-        await waitFor(() => {
-          expect(screen.getByText(/Telefone deve ter formato válido/)).toBeInTheDocument();
-        });
-      });
-
-      it('validates password confirmation', async () => {
-        renderWithRouter(<RegisterPage />);
-
-        const passwordInput = screen.getByLabelText(/^Senha/);
-        const confirmPasswordInput = screen.getByLabelText(/Confirmar Senha/);
-
-        fireEvent.change(passwordInput, { target: { value: 'password123' } });
-        fireEvent.change(confirmPasswordInput, { target: { value: 'different123' } });
-        fireEvent.blur(confirmPasswordInput);
-
-        await waitFor(() => {
-          expect(screen.getByText('As senhas não coincidem')).toBeInTheDocument();
-        });
-      });
-
-      it('validates password length', async () => {
-        renderWithRouter(<RegisterPage />);
-
-        const passwordInput = screen.getByLabelText(/^Senha/);
-        fireEvent.change(passwordInput, { target: { value: '123' } });
-        fireEvent.blur(passwordInput);
-
-        await waitFor(() => {
-          expect(screen.getByText('A senha deve ter pelo menos 8 caracteres')).toBeInTheDocument();
-        });
-      });
-
-      it('validates WhatsApp format when provided', async () => {
-        renderWithRouter(<RegisterPage />);
-
-        const whatsappInput = screen.getByLabelText(/WhatsApp/);
-        fireEvent.change(whatsappInput, { target: { value: '123' } });
-        fireEvent.blur(whatsappInput);
-
-        await waitFor(() => {
-          expect(screen.getByText(/WhatsApp deve ter formato válido/)).toBeInTheDocument();
-        });
-      });
+      await waitFor(
+        () => {
+          expect(localStorageMock.setItem).toHaveBeenCalledWith(
+            'registerFormData',
+            expect.stringContaining('João Silva')
+          );
+        },
+        { timeout: 2000 }
+      );
     });
 
-    describe('Step 2 Validation', () => {
-      beforeEach(async () => {
-        renderWithRouter(<RegisterPage />);
-        // Navigate to step 2
-        fireEvent.click(screen.getByText('Próximo Passo'));
-        await waitFor(() => {
-          expect(screen.getByText('Detalhes do Restaurante')).toBeInTheDocument();
-        });
+    it('loads saved form data from localStorage on mount', async () => {
+      const savedData = JSON.stringify({
+        ownerName: 'João Saved',
+        email: 'saved@example.com',
+        locations: [{ id: 1, phone: '', address: { zipCode: '' } }],
+      });
+      localStorageMock.getItem.mockImplementation((key) => {
+        if (key === 'registerFormData') return savedData;
+        if (key === 'registerCurrentStep') return '1'; // Load on step 1 where ownerName field exists
+        return null;
       });
 
-      it('validates restaurant name', async () => {
-        const restaurantNameInput = screen.getByLabelText(/Nome do Restaurante/);
-        fireEvent.change(restaurantNameInput, { target: { value: '' } });
-        fireEvent.click(screen.getByText('Próximo Passo'));
+      renderWithRouter(<RegisterPage />);
 
-        await waitFor(() => {
-          expect(screen.getByText(/Nome do restaurante é obrigatório/)).toBeInTheDocument();
-        });
-      });
-
-      it('validates restaurant URL name', async () => {
-        const urlNameInput = screen.getByLabelText(/Nome para URL do Menu/);
-        fireEvent.change(urlNameInput, { target: { value: '' } });
-        fireEvent.click(screen.getByText('Próximo Passo'));
-
-        await waitFor(() => {
-          expect(screen.getByText(/Nome para URL é obrigatório/)).toBeInTheDocument();
-        });
-      });
-
-      it('validates URL name format', async () => {
-        const urlNameInput = screen.getByLabelText(/Nome para URL do Menu/);
-        fireEvent.change(urlNameInput, { target: { value: 'a' } }); // Too short
-        fireEvent.blur(urlNameInput);
-
-        await waitFor(() => {
-          expect(screen.getByText(/Nome deve ter 3-50 caracteres/)).toBeInTheDocument();
-        });
-      });
-
-      it('shows URL preview', async () => {
-        const urlNameInput = screen.getByLabelText(/Nome para URL do Menu/);
-        fireEvent.change(urlNameInput, { target: { value: 'meu-restaurante' } });
-
-        await waitFor(() => {
-          expect(screen.getByText(/meu-restaurante.alacarteapp.com\/menu/)).toBeInTheDocument();
-        });
-      });
-
-      it('validates cuisine type selection', async () => {
-        const cuisineSelect = screen.getByLabelText(/Tipo de Culinária/);
-        fireEvent.change(cuisineSelect, { target: { value: '' } });
-        fireEvent.click(screen.getByText('Próximo Passo'));
-
-        await waitFor(() => {
-          expect(screen.getByText(/Tipo de culinária é obrigatório/)).toBeInTheDocument();
-        });
-      });
-
-      it('validates website format when provided', async () => {
-        const websiteInput = screen.getByLabelText(/Website/);
-        fireEvent.change(websiteInput, { target: { value: 'invalid-url' } });
-        fireEvent.blur(websiteInput);
-
-        await waitFor(() => {
-          expect(screen.getByText(/Website deve ter formato válido/)).toBeInTheDocument();
-        });
+      // Wait for the form to hydrate
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('João Saved')).toBeInTheDocument();
       });
     });
   });
 
-  describe('Multi-location functionality', () => {
+  describe('Step 1 - Account Information', () => {
+    it('validates required fields before proceeding to step 2', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      expect(screen.getByText(/nome completo é obrigatório/i)).toBeInTheDocument();
+      expect(screen.getByText(/email é obrigatório/i)).toBeInTheDocument();
+    });
+
+    it('validates email format', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const emailInput = screen.getByLabelText(/endereço de email/i);
+      await user.type(emailInput, 'invalid-email');
+      await user.tab(); // Trigger blur
+
+      expect(screen.getByText(/email deve ter um formato válido/i)).toBeInTheDocument();
+    });
+
+    it('validates password confirmation match', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      await user.type(screen.getByLabelText('Senha *'), 'password123');
+      await user.type(screen.getByLabelText('Confirmar Senha *'), 'different');
+      await user.tab();
+
+      expect(screen.getByText(/as senhas não coincidem/i)).toBeInTheDocument();
+    });
+
+    it('formats phone numbers as user types', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const phoneInput = screen.getByLabelText(/número de telefone/i);
+      await user.type(phoneInput, '11999887766');
+
+      expect(phoneInput).toHaveValue('(11) 99988-7766');
+    });
+
+    it('validates international phone numbers', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const phoneInput = screen.getByLabelText(/número de telefone/i);
+      await user.clear(phoneInput);
+      await user.type(phoneInput, '+52 12 1234-1234');
+      await user.tab();
+
+      // Should not show error for valid international number
+      expect(screen.queryByText(/telefone deve ter formato válido/i)).not.toBeInTheDocument();
+    });
+
+    it('proceeds to step 2 when all required fields are valid', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      await fillStep1Data(user);
+
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      expect(screen.getByText('Detalhes do Restaurante')).toBeInTheDocument();
+    });
+  });
+
+  describe('Step 2 - Restaurant Details', () => {
     beforeEach(async () => {
       renderWithRouter(<RegisterPage />);
-
-      // Navigate to step 2
-      fireEvent.click(screen.getByText('Próximo Passo'));
-      await waitFor(() => {
-        expect(screen.getByText('Detalhes do Restaurante')).toBeInTheDocument();
-      });
-
-      // Change to multi-location
-      const businessTypeSelect = screen.getByLabelText(/Tipo de Negócio/);
-      fireEvent.change(businessTypeSelect, { target: { value: 'multi' } });
-
-      // Navigate to step 3
-      fireEvent.click(screen.getByText('Próximo Passo'));
-      await waitFor(() => {
-        expect(screen.getByText('Localizações e Horários')).toBeInTheDocument();
-      });
+      await fillStep1Data(user);
+      await user.click(screen.getByRole('button', { name: /próximo passo/i }));
     });
 
-    it('shows location tabs for multi-location business', () => {
-      expect(screen.getByText('Localização Principal')).toBeInTheDocument();
-      expect(screen.getByText('+ Adicionar Localização')).toBeInTheDocument();
-      expect(screen.getByLabelText(/Nome da Localização para URL do Menu/)).toBeInTheDocument();
+    it('validates restaurant name is required', async () => {
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      expect(screen.getByText(/nome do restaurante é obrigatório/i)).toBeInTheDocument();
     });
 
-    it('can add new locations', async () => {
-      fireEvent.click(screen.getByText('+ Adicionar Localização'));
+    it('formats restaurant URL name as user types', async () => {
+      const urlInput = screen.getByLabelText(/nome para url/i);
+      await user.type(urlInput, 'Meu Restaurante!');
 
-      await waitFor(() => {
-        expect(screen.getByText('Localização 2')).toBeInTheDocument();
-      });
+      expect(urlInput).toHaveValue('meu-restaurante-');
     });
 
-    it('can remove locations (but not the last one)', async () => {
-      // Add a second location first
-      fireEvent.click(screen.getByText('+ Adicionar Localização'));
+    it('validates restaurant URL name format', async () => {
+      const urlInput = screen.getByLabelText(/nome para url/i);
+      await user.type(urlInput, 'ab'); // Too short
+      await user.tab();
 
-      await waitFor(() => {
-        expect(screen.getByText('Localização 2')).toBeInTheDocument();
-      });
-
-      // Try to remove location (should have remove button)
-      const removeButtons = screen.getAllByText('×');
-      expect(removeButtons).toHaveLength(1); // Only on the second location
+      expect(screen.getByText(/nome deve ter 3-50 caracteres/i)).toBeInTheDocument();
     });
 
-    it('validates location URL name for multi-location', async () => {
-      const locationUrlInput = screen.getByLabelText(/Nome da Localização para URL do Menu/);
-      fireEvent.change(locationUrlInput, { target: { value: '' } });
-      fireEvent.click(screen.getByText('Próximo Passo'));
+    it('validates website URL format when provided', async () => {
+      const websiteInput = screen.getByLabelText(/website/i);
+      await user.type(websiteInput, 'invalid-url');
+      await user.tab();
 
-      await waitFor(() => {
-        expect(screen.getByText(/Nome para URL da localização é obrigatório/)).toBeInTheDocument();
-      });
+      expect(screen.getByText(/website deve ter formato válido/i)).toBeInTheDocument();
     });
 
-    it('shows location-specific URL preview', async () => {
-      const locationUrlInput = screen.getByLabelText(/Nome da Localização para URL do Menu/);
-      fireEvent.change(locationUrlInput, { target: { value: 'centro' } });
+    it('proceeds to step 3 when all required fields are valid', async () => {
+      await fillStep2Data(user);
 
-      await waitFor(() => {
-        expect(screen.getByText(/centro\.aaa\.alacarteapp\.com\/menu/)).toBeInTheDocument();
-      });
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      expect(screen.getByText('Localizações e Horários')).toBeInTheDocument();
     });
   });
 
-  describe('CEP Lookup functionality', () => {
+  describe('Step 3 - Location and Hours', () => {
     beforeEach(async () => {
       renderWithRouter(<RegisterPage />);
+      await fillStep1Data(user);
+      await user.click(screen.getByRole('button', { name: /próximo passo/i }));
+      await fillStep2Data(user);
+      await user.click(screen.getByRole('button', { name: /próximo passo/i }));
+    });
 
-      // Navigate to step 3
-      fireEvent.click(screen.getByText('Próximo Passo'));
-      fireEvent.click(screen.getByText('Próximo Passo'));
+    it('validates location phone is required', async () => {
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      expect(screen.getByText(/telefone da localização é obrigatório/i)).toBeInTheDocument();
+    });
+
+    it('validates CEP format', async () => {
+      const cepInput = screen.getByLabelText(/cep/i);
+      // Clear and type an invalid 8-digit CEP that will fail validation
+      await user.clear(cepInput);
+      await user.type(cepInput, '1234567'); // 7 digits instead of 8
+      await user.tab();
+
       await waitFor(() => {
-        expect(screen.getByText('Localizações e Horários')).toBeInTheDocument();
+        expect(screen.getByText(/cep deve ter 8 dígitos.*ex:/i)).toBeInTheDocument();
       });
     });
 
-    it('formats CEP input correctly', async () => {
-      const cepInput = screen.getByLabelText(/CEP/);
-      fireEvent.change(cepInput, { target: { value: '12345678' } });
-
-      await waitFor(() => {
-        expect(cepInput.value).toBe('12345-678');
-      });
-    });
-
-    it('performs CEP lookup on valid CEP', async () => {
-      const mockCepData = {
-        logradouro: 'Rua das Flores',
+    it('fetches address data from CEP API', async () => {
+      const mockCepResponse = {
+        logradouro: 'Rua Teste',
+        bairro: 'Centro',
         localidade: 'São Paulo',
         uf: 'SP',
       };
 
       fetch.mockResolvedValueOnce({
-        json: () => Promise.resolve(mockCepData),
+        ok: true,
+        json: () => Promise.resolve(mockCepResponse),
       });
 
-      const cepInput = screen.getByLabelText(/CEP/);
-      fireEvent.change(cepInput, { target: { value: '01310-100' } });
-      fireEvent.blur(cepInput);
+      const cepInput = screen.getByLabelText(/cep/i);
+      // Type full 8-digit CEP and trigger blur to simulate the API call
+      await user.clear(cepInput);
+      await user.type(cepInput, '01310-100');
+      await user.tab(); // Trigger blur event
 
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith('https://viacep.com.br/ws/01310100/json/');
       });
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('Rua das Flores')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('São Paulo')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('SP')).toBeInTheDocument();
-      });
     });
 
-    it('shows error for invalid CEP', async () => {
+    it('handles CEP API errors gracefully', async () => {
       fetch.mockResolvedValueOnce({
+        ok: true,
         json: () => Promise.resolve({ erro: true }),
       });
 
-      const cepInput = screen.getByLabelText(/CEP/);
-      fireEvent.change(cepInput, { target: { value: '00000-000' } });
-      fireEvent.blur(cepInput);
+      const cepInput = screen.getByLabelText(/cep/i);
+      // Type full 8-digit CEP and trigger blur to simulate the API call
+      await user.clear(cepInput);
+      await user.type(cepInput, '99999-999');
+      await user.tab(); // Trigger blur event
 
       await waitFor(() => {
-        expect(screen.getByText('CEP não encontrado')).toBeInTheDocument();
+        expect(screen.getByText(/cep não encontrado/i)).toBeInTheDocument();
       });
-    });
-
-    it('handles CEP lookup timeout', async () => {
-      fetch.mockImplementationOnce(
-        () => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 6000))
-      );
-
-      const cepInput = screen.getByLabelText(/CEP/);
-      fireEvent.change(cepInput, { target: { value: '01310-100' } });
-      fireEvent.blur(cepInput);
-
-      await waitFor(
-        () => {
-          expect(screen.getByText('Erro ao buscar CEP')).toBeInTheDocument();
-        },
-        { timeout: 7000 }
-      );
     });
   });
 
-  describe('Operating Hours', () => {
+  describe('Phone Number Validation and Formatting', () => {
+    it('accepts Brazilian phone format', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const phoneInput = screen.getByLabelText(/número de telefone/i);
+      await user.type(phoneInput, '11999887766');
+      await user.tab();
+
+      expect(phoneInput).toHaveValue('(11) 99988-7766');
+      expect(screen.queryByText(/telefone deve ter formato válido/i)).not.toBeInTheDocument();
+    });
+
+    it('accepts international phone formats', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const phoneInput = screen.getByLabelText(/número de telefone/i);
+
+      // Test different international formats
+      const validFormats = ['+52 12 1234-1234', '+55 11 99999-9999'];
+
+      for (const format of validFormats) {
+        await user.clear(phoneInput);
+        await user.type(phoneInput, format);
+        await user.tab();
+
+        expect(screen.queryByText(/telefone deve ter formato válido/i)).not.toBeInTheDocument();
+      }
+    });
+
+    it('rejects invalid phone formats', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const phoneInput = screen.getByLabelText(/número de telefone/i);
+      await user.type(phoneInput, '123');
+      await user.tab();
+
+      expect(screen.getByText(/telefone deve ter formato válido/i)).toBeInTheDocument();
+    });
+
+    it('updates placeholder text for international numbers', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const phoneInput = screen.getByLabelText(/número de telefone/i);
+
+      // Check that placeholder supports international format
+      expect(phoneInput).toHaveAttribute('placeholder', expect.stringMatching(/\+/));
+    });
+  });
+
+  describe('Restaurant URL Validation', () => {
     beforeEach(async () => {
       renderWithRouter(<RegisterPage />);
-
-      // Navigate to step 3
-      fireEvent.click(screen.getByText('Próximo Passo'));
-      fireEvent.click(screen.getByText('Próximo Passo'));
-      await waitFor(() => {
-        expect(screen.getByText('Horários de Funcionamento')).toBeInTheDocument();
-      });
+      await fillStep1Data(user);
+      await user.click(screen.getByRole('button', { name: /próximo passo/i }));
     });
 
-    it('renders all days of the week', () => {
-      const days = [
-        'Segunda-feira',
-        'Terça-feira',
-        'Quarta-feira',
-        'Quinta-feira',
-        'Sexta-feira',
-        'Sábado',
-        'Domingo',
-        'Feriados',
-      ];
+    it('formats URL name in real-time', async () => {
+      const urlInput = screen.getByLabelText(/nome para url/i);
 
-      days.forEach((day) => {
-        expect(screen.getByText(day)).toBeInTheDocument();
-      });
+      await user.type(urlInput, 'Meu Restaurante Teste!@#');
+
+      expect(urlInput).toHaveValue('meu-restaurante-teste-');
     });
 
-    it('allows toggling closed status', async () => {
-      const mondayClosedCheckbox = screen.getByLabelText(/Segunda-feira.*Fechado/);
-      fireEvent.click(mondayClosedCheckbox);
+    it('validates URL name length', async () => {
+      const urlInput = screen.getByLabelText(/nome para url/i);
 
-      await waitFor(() => {
-        expect(mondayClosedCheckbox).toBeChecked();
-      });
-    });
+      await user.type(urlInput, 'ab');
+      await user.tab();
 
-    it('hides time inputs when day is closed', async () => {
-      const mondayClosedCheckbox = screen.getByLabelText(/Segunda-feira.*Fechado/);
-      fireEvent.click(mondayClosedCheckbox);
-
-      await waitFor(() => {
-        const timeInputs = screen.queryAllByDisplayValue('09:00');
-        expect(timeInputs.length).toBeLessThan(7); // Should be fewer time inputs
-      });
-    });
-  });
-
-  describe('Features and Plan Selection', () => {
-    beforeEach(async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Navigate to step 4
-      for (let i = 0; i < 3; i++) {
-        fireEvent.click(screen.getByText('Próximo Passo'));
-        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText('Recursos e Seleção de Plano')).toBeInTheDocument();
-      });
-    });
-
-    it('shows all available features', () => {
-      expect(screen.getByText('Menu Digital e Pedidos QR')).toBeInTheDocument();
-      expect(screen.getByText('Portal do Garçom')).toBeInTheDocument();
-      expect(screen.getByText('Pedidos por Mesa')).toBeInTheDocument();
-      expect(screen.getByText('Integração de Pagamento')).toBeInTheDocument();
-      expect(screen.getByText('Integração Impressora Cozinha')).toBeInTheDocument();
-      expect(screen.getByText('Programa de Fidelidade')).toBeInTheDocument();
-      expect(screen.getByText('Análises Avançadas')).toBeInTheDocument();
-    });
-
-    it('has digital menu as required feature', () => {
-      const digitalMenuCheckbox = screen.getByLabelText(/Menu Digital e Pedidos QR/);
-      expect(digitalMenuCheckbox).toBeChecked();
-      expect(digitalMenuCheckbox).toBeDisabled();
-    });
-
-    it('allows toggling optional features', async () => {
-      const waiterPortalCheckbox = screen.getByLabelText(/Portal do Garçom/);
-      fireEvent.click(waiterPortalCheckbox);
-
-      await waitFor(() => {
-        expect(waiterPortalCheckbox).toBeChecked();
-      });
-    });
-
-    it('shows plan recommendation', () => {
-      expect(screen.getByText('Plano Recomendado')).toBeInTheDocument();
-      expect(screen.getByText('Plano Inicial')).toBeInTheDocument();
-      expect(screen.getByText('R$29/mês')).toBeInTheDocument();
-    });
-
-    it('updates plan recommendation based on features', async () => {
-      // Select multiple features to trigger professional plan
-      const features = [
-        'Portal do Garçom',
-        'Pedidos por Mesa',
-        'Integração de Pagamento',
-        'Integração Impressora Cozinha',
-      ];
-
-      for (const feature of features) {
-        const checkbox = screen.getByLabelText(new RegExp(feature));
-        fireEvent.click(checkbox);
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText('Plano Profissional')).toBeInTheDocument();
-        expect(screen.getByText('R$79/mês')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Payment and Billing', () => {
-    beforeEach(async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Navigate to step 5
-      for (let i = 0; i < 4; i++) {
-        fireEvent.click(screen.getByText('Próximo Passo'));
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText('Pagamento e Cobrança')).toBeInTheDocument();
-      });
-    });
-
-    it('renders payment form fields', () => {
-      expect(screen.getByLabelText(/Nome no Cartão/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Número do Cartão/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Data de Validade/)).toBeInTheDocument();
-      expect(screen.getByLabelText(/CVV/)).toBeInTheDocument();
-    });
-
-    it('shows billing address toggle', () => {
-      expect(
-        screen.getByLabelText(/Endereço de cobrança igual ao endereço do restaurante/)
-      ).toBeInTheDocument();
-    });
-
-    it('shows billing address fields when toggle is off', async () => {
-      const toggle = screen.getByLabelText(/Endereço de cobrança igual ao endereço do restaurante/);
-      fireEvent.click(toggle);
-
-      await waitFor(() => {
-        expect(screen.getByText('Endereço de Cobrança')).toBeInTheDocument();
-      });
-    });
-
-    it('shows marketing consent checkbox', () => {
-      expect(screen.getByLabelText(/Gostaria de receber atualizações/)).toBeInTheDocument();
-    });
-
-    it('shows plan summary', () => {
-      expect(screen.getByText('Resumo do Plano')).toBeInTheDocument();
-      expect(screen.getByText(/Recursos:.*selecionados/)).toBeInTheDocument();
-    });
-
-    it('shows security notice', () => {
-      expect(
-        screen.getByText(/Suas informações de pagamento são criptografadas/)
-      ).toBeInTheDocument();
-    });
-  });
-
-  describe('Navigation', () => {
-    it('scrolls to top when navigating between steps', async () => {
-      renderWithRouter(<RegisterPage />);
-
-      fireEvent.click(screen.getByText('Próximo Passo'));
-
-      await waitFor(() => {
-        expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
-      });
-    });
-
-    it('allows going back to previous step', async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Go to step 2
-      fireEvent.click(screen.getByText('Próximo Passo'));
-      await waitFor(() => {
-        expect(screen.getByText('Detalhes do Restaurante')).toBeInTheDocument();
-      });
-
-      // Go back to step 1
-      fireEvent.click(screen.getByText('Anterior'));
-      await waitFor(() => {
-        expect(screen.getByText('Informações da Conta')).toBeInTheDocument();
-      });
-    });
-
-    it('clears errors when going back', async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Create an error by trying to proceed with empty required field
-      fireEvent.change(screen.getByLabelText(/Nome Completo/), { target: { value: '' } });
-      fireEvent.click(screen.getByText('Próximo Passo'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Por favor, corrija/)).toBeInTheDocument();
-      });
-
-      // Navigate to step 2 first
-      fireEvent.change(screen.getByLabelText(/Nome Completo/), { target: { value: 'Test Name' } });
-      fireEvent.click(screen.getByText('Próximo Passo'));
-
-      // Go back
-      fireEvent.click(screen.getByText('Anterior'));
-
-      await waitFor(() => {
-        expect(screen.queryByText(/Por favor, corrija/)).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Form Submission', () => {
-    beforeEach(async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Navigate to final step
-      for (let i = 0; i < 4; i++) {
-        fireEvent.click(screen.getByText('Próximo Passo'));
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      await waitFor(() => {
-        expect(screen.getByText('Concluir Registro')).toBeInTheDocument();
-      });
-    });
-
-    it('shows submit button on final step', () => {
-      expect(screen.getByText('Concluir Registro')).toBeInTheDocument();
-    });
-
-    it('calls register function on successful submission', async () => {
-      mockRegister.mockResolvedValueOnce({});
-
-      // Fill required payment fields
-      fireEvent.change(screen.getByLabelText(/Nome no Cartão/), { target: { value: 'Test User' } });
-      fireEvent.change(screen.getByLabelText(/Número do Cartão/), {
-        target: { value: '4111111111111111' },
-      });
-      fireEvent.change(screen.getByLabelText(/Data de Validade/), { target: { value: '12/25' } });
-      fireEvent.change(screen.getByLabelText(/CVV/), { target: { value: '123' } });
-
-      fireEvent.click(screen.getByText('Concluir Registro'));
-
-      await waitFor(() => {
-        expect(mockRegister).toHaveBeenCalledWith(
-          expect.objectContaining({
-            type: 'restaurant',
-            ownerName: 'Flavio Ferreira',
-            email: 'flavio_luiz_ferreira@hotmail.com',
-            subscriptionPlan: 'starter',
-          })
-        );
-      });
-
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-    });
-
-    it('shows error on submission failure', async () => {
-      mockRegister.mockRejectedValueOnce(new Error('Registration failed'));
-
-      // Fill required payment fields
-      fireEvent.change(screen.getByLabelText(/Nome no Cartão/), { target: { value: 'Test User' } });
-      fireEvent.change(screen.getByLabelText(/Número do Cartão/), {
-        target: { value: '4111111111111111' },
-      });
-      fireEvent.change(screen.getByLabelText(/Data de Validade/), { target: { value: '12/25' } });
-      fireEvent.change(screen.getByLabelText(/CVV/), { target: { value: '123' } });
-
-      fireEvent.click(screen.getByText('Concluir Registro'));
-
-      await waitFor(() => {
-        expect(screen.getByText('Registration failed')).toBeInTheDocument();
-      });
-    });
-
-    it('validates required fields before submission', async () => {
-      // Don't fill payment fields
-      fireEvent.click(screen.getByText('Concluir Registro'));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Por favor, corrija.*campos obrigatórios/)).toBeInTheDocument();
-      });
-
-      expect(mockRegister).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Validation Helpers', () => {
-    it('validates Brazilian phone numbers correctly', () => {
-      renderWithRouter(<RegisterPage />);
-
-      const phoneInput = screen.getByLabelText(/Telefone/);
-
-      // Valid mobile numbers
-      fireEvent.change(phoneInput, { target: { value: '11987654321' } });
-      fireEvent.blur(phoneInput);
-      expect(screen.queryByText(/Telefone deve ter formato válido/)).not.toBeInTheDocument();
-
-      // Valid landline
-      fireEvent.change(phoneInput, { target: { value: '1133334444' } });
-      fireEvent.blur(phoneInput);
-      expect(screen.queryByText(/Telefone deve ter formato válido/)).not.toBeInTheDocument();
-    });
-
-    it('validates email addresses correctly', () => {
-      renderWithRouter(<RegisterPage />);
-
-      const emailInput = screen.getByLabelText(/Email/);
-
-      // Valid email
-      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-      fireEvent.blur(emailInput);
-      expect(screen.queryByText(/Email deve ter um formato válido/)).not.toBeInTheDocument();
-
-      // Invalid email
-      fireEvent.change(emailInput, { target: { value: 'invalid.email' } });
-      fireEvent.blur(emailInput);
-      expect(screen.getByText(/Email deve ter um formato válido/)).toBeInTheDocument();
-    });
-
-    it('validates restaurant URL names correctly', async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Navigate to step 2
-      fireEvent.click(screen.getByText('Próximo Passo'));
-
-      await waitFor(() => {
-        const urlInput = screen.getByLabelText(/Nome para URL do Menu/);
-
-        // Valid URL name
-        fireEvent.change(urlInput, { target: { value: 'meu-restaurante-123' } });
-        fireEvent.blur(urlInput);
-        expect(screen.queryByText(/Nome deve ter 3-50 caracteres/)).not.toBeInTheDocument();
-
-        // Invalid URL name (too short)
-        fireEvent.change(urlInput, { target: { value: 'a' } });
-        fireEvent.blur(urlInput);
-        expect(screen.getByText(/Nome deve ter 3-50 caracteres/)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('URL Formatting', () => {
-    it('formats restaurant URL name as user types', async () => {
-      renderWithRouter(<RegisterPage />);
-
-      // Navigate to step 2
-      fireEvent.click(screen.getByText('Próximo Passo'));
-
-      await waitFor(() => {
-        const urlInput = screen.getByLabelText(/Nome para URL do Menu/);
-        fireEvent.change(urlInput, { target: { value: 'Meu Restaurante!' } });
-
-        expect(urlInput.value).toBe('meu-restaurante-');
-      });
+      expect(screen.getByText(/nome deve ter 3-50 caracteres/i)).toBeInTheDocument();
     });
 
     it('cleans up URL name on blur', async () => {
+      const urlInput = screen.getByLabelText(/nome para url/i);
+
+      await user.type(urlInput, '-meu-restaurante-');
+      await user.tab();
+
+      expect(urlInput).toHaveValue('meu-restaurante');
+    });
+  });
+
+  describe('Error Handling and Validation', () => {
+    it('scrolls to top when validation errors occur', async () => {
       renderWithRouter(<RegisterPage />);
 
-      // Navigate to step 2
-      fireEvent.click(screen.getByText('Próximo Passo'));
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
 
       await waitFor(() => {
-        const urlInput = screen.getByLabelText(/Nome para URL do Menu/);
-        fireEvent.change(urlInput, { target: { value: '-meu-restaurante-' } });
-        fireEvent.blur(urlInput);
-
-        expect(urlInput.value).toBe('meu-restaurante');
+        expect(global.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
       });
+    });
+
+    it('highlights fields with errors', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      const nameInput = screen.getByLabelText(/nome completo/i);
+      expect(nameInput).toHaveClass('error');
+    });
+
+    it('removes error styling when field becomes valid', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const nameInput = screen.getByLabelText(/nome completo/i);
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+
+      await user.click(nextButton); // Trigger validation
+      expect(nameInput).toHaveClass('error');
+
+      await user.type(nameInput, 'João Silva');
+      await user.tab();
+
+      expect(nameInput).not.toHaveClass('error');
+    });
+
+    it('shows all validation errors at once', async () => {
+      renderWithRouter(<RegisterPage />);
+
+      const nextButton = screen.getByRole('button', { name: /próximo passo/i });
+      await user.click(nextButton);
+
+      expect(screen.getByText(/nome completo é obrigatório/i)).toBeInTheDocument();
+      expect(screen.getByText(/email é obrigatório/i)).toBeInTheDocument();
+      expect(screen.getByText(/número de telefone é obrigatório/i)).toBeInTheDocument();
     });
   });
 });

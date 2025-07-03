@@ -1112,7 +1112,16 @@ function RegisterPage() {
     if (name === 'address.zipCode' && value) {
       // Clear any previous CEP error when user starts typing
       cepAsyncError.current = '';
-      await handleCEPLookup(value);
+
+      // First validate the CEP format
+      const cleanedCEP = value.replace(/\D/g, '');
+      if (cleanedCEP.length !== 8) {
+        // Show validation error for incomplete CEP
+        validateField(name);
+      } else {
+        // If CEP has 8 digits, try to lookup
+        await handleCEPLookup(value);
+      }
     } else {
       // Validate the specific field for other fields
       validateField(name);

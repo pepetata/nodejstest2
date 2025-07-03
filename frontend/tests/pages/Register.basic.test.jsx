@@ -49,9 +49,13 @@ describe('RegisterPage Basic Tests', () => {
     expect(screen.getByLabelText(/Nome Completo/)).toBeInTheDocument();
   });
 
-  it('has pre-filled test data', () => {
+  it('starts with empty form fields', () => {
     renderWithRouter(<RegisterPage />);
-    expect(screen.getByDisplayValue('Flavio Ferreira')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('flavio_luiz_ferreira@hotmail.com')).toBeInTheDocument();
+    // Verify that all required fields start empty (correct behavior for production)
+    expect(screen.getByLabelText(/Nome Completo/)).toHaveValue('');
+    expect(screen.getByLabelText(/Endereço de Email/)).toHaveValue('');
+    expect(screen.getByLabelText(/Número de Telefone/)).toHaveValue('');
+    expect(screen.getByLabelText('Senha *')).toHaveValue('');
+    expect(screen.getByLabelText('Confirmar Senha *')).toHaveValue('');
   });
 });
