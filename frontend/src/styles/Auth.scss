@@ -209,6 +209,28 @@
   }
 }
 
+.terms-link {
+  background: none;
+  border: none;
+  color: vars.$textLabel;
+  text-decoration: underline;
+  font-family: vars.$body-font;
+  font-weight: 500;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    color: color.scale(vars.$textLabel, $lightness: -15%);
+  }
+
+  &:focus {
+    outline: 2px solid vars.$primary;
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+}
+
 .auth-footer {
   text-align: center;
   margin-top: 1.5rem;

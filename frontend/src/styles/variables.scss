@@ -5,7 +5,7 @@
 $bg-color: #fff4e5;
 $logoO: #ffaa00;
 $logoB: #1650a1;
-$textLabel: #0896ff;
+$textLabel: #e6930a; // Orange nuance for text labels instead of blue
 $header-color: #ffd699;
 $footer-color: #ffd699;
 $body-font: 'Inconsolata', monospace;
@@ -17,14 +17,23 @@ $heading-font:
   sans-serif;
 
 // Additional color variables
-$primary: #1650a1; // Using logoB color for primary
+$primary: #ffaa00; // Using logoO (orange) color for primary
+$secondary: #1650a1; // Using logoB (blue) as secondary accent
 $dark: #212529; // Bootstrap-like dark color
 
 // Derived colors for consistency
-$primary-hover: color.scale($primary, $lightness: -10%);
-$primary-light: color.scale($primary, $lightness: 20%);
+$primary-hover: color.scale($primary, $lightness: -15%);
+$primary-light: color.scale($primary, $lightness: 25%);
+$primary-dark: color.scale($primary, $lightness: -25%);
+$secondary-light: color.scale($secondary, $lightness: 25%);
 $text-primary: $dark;
 $text-secondary: color.scale($dark, $lightness: 20%);
+
+// Orange-based accent colors
+$accent-orange: #ff8c00; // Darker orange for accents
+$accent-orange-light: #ffb347; // Light orange for hover states
+$warning: #ff6b35; // Orange-red for warnings
+$success: #4caf50; // Keep green for success states
 
 // Background variations
 $bg-light: color.scale($bg-color, $lightness: 5%);

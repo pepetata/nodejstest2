@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import TermsModal from '../components/common/TermsModal';
 import '../styles/Auth.scss';
 import '../styles/register.scss';
 
@@ -11,34 +12,34 @@ function RegisterPage() {
   const [currentLocationIndex, setCurrentLocationIndex] = useState(0);
   const [formData, setFormData] = useState({
     // Step 1: Account Information
-    ownerName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    whatsapp: '',
+    ownerName: 'Flavio Ferreira',
+    email: 'flavio_luiz_ferreira@hotmail.com',
+    password: '12345678',
+    confirmPassword: '12345678',
+    phone: '11945471011',
+    whatsapp: '11945471011',
 
     // Step 2: Restaurant Details
-    restaurantName: '',
-    restaurantUrlName: '',
+    restaurantName: 'Restaurante do Padre',
+    restaurantUrlName: 'padre',
     businessType: 'single', // single or multi-location
     cuisineType: 'American',
-    website: '',
-    description: '',
+    website: 'padre.com',
+    description: 'nao tem',
 
     // Step 3: Locations & Hours (array for multi-location support)
     locations: [
       {
         id: 1,
         name: 'Localização Principal',
-        urlName: '', // URL-safe name for location
-        phone: '', // Location-specific phone
-        whatsapp: '', // Location-specific WhatsApp
+        urlName: 'matriz', // URL-safe name for location
+        phone: '1199999999', // Location-specific phone
+        whatsapp: '1199999999', // Location-specific WhatsApp
         address: {
-          zipCode: '',
+          zipCode: '05089-030',
           street: '',
-          streetNumber: '',
-          complement: '',
+          streetNumber: '123',
+          complement: 'cj 111',
           city: '',
           state: '',
         },
@@ -61,10 +62,10 @@ function RegisterPage() {
 
     // Step 5: Payment & Billing
     paymentInfo: {
-      cardNumber: '',
-      expiryDate: '',
-      cvv: '',
-      cardholderName: '',
+      cardNumber: 'a',
+      expiryDate: 'a',
+      cvv: 'a',
+      cardholderName: 'a',
     },
     billingAddress: {
       zipCode: '',
@@ -76,11 +77,13 @@ function RegisterPage() {
       sameAsRestaurant: true,
     },
     marketingConsent: false,
+    termsAccepted: false,
   });
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const cepAsyncError = useRef('');
 
   // Set document title and scroll to top when component mounts
@@ -1244,6 +1247,11 @@ function RegisterPage() {
       }
     });
 
+    // Special validation for step 5 - terms acceptance
+    if (step === 5 && !formData.termsAccepted) {
+      errors.termsAccepted = 'Você deve aceitar os termos de serviço para continuar';
+    }
+
     setFieldErrors(errors);
 
     if (Object.keys(errors).length > 0) {
@@ -2240,6 +2248,29 @@ function RegisterPage() {
         </div>
       </div>
 
+      <div className={`form-group ${hasFieldError('termsAccepted') ? 'error' : ''}`}>
+        <div className="checkbox-group">
+          <input
+            type="checkbox"
+            id="termsAccepted"
+            name="termsAccepted"
+            checked={formData.termsAccepted}
+            onChange={handleChange}
+            required
+          />
+          <label htmlFor="termsAccepted">
+            Eu li e aceito os{' '}
+            <button type="button" className="terms-link" onClick={() => setShowTermsModal(true)}>
+              termos de serviço e contrato de assinatura
+            </button>{' '}
+            *
+          </label>
+        </div>
+        {hasFieldError('termsAccepted') && (
+          <div className="field-error">{fieldErrors.termsAccepted}</div>
+        )}
+      </div>
+
       <div className="plan-summary">
         <h4>Resumo do Plano</h4>
         <div className="summary-item">
@@ -2318,6 +2349,16 @@ function RegisterPage() {
           )}
         </form>
       </div>
+
+      {/* Terms Modal */}
+      <TermsModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        onAccept={() => {
+          setFormData((prev) => ({ ...prev, termsAccepted: true }));
+          setShowTermsModal(false);
+        }}
+      />
     </div>
   );
 }
