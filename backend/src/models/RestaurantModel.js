@@ -562,6 +562,24 @@ class RestaurantModel extends BaseModel {
     const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC' } = pagination;
     const offset = (page - 1) * limit;
 
+    // Validate sort parameters to prevent SQL injection
+    const validSortColumns = [
+      'created_at',
+      'updated_at',
+      'restaurant_name',
+      'owner_name',
+      'status',
+    ];
+    const validSortOrders = ['ASC', 'DESC'];
+
+    if (!validSortColumns.includes(sortBy)) {
+      throw new Error(`Invalid sort column: ${sortBy}`);
+    }
+
+    if (!validSortOrders.includes(sortOrder.toUpperCase())) {
+      throw new Error(`Invalid sort order: ${sortOrder}`);
+    }
+
     // Build filter conditions
     const conditions = {};
     if (filters.status) conditions.status = filters.status;
@@ -576,7 +594,7 @@ class RestaurantModel extends BaseModel {
     const options = {
       limit,
       offset,
-      orderBy: `${sortBy} ${sortOrder}`,
+      orderBy: `${sortBy} ${sortOrder.toUpperCase()}`,
     };
 
     const columns = [

@@ -166,7 +166,8 @@ class BaseModel {
 
     // Add ORDER BY
     if (options.orderBy) {
-      query += ` ORDER BY ${options.orderBy}`;
+      const validatedOrderBy = this.validateOrderBy(options.orderBy);
+      query += ` ORDER BY ${validatedOrderBy}`;
     }
 
     // Add LIMIT and OFFSET
@@ -274,6 +275,26 @@ class BaseModel {
     });
 
     return sanitized;
+  }
+
+  /**
+   * Validate ORDER BY clause to prevent SQL injection
+   * @param {String} orderBy - ORDER BY clause
+   * @returns {String} Validated ORDER BY clause
+   * @private
+   */
+  validateOrderBy(orderBy) {
+    if (!orderBy) return null;
+
+    // Allow only alphanumeric characters, underscores, spaces, commas, ASC, DESC
+    const validOrderByPattern =
+      /^[a-zA-Z0-9_,\s]+(\s+(ASC|DESC))?(\s*,\s*[a-zA-Z0-9_,\s]+(\s+(ASC|DESC))?)*$/i;
+
+    if (!validOrderByPattern.test(orderBy)) {
+      throw new Error('Invalid ORDER BY clause format');
+    }
+
+    return orderBy;
   }
 }
 
