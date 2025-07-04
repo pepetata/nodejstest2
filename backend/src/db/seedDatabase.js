@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+/* eslint-disable no-process-exit */
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
@@ -15,10 +17,10 @@ const executeSqlFile = async (filePath) => {
   }
 };
 
-// Main seed function
-const seedDatabase = async () => {
+// Function to run only migrations (no seeds)
+const runMigrations = async () => {
   try {
-    console.log('Starting database seeding...');
+    console.log('Running database migrations...');
 
     // Execute migration files in order
     const migrationsDir = path.join(__dirname, 'migrations');
@@ -30,6 +32,18 @@ const seedDatabase = async () => {
     for (const file of migrationFiles) {
       await executeSqlFile(path.join(migrationsDir, file));
     }
+
+    console.log('Database migrations completed successfully');
+  } catch (error) {
+    console.error('Database migrations failed:', error);
+    throw error;
+  }
+};
+
+// Function to run only seeds (no migrations)
+const runSeeds = async () => {
+  try {
+    console.log('Running database seeds...');
 
     // Execute seed files in order
     const seedsDir = path.join(__dirname, 'seeds');
@@ -45,9 +59,48 @@ const seedDatabase = async () => {
     console.log('Database seeding completed successfully');
   } catch (error) {
     console.error('Database seeding failed:', error);
+    throw error;
+  }
+};
+
+// Main seed function (runs both migrations and seeds - backward compatibility)
+const seedDatabase = async () => {
+  try {
+    console.log('Starting database seeding...');
+
+    await runMigrations();
+    await runSeeds();
+
+    console.log('Database setup completed successfully');
+  } catch (error) {
+    console.error('Database setup failed:', error);
     process.exit(1);
   } finally {
     // Close database connection
+    await db.closePool();
+  }
+};
+
+// Function to run only seeds with connection management
+const seedOnly = async () => {
+  try {
+    await runSeeds();
+  } catch (error) {
+    console.error('Database seeding failed:', error);
+    throw error;
+  } finally {
+    await db.closePool();
+  }
+};
+
+// Function to run only migrations with connection management
+const migrationsOnly = async () => {
+  try {
+    await runMigrations();
+  } catch (error) {
+    console.error('Database migrations failed:', error);
+    throw error;
+  } finally {
     await db.closePool();
   }
 };
@@ -57,4 +110,10 @@ if (require.main === module) {
   seedDatabase();
 }
 
-module.exports = seedDatabase;
+module.exports = {
+  seedDatabase,
+  runMigrations,
+  runSeeds,
+  seedOnly,
+  migrationsOnly,
+};

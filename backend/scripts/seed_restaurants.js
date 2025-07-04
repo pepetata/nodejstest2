@@ -1,4 +1,40 @@
 /* eslint-disable no-console */
+
+/**
+ * ⚠️  DEPRECATED SCRIPT ⚠️
+ *
+ * This script has been replaced by the modern SQL-based seeding system.
+ *
+ * The new approach provides:
+ * - SQL seed files for better data management
+ * - Automatic seed discovery and execution
+ * - Better performance and maintainability
+ * - Integration with migration system
+ * - Centralized configuration
+ *
+ * Restaurant seed data is now located in:
+ *   src/db/seeds/003_restaurants.sql
+ *   src/db/seeds/004_restaurant_locations.sql
+ *
+ * To seed the database, use:
+ *   npm run seed                    # Seed current environment
+ *   npm run db:setup               # Full database setup (creates + seeds)
+ *   node scripts/setup-database.js # Full setup with options
+ *
+ * This file will be removed in a future version.
+ */
+
+console.log('⚠️  WARNING: This script is deprecated!');
+console.log('Restaurant seeding is now handled by SQL files in src/db/seeds/');
+console.log('');
+console.log('Please use one of these instead:');
+console.log('  npm run seed          # Seed current environment');
+console.log('  npm run db:setup      # Full database setup');
+console.log('');
+console.log('Seed files location: src/db/seeds/003_restaurants.sql');
+console.log('');
+
+// Legacy functionality preserved for compatibility
 const { Client } = require('pg');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
