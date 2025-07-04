@@ -38,6 +38,7 @@
 .progress-container {
   width: 100%;
   margin-bottom: 3rem;
+  overflow-x: auto; /* Allow horizontal scroll if needed */
 
   .progress-bar {
     display: flex !important;
@@ -48,6 +49,7 @@
     position: relative;
     width: 100%;
     max-width: 800px;
+    min-width: 300px; /* Ensure minimum width */
     margin: 0 auto;
     padding: 0 40px;
     padding-top: 5px;
@@ -116,6 +118,14 @@
       transition: all 0.3s ease;
       word-wrap: break-word;
       hyphens: auto;
+
+      .label-short {
+        display: none;
+      }
+
+      .label-full {
+        display: inline;
+      }
     }
 
     &.active {
@@ -623,42 +633,75 @@
 @media (max-width: 768px) {
   .restaurant-registration {
     max-width: 100%;
-    padding: 1rem;
+    padding: 1.5rem 1rem;
+    margin: 0.5rem;
+    border-radius: 12px;
   }
 
   .progress-container {
+    margin-bottom: 2rem;
+
     .progress-bar {
       max-width: 100%;
-      padding: 0 10px;
+      min-width: 280px; /* Ensure minimum width for mobile */
+      padding: 0 5px;
       flex-direction: row !important;
 
       &::before {
-        left: 8%;
-        right: 8%;
+        left: 6%;
+        right: 6%;
       }
 
       &::after {
-        left: 8%;
-        width: calc((84%) * (var(--progress, 0) - 1) / 4);
+        left: 6%;
+        width: calc((88%) * (var(--progress, 1) - 1) / 4);
+      }
+    }
+
+    .progress-step {
+      max-width: 70px;
+      min-width: 50px;
+      flex: 1;
+
+      .step-number {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .step-label {
+        font-size: 0.6rem;
+        line-height: 1.1;
+        padding: 0 2px;
+
+        .label-full {
+          display: none;
+        }
+
+        .label-short {
+          display: inline;
+        }
+      }
+
+      &.active {
+        .step-number {
+          width: 2.1rem;
+          height: 2.1rem;
+          transform: scale(1.05);
+        }
       }
     }
   }
 
-  .progress-step {
-    max-width: 80px;
-    min-width: 60px;
-    flex: 1;
+  .step-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
 
-    .step-number {
-      width: 2.5rem;
-      height: 2.5rem;
-      font-size: 0.9rem;
-    }
-
-    .step-label {
-      font-size: 0.65rem;
-      line-height: 1.1;
-    }
+  .step-description {
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
   }
 
   .features-grid {
@@ -673,6 +716,110 @@
     .hours-inputs {
       width: 100%;
       justify-content: space-between;
+    }
+  }
+}
+
+/* Extra small screens (phones in portrait mode) */
+@media (max-width: 480px) {
+  .restaurant-registration {
+    padding: 1rem 0.75rem;
+    margin: 0.25rem;
+    border-radius: 8px;
+  }
+
+  .progress-container {
+    margin-bottom: 1.5rem;
+
+    .progress-bar {
+      padding: 0 2px;
+
+      &::before {
+        left: 4%;
+        right: 4%;
+        height: 2px;
+      }
+
+      &::after {
+        left: 4%;
+        width: calc((92%) * (var(--progress, 1) - 1) / 4);
+        height: 2px;
+      }
+    }
+
+    .progress-step {
+      max-width: 60px;
+      min-width: 45px;
+
+      .step-number {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.75rem;
+        border-width: 2px;
+        margin-bottom: 0.25rem;
+      }
+
+      .step-label {
+        font-size: 0.55rem;
+        line-height: 1;
+        padding: 0 1px;
+
+        .label-full {
+          display: none;
+        }
+
+        .label-short {
+          display: inline;
+        }
+      }
+
+      &.active {
+        .step-number {
+          width: 1.85rem;
+          height: 1.85rem;
+          transform: scale(1.02);
+        }
+      }
+    }
+  }
+
+  .step-title {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  .step-description {
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* Very small screens (older phones) */
+@media (max-width: 320px) {
+  .progress-container {
+    .progress-step {
+      max-width: 50px;
+      min-width: 40px;
+
+      .step-number {
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: 0.7rem;
+      }
+
+      .step-label {
+        font-size: 0.5rem;
+        /* Hide text on very small screens, show only numbers */
+        display: none;
+      }
+
+      &.active {
+        .step-number {
+          width: 1.6rem;
+          height: 1.6rem;
+        }
+      }
     }
   }
 }

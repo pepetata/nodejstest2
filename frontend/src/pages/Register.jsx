@@ -1375,11 +1375,20 @@ function RegisterPage() {
           <div key={step} className={`progress-step ${currentStep >= step ? 'active' : ''}`}>
             <div className="step-number">{step}</div>
             <div className="step-label">
-              {step === 1 && 'Conta'}
-              {step === 2 && 'Restaurante'}
-              {step === 3 && 'Localização'}
-              {step === 4 && 'Recursos'}
-              {step === 5 && 'Pagamento'}
+              <span className="label-full">
+                {step === 1 && 'Conta'}
+                {step === 2 && 'Restaurante'}
+                {step === 3 && 'Localização'}
+                {step === 4 && 'Recursos'}
+                {step === 5 && 'Pagamento'}
+              </span>
+              <span className="label-short">
+                {step === 1 && 'Conta'}
+                {step === 2 && 'Rest.'}
+                {step === 3 && 'Local'}
+                {step === 4 && 'Recur.'}
+                {step === 5 && 'Pagam.'}
+              </span>
             </div>
           </div>
         ))}
