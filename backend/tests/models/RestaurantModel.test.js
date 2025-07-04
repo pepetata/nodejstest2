@@ -26,23 +26,23 @@ jest.mock('../../src/models/BaseModel', () => {
       this.softDeletes = false;
     }
 
-    async validate(data, schema) {
+    async validate(data, _schema) {
       return data;
     }
 
-    async executeQuery(query, params) {
+    async executeQuery(_query, _params) {
       return { rows: [] };
     }
 
-    async find(conditions, options, columns) {
+    async find(_conditions, _options, _columns) {
       return [];
     }
 
-    async findById(id, columns) {
+    async findById(_id, _columns) {
       return null;
     }
 
-    async count(conditions) {
+    async count(_conditions) {
       return 0;
     }
 
@@ -628,9 +628,6 @@ describe('RestaurantModel', () => {
       });
 
       it('should return null for expired token', async () => {
-        const expiredRestaurant = Object.assign({}, mockRestaurant, {
-          email_confirmation_expires: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
-        });
         // The find method will return empty array because the expiry check happens in the query
         jest.spyOn(RestaurantModel, 'find').mockResolvedValue([]);
 
