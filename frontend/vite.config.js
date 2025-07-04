@@ -11,6 +11,16 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Use modern Sass API to avoid deprecation warnings
+        api: 'modern-compiler',
+        // You can also add global variables here if needed
+        // additionalData: `@use "./src/styles/variables.scss" as vars;`
+      },
+    },
+  },
   server: {
     port: 3000,
     proxy: {
