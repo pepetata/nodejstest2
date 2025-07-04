@@ -2,8 +2,8 @@
 -- Created: 2025-07-04
 
 CREATE TABLE IF NOT EXISTS restaurant_locations (
-  id SERIAL PRIMARY KEY,
-  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   url_name VARCHAR(100) NOT NULL,
   phone VARCHAR(20),

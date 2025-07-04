@@ -3,8 +3,8 @@
 -- Note: In production, store only tokenized card data for security
 
 CREATE TABLE IF NOT EXISTS payment_info (
-  id SERIAL PRIMARY KEY,
-  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   card_token VARCHAR(255), -- Store tokenized card data only
   cardholder_name VARCHAR(255),
   last_four_digits VARCHAR(4),

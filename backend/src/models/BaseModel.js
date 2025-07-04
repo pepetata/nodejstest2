@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 const db = require('../config/db');
-const Joi = require('joi');
 
 /**
  * Base Model Class

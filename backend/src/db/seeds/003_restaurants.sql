@@ -7,15 +7,9 @@ DELETE FROM billing_addresses;
 DELETE FROM restaurant_locations;
 DELETE FROM restaurants;
 
--- Reset sequences
-ALTER SEQUENCE restaurants_id_seq RESTART WITH 1;
-ALTER SEQUENCE restaurant_locations_id_seq RESTART WITH 1;
-ALTER SEQUENCE billing_addresses_id_seq RESTART WITH 1;
-ALTER SEQUENCE payment_info_id_seq RESTART WITH 1;
-
--- Insert sample restaurants
+-- Insert sample restaurants with specific UUIDs for consistency
 INSERT INTO restaurants (
-  owner_name, email, email_confirmed, email_confirmation_token,
+  id, owner_name, email, email_confirmed, email_confirmation_token,
   email_confirmation_expires, password, phone, whatsapp,
   restaurant_name, restaurant_url_name, business_type, cuisine_type,
   website, description, subscription_plan, marketing_consent,
@@ -23,6 +17,7 @@ INSERT INTO restaurants (
 ) VALUES
 -- 1. Pizzaria Bella (single location, active)
 (
+  '550e8400-e29b-41d4-a716-446655440001',
   'João Silva',
   'joao@pizzariabella.com.br',
   true,
@@ -45,6 +40,7 @@ INSERT INTO restaurants (
 ),
 -- 2. Burger House (multi-location, active)
 (
+  '550e8400-e29b-41d4-a716-446655440002',
   'Maria Santos',
   'maria@burgerhouse.com.br',
   true,
@@ -67,6 +63,7 @@ INSERT INTO restaurants (
 ),
 -- 3. Sabor Tropical (single location, pending)
 (
+  '550e8400-e29b-41d4-a716-446655440003',
   'Carlos Oliveira',
   'carlos@sabortropical.com.br',
   false,

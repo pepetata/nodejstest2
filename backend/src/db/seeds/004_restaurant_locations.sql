@@ -1,16 +1,17 @@
 -- Seed data for restaurant locations
 -- Created: 2025-07-04
 
--- Insert restaurant locations
+-- Insert restaurant locations with specific UUIDs
 INSERT INTO restaurant_locations (
-  restaurant_id, name, url_name, phone, whatsapp,
+  id, restaurant_id, name, url_name, phone, whatsapp,
   address_zip_code, address_street, address_street_number,
   address_complement, address_city, address_state,
   operating_hours, selected_features, is_primary, status
 ) VALUES
 -- Pizzaria Bella - Main Location
 (
-  1,
+  '650e8400-e29b-41d4-a716-446655440001',
+  '550e8400-e29b-41d4-a716-446655440001',
   'Pizzaria Bella - Matriz',
   'matriz',
   '11987654321',
@@ -28,7 +29,8 @@ INSERT INTO restaurant_locations (
 ),
 -- Burger House - Shopping Center Norte (Primary)
 (
-  2,
+  '650e8400-e29b-41d4-a716-446655440002',
+  '550e8400-e29b-41d4-a716-446655440002',
   'Burger House - Shopping Center Norte',
   'center-norte',
   '11876543210',
@@ -46,7 +48,8 @@ INSERT INTO restaurant_locations (
 ),
 -- Burger House - Vila Madalena
 (
-  2,
+  '650e8400-e29b-41d4-a716-446655440003',
+  '550e8400-e29b-41d4-a716-446655440002',
   'Burger House - Vila Madalena',
   'vila-madalena',
   '11876543211',
@@ -64,7 +67,8 @@ INSERT INTO restaurant_locations (
 ),
 -- Burger House - Alphaville
 (
-  2,
+  '650e8400-e29b-41d4-a716-446655440004',
+  '550e8400-e29b-41d4-a716-446655440002',
   'Burger House - Alphaville',
   'alphaville',
   '11876543212',
@@ -82,7 +86,8 @@ INSERT INTO restaurant_locations (
 ),
 -- Sabor Tropical - Main Location
 (
-  3,
+  '650e8400-e29b-41d4-a716-446655440005',
+  '550e8400-e29b-41d4-a716-446655440003',
   'Sabor Tropical',
   'principal',
   '11765432109',

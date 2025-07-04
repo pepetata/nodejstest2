@@ -15,6 +15,47 @@ class RestaurantModel extends BaseModel {
   }
 
   /**
+   * UUID validation schema
+   */
+  get uuidSchema() {
+    return Joi.string()
+      .uuid({ version: ['uuidv4'] })
+      .required();
+  }
+
+  /**
+   * Validate and sanitize UUID
+   * @param {String} uuid - UUID string to validate
+   * @returns {Object} Validation result with sanitized UUID
+   */
+  validateUuid(uuid) {
+    const { error, value } = this.uuidSchema.validate(uuid);
+
+    if (error) {
+      throw new Error(`Invalid UUID format: ${error.details[0].message}`);
+    }
+
+    return {
+      isValid: true,
+      sanitizedUuid: value.toLowerCase(), // Ensure lowercase for consistency
+    };
+  }
+
+  /**
+   * Check if a string is a valid UUID v4
+   * @param {String} uuid - UUID string to check
+   * @returns {Boolean} True if valid UUID v4
+   */
+  isValidUuid(uuid) {
+    try {
+      const result = this.validateUuid(uuid);
+      return result.isValid;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Validation schema for restaurant creation
    */
   get createSchema() {
@@ -286,6 +327,13 @@ class RestaurantModel extends BaseModel {
    * @returns {Object|null} Updated restaurant data
    */
   async update(id, updateData) {
+    // Validate and sanitize UUID
+    if (!this.isValidUuid(id)) {
+      throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+    }
+
+    const { sanitizedUuid } = this.validateUuid(id);
+
     // Validate update data
     const validatedData = await this.validate(updateData, this.updateSchema);
 
@@ -304,22 +352,29 @@ class RestaurantModel extends BaseModel {
                 status, created_at, updated_at
     `;
 
-    const result = await this.executeQuery(query, [...params, id]);
+    const result = await this.executeQuery(query, [...params, sanitizedUuid]);
     return result.rows[0] || null;
   }
 
   /**
    * Change restaurant password
-   * @param {Number} id - Restaurant ID
+   * @param {String} id - Restaurant UUID
    * @param {Object} passwordData - Password change data
    * @returns {Boolean} Success status
    */
   async changePassword(id, passwordData) {
+    // Validate and sanitize UUID
+    if (!this.isValidUuid(id)) {
+      throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+    }
+
+    const { sanitizedUuid } = this.validateUuid(id);
+
     // Validate password data
     const validatedData = await this.validate(passwordData, this.passwordSchema);
 
     // Get current restaurant data with password
-    const restaurant = await this.findById(id, ['id', 'password']);
+    const restaurant = await this.findById(sanitizedUuid, ['id', 'password']);
     if (!restaurant) {
       throw new Error('Restaurant not found');
     }
@@ -344,7 +399,7 @@ class RestaurantModel extends BaseModel {
       WHERE id = $2
     `;
 
-    await this.executeQuery(query, [hashedPassword, id]);
+    await this.executeQuery(query, [hashedPassword, sanitizedUuid]);
     return true;
   }
 
@@ -413,6 +468,13 @@ class RestaurantModel extends BaseModel {
    * @returns {Object|null} Restaurant data
    */
   async findById(id, columns = null) {
+    // Validate and sanitize UUID
+    if (!this.isValidUuid(id)) {
+      throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+    }
+
+    const { sanitizedUuid } = this.validateUuid(id);
+
     const defaultColumns = [
       'id',
       'owner_name',
@@ -433,7 +495,7 @@ class RestaurantModel extends BaseModel {
     ];
 
     const selectColumns = columns || defaultColumns;
-    const result = await super.findById(id, selectColumns);
+    const result = await super.findById(sanitizedUuid, selectColumns);
 
     return result ? this.sanitizeOutput(result, this.sensitiveFields) : null;
   }

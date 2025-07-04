@@ -12,6 +12,47 @@ class RestaurantLocationModel extends BaseModel {
   }
 
   /**
+   * UUID validation schema
+   */
+  get uuidSchema() {
+    return Joi.string()
+      .uuid({ version: ['uuidv4'] })
+      .required();
+  }
+
+  /**
+   * Validate and sanitize UUID
+   * @param {String} uuid - UUID string to validate
+   * @returns {Object} Validation result with sanitized UUID
+   */
+  validateUuid(uuid) {
+    const { error, value } = this.uuidSchema.validate(uuid);
+
+    if (error) {
+      throw new Error(`Invalid UUID format: ${error.details[0].message}`);
+    }
+
+    return {
+      isValid: true,
+      sanitizedUuid: value.toLowerCase(), // Ensure lowercase for consistency
+    };
+  }
+
+  /**
+   * Check if a string is a valid UUID v4
+   * @param {String} uuid - UUID string to check
+   * @returns {Boolean} True if valid UUID v4
+   */
+  isValidUuid(uuid) {
+    try {
+      const result = this.validateUuid(uuid);
+      return result.isValid;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Validation schema for operating hours
    */
   get operatingHoursSchema() {
@@ -38,7 +79,9 @@ class RestaurantLocationModel extends BaseModel {
    */
   get createSchema() {
     return Joi.object({
-      restaurant_id: Joi.number().integer().positive().required(),
+      restaurant_id: Joi.string()
+        .uuid({ version: ['uuidv4'] })
+        .required(),
       name: Joi.string().trim().min(2).max(255).required(),
       url_name: Joi.string()
         .lowercase()
@@ -197,12 +240,18 @@ class RestaurantLocationModel extends BaseModel {
 
   /**
    * Get locations by restaurant ID
-   * @param {Number} restaurantId - Restaurant ID
+   * @param {String} restaurantId - Restaurant UUID
    * @param {Object} options - Query options
    * @returns {Array} Restaurant locations
    */
   async getByRestaurantId(restaurantId, options = {}) {
-    const conditions = { restaurant_id: restaurantId };
+    // Validate and sanitize restaurant UUID
+    if (!this.isValidUuid(restaurantId)) {
+      throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+    }
+
+    const { sanitizedUuid } = this.validateUuid(restaurantId);
+    const conditions = { restaurant_id: sanitizedUuid };
 
     if (options.status) {
       conditions.status = options.status;
@@ -217,13 +266,20 @@ class RestaurantLocationModel extends BaseModel {
 
   /**
    * Find location by restaurant ID and URL name
-   * @param {Number} restaurantId - Restaurant ID
+   * @param {String} restaurantId - Restaurant UUID
    * @param {String} urlName - Location URL name
    * @returns {Object|null} Location data
    */
   async findByRestaurantAndUrlName(restaurantId, urlName) {
+    // Validate and sanitize restaurant UUID
+    if (!this.isValidUuid(restaurantId)) {
+      throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+    }
+
+    const { sanitizedUuid } = this.validateUuid(restaurantId);
+
     const conditions = {
-      restaurant_id: restaurantId,
+      restaurant_id: sanitizedUuid,
       url_name: urlName.toLowerCase(),
     };
 

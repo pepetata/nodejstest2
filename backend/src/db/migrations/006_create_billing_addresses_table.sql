@@ -2,8 +2,8 @@
 -- Created: 2025-07-04
 
 CREATE TABLE IF NOT EXISTS billing_addresses (
-  id SERIAL PRIMARY KEY,
-  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   zip_code VARCHAR(10),
   street VARCHAR(255),
   street_number VARCHAR(10),

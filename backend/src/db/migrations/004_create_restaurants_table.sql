@@ -1,8 +1,11 @@
 -- Migration: Create restaurants table
 -- Created: 2025-07-04
 
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS restaurants (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   owner_name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   email_confirmed BOOLEAN DEFAULT FALSE,
