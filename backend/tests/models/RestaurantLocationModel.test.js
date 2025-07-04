@@ -20,6 +20,7 @@ jest.mock('../../src/models/BaseModel', () => {
       this.primaryKey = 'id';
       this.timestamps = true;
       this.softDeletes = false;
+      this.logger = mockLogger; // Add logger to mock
     }
     async validate(data, schema) {
       return data;
@@ -396,7 +397,9 @@ describe('RestaurantLocationModel', () => {
       it.skip('should find location by restaurant ID and URL name', async () => {
         // This test needs to be fixed - the actual implementation doesn't call find directly
         const expectedLocation = mockLocations[0];
-        const findSpy = jest.spyOn(RestaurantLocationModel, 'find').mockResolvedValue([expectedLocation]);
+        const findSpy = jest
+          .spyOn(RestaurantLocationModel, 'find')
+          .mockResolvedValue([expectedLocation]);
         const result = await RestaurantLocationModel.findByRestaurantAndUrlName(
           mockRestaurantId,
           mockUrlName
@@ -540,22 +543,25 @@ describe('RestaurantLocationModel', () => {
     describe('checkRestaurantExists', () => {
       it.skip('should return true when restaurant exists', async () => {
         // This test needs to be fixed - the implementation calls the method differently than expected
-        const executeQuerySpy = jest.spyOn(RestaurantLocationModel, 'executeQuery').mockResolvedValue({
-          rows: [{ exists: true }],
-        });
+        const executeQuerySpy = jest
+          .spyOn(RestaurantLocationModel, 'executeQuery')
+          .mockResolvedValue({
+            rows: [{ exists: true }],
+          });
         const result = await RestaurantLocationModel.checkRestaurantExists(mockRestaurantId);
-        expect(executeQuerySpy).toHaveBeenCalledWith(
-          'SELECT 1 FROM restaurants WHERE id = $1',
-          [mockRestaurantId]
-        );
+        expect(executeQuerySpy).toHaveBeenCalledWith('SELECT 1 FROM restaurants WHERE id = $1', [
+          mockRestaurantId,
+        ]);
         expect(result).toBe(true);
         executeQuerySpy.mockRestore();
       });
       it.skip('should return false when restaurant does not exist', async () => {
         // This test needs to be fixed - the implementation behavior differs from expectations
-        const executeQuerySpy = jest.spyOn(RestaurantLocationModel, 'executeQuery').mockResolvedValue({
-          rows: [],
-        });
+        const executeQuerySpy = jest
+          .spyOn(RestaurantLocationModel, 'executeQuery')
+          .mockResolvedValue({
+            rows: [],
+          });
         const result = await RestaurantLocationModel.checkRestaurantExists(mockRestaurantId);
         expect(result).toBe(false);
         executeQuerySpy.mockRestore();
@@ -643,22 +649,22 @@ describe('RestaurantLocationModel', () => {
       expect(RestaurantLocationModel.updateSchema).toBeDefined();
     });
   });
-  
+
   describe('Additional Coverage Tests', () => {
     const mockRestaurantId = '550e8400-e29b-41d4-a716-446655440000';
-    
+
     describe('Error handling in methods', () => {
       it('should handle error in isValidUuid when validateUuid throws', () => {
         jest.spyOn(RestaurantLocationModel, 'validateUuid').mockImplementation(() => {
           throw new Error('Validation error');
         });
-        
+
         const result = RestaurantLocationModel.isValidUuid('invalid-uuid');
         expect(result).toBe(false);
-        
+
         RestaurantLocationModel.validateUuid.mockRestore();
       });
-      
+
       it('should handle closed day in operating hours validation', () => {
         const validHours = {
           monday: { open: '09:00', close: '22:00', closed: false },
@@ -669,7 +675,7 @@ describe('RestaurantLocationModel', () => {
         // The test documents the current behavior
         expect(error).toBeUndefined();
       });
-      
+
       it('should validate url_name pattern in createSchema', () => {
         const invalidData = {
           restaurant_id: mockRestaurantId,
@@ -683,7 +689,7 @@ describe('RestaurantLocationModel', () => {
         expect(error).toBeDefined();
         expect(error.details[0].path).toContain('url_name');
       });
-      
+
       it('should validate phone pattern in updateSchema', () => {
         const invalidData = {
           phone: 'invalid-phone',
@@ -692,7 +698,7 @@ describe('RestaurantLocationModel', () => {
         expect(error).toBeDefined();
         expect(error.details[0].path).toContain('phone');
       });
-      
+
       it('should validate whatsapp pattern in createSchema', () => {
         const invalidData = {
           restaurant_id: mockRestaurantId,
@@ -708,7 +714,7 @@ describe('RestaurantLocationModel', () => {
         expect(error.details[0].path).toContain('whatsapp');
       });
     });
-    
+
     describe('Edge cases in CRUD operations', () => {
       it('should handle error in update when buildSetClause returns empty', async () => {
         const mockId = 1;
@@ -716,22 +722,22 @@ describe('RestaurantLocationModel', () => {
           name: 'Updated Location',
         };
         const mockCurrentLocation = { id: mockId, restaurant_id: mockRestaurantId };
-        
+
         jest.spyOn(RestaurantLocationModel, 'validate').mockResolvedValue({});
         jest.spyOn(RestaurantLocationModel, 'findById').mockResolvedValue(mockCurrentLocation);
-        
+
         await expect(RestaurantLocationModel.update(mockId, mockUpdateData)).rejects.toThrow(
           'No valid fields to update'
         );
       });
-      
+
       it('should handle error when executing query in update returns null', async () => {
         const mockId = 1;
         const mockUpdateData = {
           name: 'Updated Location',
         };
         const mockCurrentLocation = { id: mockId, restaurant_id: mockRestaurantId };
-        
+
         jest.spyOn(RestaurantLocationModel, 'validate').mockResolvedValue(mockUpdateData);
         jest.spyOn(RestaurantLocationModel, 'findById').mockResolvedValue(mockCurrentLocation);
         jest.spyOn(RestaurantLocationModel, 'buildSetClause').mockReturnValue({
@@ -741,11 +747,11 @@ describe('RestaurantLocationModel', () => {
         jest.spyOn(RestaurantLocationModel, 'executeQuery').mockResolvedValue({
           rows: [],
         });
-        
+
         const result = await RestaurantLocationModel.update(mockId, mockUpdateData);
         expect(result).toBeNull();
       });
-      
+
       it('should handle find operation with operator conditions in deleteLocation', async () => {
         const mockId = 1;
         const mockLocation = {
@@ -754,15 +760,15 @@ describe('RestaurantLocationModel', () => {
           is_primary: true,
         };
         const mockOtherLocation = { id: 2, restaurant_id: mockRestaurantId };
-        
+
         jest.spyOn(RestaurantLocationModel, 'findById').mockResolvedValue(mockLocation);
         jest.spyOn(RestaurantLocationModel, 'count').mockResolvedValue(2);
         jest.spyOn(RestaurantLocationModel, 'find').mockResolvedValue([mockOtherLocation]);
         jest.spyOn(RestaurantLocationModel, 'setPrimary').mockResolvedValue(mockOtherLocation);
         jest.spyOn(RestaurantLocationModel, 'delete').mockResolvedValue(1);
-        
+
         const result = await RestaurantLocationModel.deleteLocation(mockId);
-        
+
         expect(RestaurantLocationModel.find).toHaveBeenCalledWith({
           restaurant_id: mockRestaurantId,
           id: { operator: '!=', value: mockId },
@@ -770,7 +776,7 @@ describe('RestaurantLocationModel', () => {
         });
         expect(result).toBe(true);
       });
-      
+
       it('should handle deleteLocation when delete returns 0', async () => {
         const mockId = 1;
         const mockLocation = {
@@ -778,16 +784,16 @@ describe('RestaurantLocationModel', () => {
           restaurant_id: mockRestaurantId,
           is_primary: false,
         };
-        
+
         jest.spyOn(RestaurantLocationModel, 'findById').mockResolvedValue(mockLocation);
         jest.spyOn(RestaurantLocationModel, 'count').mockResolvedValue(2);
         jest.spyOn(RestaurantLocationModel, 'delete').mockResolvedValue(0);
-        
+
         const result = await RestaurantLocationModel.deleteLocation(mockId);
         expect(result).toBe(false);
       });
     });
-    
+
     describe('Statistics handling', () => {
       it('should convert string counts to numbers in getLocationStats', async () => {
         const mockStats = {
@@ -796,13 +802,13 @@ describe('RestaurantLocationModel', () => {
           inactive_locations: '1',
           primary_locations: '1',
         };
-        
+
         jest.spyOn(RestaurantLocationModel, 'executeQuery').mockResolvedValue({
           rows: [mockStats],
         });
-        
+
         const result = await RestaurantLocationModel.getLocationStats(mockRestaurantId);
-        
+
         expect(typeof result.total_locations).toBe('number');
         expect(typeof result.active_locations).toBe('number');
         expect(typeof result.inactive_locations).toBe('number');
@@ -811,7 +817,7 @@ describe('RestaurantLocationModel', () => {
         expect(result.active_locations).toBe(4);
       });
     });
-    
+
     describe('Query parameter validation', () => {
       it('should handle invalid time patterns in operatingHours', () => {
         const invalidHours = {
@@ -820,7 +826,7 @@ describe('RestaurantLocationModel', () => {
         const { error } = RestaurantLocationModel.operatingHoursSchema.validate(invalidHours);
         expect(error).toBeDefined();
       });
-      
+
       it('should validate address field lengths', () => {
         const longAddress = 'a'.repeat(256);
         const invalidData = {
@@ -837,7 +843,7 @@ describe('RestaurantLocationModel', () => {
         expect(error.details[0].path).toContain('address_street');
       });
     });
-    
+
     describe('Private methods and edge cases', () => {
       it('should test unsetPrimaryLocations without excludeId', async () => {
         // Since this is a private method called via this.executeQuery, we need to test it differently
@@ -846,7 +852,7 @@ describe('RestaurantLocationModel', () => {
         expect(unsetSpy).toHaveBeenCalledWith(mockRestaurantId);
         unsetSpy.mockRestore();
       });
-      
+
       it('should test unsetPrimaryLocations with excludeId', async () => {
         const excludeId = 5;
         const unsetSpy = jest.spyOn(RestaurantLocationModel, 'unsetPrimaryLocations');
@@ -854,52 +860,56 @@ describe('RestaurantLocationModel', () => {
         expect(unsetSpy).toHaveBeenCalledWith(mockRestaurantId, excludeId);
         unsetSpy.mockRestore();
       });
-      
+
       it('should handle error in getLocationStats', async () => {
-        const executeQuerySpy = jest.spyOn(RestaurantLocationModel, 'executeQuery').mockRejectedValue(
-          new Error('Database error')
+        const executeQuerySpy = jest
+          .spyOn(RestaurantLocationModel, 'executeQuery')
+          .mockRejectedValue(new Error('Database error'));
+
+        await expect(RestaurantLocationModel.getLocationStats(mockRestaurantId)).rejects.toThrow(
+          'Database error'
         );
-        
-        await expect(RestaurantLocationModel.getLocationStats(mockRestaurantId)).rejects.toThrow('Database error');
         executeQuerySpy.mockRestore();
       });
-      
+
       it('should test safeGetById with invalid ID types', async () => {
         const result1 = await RestaurantLocationModel.safeGetById(null);
         expect(result1.success).toBe(false);
         expect(result1.error).toBe('INVALID_ID');
-        
+
         const result2 = await RestaurantLocationModel.safeGetById(undefined);
         expect(result2.success).toBe(false);
         expect(result2.error).toBe('INVALID_ID');
-        
+
         const result3 = await RestaurantLocationModel.safeGetById({});
         expect(result3.success).toBe(false);
         expect(result3.error).toBe('INVALID_ID');
       });
-      
+
       it('should test safeGetById when location not found', async () => {
         const findByIdSpy = jest.spyOn(RestaurantLocationModel, 'findById').mockResolvedValue(null);
-        
+
         const result = await RestaurantLocationModel.safeGetById(999);
         expect(result.success).toBe(false);
         expect(result.error).toBe('NOT_FOUND');
         expect(result.message).toContain('Location with ID 999 not found');
-        
+
         findByIdSpy.mockRestore();
       });
-      
+
       it('should test safeGetById success case', async () => {
         const mockLocation = { id: 1, name: 'Test Location' };
-        const findByIdSpy = jest.spyOn(RestaurantLocationModel, 'findById').mockResolvedValue(mockLocation);
-        
+        const findByIdSpy = jest
+          .spyOn(RestaurantLocationModel, 'findById')
+          .mockResolvedValue(mockLocation);
+
         const result = await RestaurantLocationModel.safeGetById(1);
         expect(result.success).toBe(true);
         expect(result.location).toEqual(mockLocation);
-        
+
         findByIdSpy.mockRestore();
       });
-      
+
       it('should handle Joi validation errors in schema properties', () => {
         // Test updateSchema with invalid status
         const invalidUpdate = {
@@ -909,7 +919,7 @@ describe('RestaurantLocationModel', () => {
         expect(error).toBeDefined();
         expect(error.details[0].path).toContain('status');
       });
-      
+
       it('should validate createSchema with all optional fields', () => {
         const fullData = {
           restaurant_id: mockRestaurantId,
@@ -933,7 +943,7 @@ describe('RestaurantLocationModel', () => {
         const { error } = RestaurantLocationModel.createSchema.validate(fullData);
         expect(error).toBeUndefined();
       });
-      
+
       it('should test operating hours schema with all days', () => {
         const allDaysHours = {
           monday: { open: '09:00', close: '22:00', closed: false },
@@ -948,19 +958,19 @@ describe('RestaurantLocationModel', () => {
         const { error } = RestaurantLocationModel.operatingHoursSchema.validate(allDaysHours);
         expect(error).toBeUndefined();
       });
-      
+
       it('should handle safeGetById with error during findById', async () => {
-        const findByIdSpy = jest.spyOn(RestaurantLocationModel, 'findById').mockRejectedValue(
-          new Error('Database error')
-        );
-        
+        const findByIdSpy = jest
+          .spyOn(RestaurantLocationModel, 'findById')
+          .mockRejectedValue(new Error('Database error'));
+
         const result = await RestaurantLocationModel.safeGetById(1);
         expect(result.success).toBe(false);
         expect(result.error).toBe('DATABASE_ERROR');
-        
+
         findByIdSpy.mockRestore();
       });
-      
+
       it('should validate minimum field lengths in schemas', () => {
         // Test minimum name length
         const shortNameData = {
@@ -975,7 +985,7 @@ describe('RestaurantLocationModel', () => {
         expect(error).toBeDefined();
         expect(error.details[0].path).toContain('name');
       });
-      
+
       it('should validate maximum field lengths in schemas', () => {
         // Test maximum zip code length
         const longZipData = {
@@ -991,7 +1001,7 @@ describe('RestaurantLocationModel', () => {
         expect(error).toBeDefined();
         expect(error.details[0].path).toContain('address_zip_code');
       });
-      
+
       it('should validate phone number lengths', () => {
         // Test short phone number
         const shortPhoneData = {
@@ -999,7 +1009,7 @@ describe('RestaurantLocationModel', () => {
         };
         const { error: shortError } = RestaurantLocationModel.updateSchema.validate(shortPhoneData);
         expect(shortError).toBeDefined();
-        
+
         // Test long phone number
         const longPhoneData = {
           phone: '1234567890123456', // Too long (16 chars, max 15)

@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 const db = require('../config/db');
+const { logger } = require('../utils/logger');
 
 /**
  * Base Model Class
@@ -11,6 +12,7 @@ class BaseModel {
     this.primaryKey = 'id';
     this.timestamps = true;
     this.softDeletes = false;
+    this.logger = logger.child({ model: this.constructor.name });
   }
 
   /**
@@ -21,6 +23,11 @@ class BaseModel {
    * @throws {Error} Validation error
    */
   async validate(data, schema) {
+    this.logger.debug('Validating data against schema', {
+      table: this.tableName,
+      fieldsCount: Object.keys(data).length,
+    });
+
     const { error, value } = schema.validate(data, {
       abortEarly: false,
       stripUnknown: true,
@@ -28,6 +35,14 @@ class BaseModel {
     });
 
     if (error) {
+      this.logger.warn('Data validation failed', {
+        table: this.tableName,
+        errors: error.details.map((detail) => ({
+          field: detail.path.join('.'),
+          message: detail.message,
+        })),
+      });
+
       const validationError = new Error('Validation failed');
       validationError.details = error.details.map((detail) => ({
         field: detail.path.join('.'),
@@ -36,6 +51,11 @@ class BaseModel {
       }));
       throw validationError;
     }
+
+    this.logger.debug('Data validation successful', {
+      table: this.tableName,
+      validatedFieldsCount: Object.keys(value).length,
+    });
 
     return value;
   }
@@ -107,15 +127,36 @@ class BaseModel {
    * @returns {Object} Query result
    */
   async executeQuery(text, params = []) {
+    const startTime = Date.now();
+
+    this.logger.debug('Executing database query', {
+      table: this.tableName,
+      query: text.replace(/\s+/g, ' ').trim(),
+      paramCount: params.length,
+    });
+
     try {
       const result = await db.query(text, params);
+      const duration = Date.now() - startTime;
+
+      this.logger.debug('Database query completed successfully', {
+        table: this.tableName,
+        rowsAffected: result.rowCount,
+        duration: `${duration}ms`,
+      });
+
       return result;
     } catch (error) {
+      const duration = Date.now() - startTime;
+
       // Log error details (without exposing sensitive data)
-      console.error('Database query error:', {
+      this.logger.error('Database query failed', {
         table: this.tableName,
         error: error.message,
         code: error.code,
+        duration: `${duration}ms`,
+        query: text.replace(/\s+/g, ' ').trim(),
+        paramCount: params.length,
       });
 
       // Throw sanitized error
@@ -217,8 +258,17 @@ class BaseModel {
    * @returns {Object} Transaction client
    */
   async beginTransaction() {
+    this.logger.debug('Beginning database transaction', {
+      table: this.tableName,
+    });
+
     const client = await db.getClient();
     await client.query('BEGIN');
+
+    this.logger.debug('Database transaction started successfully', {
+      table: this.tableName,
+    });
+
     return client;
   }
 
@@ -227,8 +277,16 @@ class BaseModel {
    * @param {Object} client - Transaction client
    */
   async commitTransaction(client) {
+    this.logger.debug('Committing database transaction', {
+      table: this.tableName,
+    });
+
     await client.query('COMMIT');
     client.release();
+
+    this.logger.debug('Database transaction committed successfully', {
+      table: this.tableName,
+    });
   }
 
   /**
@@ -236,8 +294,16 @@ class BaseModel {
    * @param {Object} client - Transaction client
    */
   async rollbackTransaction(client) {
+    this.logger.warn('Rolling back database transaction', {
+      table: this.tableName,
+    });
+
     await client.query('ROLLBACK');
     client.release();
+
+    this.logger.warn('Database transaction rolled back', {
+      table: this.tableName,
+    });
   }
 
   /**
@@ -248,14 +314,36 @@ class BaseModel {
    * @returns {Object} Query result
    */
   async executeInTransaction(client, text, params = []) {
+    const startTime = Date.now();
+
+    this.logger.debug('Executing query in transaction', {
+      table: this.tableName,
+      query: text.replace(/\s+/g, ' ').trim(),
+      paramCount: params.length,
+    });
+
     try {
-      return await client.query(text, params);
+      const result = await client.query(text, params);
+      const duration = Date.now() - startTime;
+
+      this.logger.debug('Transaction query completed successfully', {
+        table: this.tableName,
+        rowsAffected: result.rowCount,
+        duration: `${duration}ms`,
+      });
+
+      return result;
     } catch (error) {
-      console.error('Transaction query error:', {
+      const duration = Date.now() - startTime;
+
+      this.logger.error('Transaction query failed', {
         table: this.tableName,
         error: error.message,
         code: error.code,
+        duration: `${duration}ms`,
+        query: text.replace(/\s+/g, ' ').trim(),
       });
+
       throw error;
     }
   }
