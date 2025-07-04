@@ -22,7 +22,12 @@ const AppNavbar = () => {
   }
 
   const handleLogout = async () => {
-    await logout();
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Continue with navigation even if logout fails
+    }
     navigate(restaurantSlug ? `/${restaurantSlug}/login` : '/login');
   };
 
