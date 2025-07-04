@@ -112,7 +112,7 @@ describe('RestaurantModel', () => {
       it('should validate a correct UUID v4', () => {
         const validUuid = '550e8400-e29b-41d4-a716-446655440000';
         const result = RestaurantModel.validateUuid(validUuid);
-        
+
         expect(result.isValid).toBe(true);
         expect(result.sanitizedUuid).toBe(validUuid.toLowerCase());
       });
@@ -127,7 +127,7 @@ describe('RestaurantModel', () => {
         expect(() => {
           RestaurantModel.validateUuid(null);
         }).toThrow('Invalid UUID format');
-        
+
         expect(() => {
           RestaurantModel.validateUuid(undefined);
         }).toThrow('Invalid UUID format');
@@ -156,11 +156,11 @@ describe('RestaurantModel', () => {
       it('should hash password with correct salt rounds', async () => {
         const password = 'testPassword123';
         const hashedPassword = '$2b$12$hashedPassword';
-        
+
         bcrypt.hash.mockResolvedValue(hashedPassword);
-        
+
         const result = await RestaurantModel.hashPassword(password);
-        
+
         expect(bcrypt.hash).toHaveBeenCalledWith(password, 12);
         expect(result).toBe(hashedPassword);
       });
@@ -168,9 +168,9 @@ describe('RestaurantModel', () => {
       it('should throw error if bcrypt fails', async () => {
         const password = 'testPassword123';
         const error = new Error('Bcrypt error');
-        
+
         bcrypt.hash.mockRejectedValue(error);
-        
+
         await expect(RestaurantModel.hashPassword(password)).rejects.toThrow(error);
       });
     });
@@ -179,11 +179,11 @@ describe('RestaurantModel', () => {
       it('should verify password correctly', async () => {
         const password = 'testPassword123';
         const hashedPassword = '$2b$12$hashedPassword';
-        
+
         bcrypt.compare.mockResolvedValue(true);
-        
+
         const result = await RestaurantModel.verifyPassword(password, hashedPassword);
-        
+
         expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
         expect(result).toBe(true);
       });
@@ -191,11 +191,11 @@ describe('RestaurantModel', () => {
       it('should return false for incorrect password', async () => {
         const password = 'wrongPassword';
         const hashedPassword = '$2b$12$hashedPassword';
-        
+
         bcrypt.compare.mockResolvedValue(false);
-        
+
         const result = await RestaurantModel.verifyPassword(password, hashedPassword);
-        
+
         expect(result).toBe(false);
       });
 
@@ -203,10 +203,12 @@ describe('RestaurantModel', () => {
         const password = 'testPassword123';
         const hashedPassword = '$2b$12$hashedPassword';
         const error = new Error('Bcrypt compare error');
-        
+
         bcrypt.compare.mockRejectedValue(error);
-        
-        await expect(RestaurantModel.verifyPassword(password, hashedPassword)).rejects.toThrow(error);
+
+        await expect(RestaurantModel.verifyPassword(password, hashedPassword)).rejects.toThrow(
+          error
+        );
       });
     });
   });
@@ -216,9 +218,9 @@ describe('RestaurantModel', () => {
       it('should generate token and expiry date', () => {
         const mockToken = 'mockToken1234567890123456789012345678901234567890123456789012345678';
         crypto.randomBytes.mockReturnValue({ toString: () => mockToken });
-        
+
         const result = RestaurantModel.generateEmailConfirmationToken();
-        
+
         expect(crypto.randomBytes).toHaveBeenCalledWith(32);
         expect(result.token).toBe(mockToken);
         expect(result.expires).toBeInstanceOf(Date);
@@ -227,15 +229,15 @@ describe('RestaurantModel', () => {
       it('should generate token with 24 hours expiry', () => {
         const mockToken = 'mockToken';
         crypto.randomBytes.mockReturnValue({ toString: () => mockToken });
-        
+
         const beforeTime = new Date();
         beforeTime.setHours(beforeTime.getHours() + 24);
-        
+
         const result = RestaurantModel.generateEmailConfirmationToken();
-        
+
         const afterTime = new Date();
         afterTime.setHours(afterTime.getHours() + 24);
-        
+
         expect(result.expires.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime() - 1000);
         expect(result.expires.getTime()).toBeLessThanOrEqual(afterTime.getTime() + 1000);
       });
@@ -275,15 +277,20 @@ describe('RestaurantModel', () => {
 
         const result = await RestaurantModel.create(mockRestaurantData);
 
-        expect(RestaurantModel.validate).toHaveBeenCalledWith(mockRestaurantData, RestaurantModel.createSchema);
+        expect(RestaurantModel.validate).toHaveBeenCalledWith(
+          mockRestaurantData,
+          RestaurantModel.createSchema
+        );
         expect(RestaurantModel.hashPassword).toHaveBeenCalledWith(mockRestaurantData.password);
         expect(RestaurantModel.generateEmailConfirmationToken).toHaveBeenCalled();
-        expect(result).toEqual(expect.objectContaining({
-          id: mockCreatedRestaurant.id,
-          email: mockCreatedRestaurant.email,
-          restaurant_name: mockCreatedRestaurant.restaurant_name,
-          email_confirmation_token: 'mockToken123',
-        }));
+        expect(result).toEqual(
+          expect.objectContaining({
+            id: mockCreatedRestaurant.id,
+            email: mockCreatedRestaurant.email,
+            restaurant_name: mockCreatedRestaurant.restaurant_name,
+            email_confirmation_token: 'mockToken123',
+          })
+        );
       });
 
       it('should handle validation errors', async () => {
@@ -336,11 +343,17 @@ describe('RestaurantModel', () => {
 
         const result = await RestaurantModel.findByEmail(email);
 
-        expect(RestaurantModel.find).toHaveBeenCalledWith(
-          { email: email.toLowerCase() },
-          {},
-          ['id', 'owner_name', 'email', 'email_confirmed', 'restaurant_name', 'restaurant_url_name', 'status', 'created_at', 'updated_at']
-        );
+        expect(RestaurantModel.find).toHaveBeenCalledWith({ email: email.toLowerCase() }, {}, [
+          'id',
+          'owner_name',
+          'email',
+          'email_confirmed',
+          'restaurant_name',
+          'restaurant_url_name',
+          'status',
+          'created_at',
+          'updated_at',
+        ]);
         expect(result).toBeDefined();
         expect(result.email).toBe(email);
       });
@@ -350,11 +363,18 @@ describe('RestaurantModel', () => {
 
         await RestaurantModel.findByEmail(email, true);
 
-        expect(RestaurantModel.find).toHaveBeenCalledWith(
-          { email: email.toLowerCase() },
-          {},
-          ['id', 'owner_name', 'email', 'email_confirmed', 'restaurant_name', 'restaurant_url_name', 'status', 'password', 'created_at', 'updated_at']
-        );
+        expect(RestaurantModel.find).toHaveBeenCalledWith({ email: email.toLowerCase() }, {}, [
+          'id',
+          'owner_name',
+          'email',
+          'email_confirmed',
+          'restaurant_name',
+          'restaurant_url_name',
+          'status',
+          'password',
+          'created_at',
+          'updated_at',
+        ]);
       });
 
       it('should return null when restaurant not found', async () => {
@@ -403,7 +423,10 @@ describe('RestaurantModel', () => {
         const result = await RestaurantModel.authenticate(email, password);
 
         expect(RestaurantModel.findByEmail).toHaveBeenCalledWith(email, true);
-        expect(RestaurantModel.verifyPassword).toHaveBeenCalledWith(password, mockRestaurant.password);
+        expect(RestaurantModel.verifyPassword).toHaveBeenCalledWith(
+          password,
+          mockRestaurant.password
+        );
         expect(result).toBeDefined();
         expect(result.email).toBe(email);
       });
