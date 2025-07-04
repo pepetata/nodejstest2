@@ -36,6 +36,16 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy' });
 });
 
+// Handle 404 - Route not found
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Route not found',
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+    path: req.originalUrl,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Error handling middleware
 app.use(errorHandler);
 
