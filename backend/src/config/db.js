@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'restaurant_dev',
+  database: process.env.DB_NAME || 'alacarte_dev',
   password: process.env.DB_PASSWORD || 'password',
   port: process.env.DB_PORT || 5432,
   max: 20, // Maximum number of clients in the pool

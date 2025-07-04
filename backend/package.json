@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "nodemon server.js --env development",
     "test": "jest --runInBand --config jest.config.json",
     "test:watch": "jest --runInBand --config jest.config.json --watch",
     "test:coverage": "jest --runInBand --config jest.config.json --coverage",
