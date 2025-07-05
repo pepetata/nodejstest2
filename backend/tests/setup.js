@@ -11,8 +11,6 @@ process.env.ENABLE_FILE_LOGGING = 'false'; // Disable file logging during tests
 
 // Suppress console output during tests to keep them clean
 const originalConsole = global.console;
-const originalStdout = process.stdout.write;
-const originalStderr = process.stderr.write;
 
 global.console = {
   ...originalConsole,
@@ -23,11 +21,5 @@ global.console = {
   debug: jest.fn(),
 };
 
-// Mock stdout and stderr to catch all output including custom logger
-process.stdout.write = jest.fn();
-process.stderr.write = jest.fn();
-
-// Store originals for potential restoration if needed in specific tests
+// Store original console for potential restoration if needed in specific tests
 global.originalConsole = originalConsole;
-global.originalStdout = originalStdout;
-global.originalStderr = originalStderr;
