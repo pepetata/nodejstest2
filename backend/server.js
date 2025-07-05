@@ -52,6 +52,15 @@ if (process.env.NODE_ENV !== 'production') {
       urlParams: req.params,
     });
   });
+
+  app.get('/api/test/xss', (req, res) => {
+    res.status(200).json({
+      message: 'XSS test endpoint',
+      receivedData: req.body,
+      queryParams: req.query,
+      urlParams: req.params,
+    });
+  });
 }
 
 // Handle 404 - Route not found
@@ -94,7 +103,10 @@ process.on('unhandledRejection', (error) => {
   process.exit(1);
 });
 
-startServer();
+// Only start the server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
 // Export for testing
 module.exports = app;

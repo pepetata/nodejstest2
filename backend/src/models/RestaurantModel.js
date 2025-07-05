@@ -687,7 +687,13 @@ class RestaurantModel extends BaseModel {
         });
       }
 
-      return result ? this.sanitizeOutput(result, this.sensitiveFields) : null;
+      // Only sanitize if no specific columns were requested
+      // If specific columns were requested, return exactly what was requested
+      if (columns) {
+        return result;
+      } else {
+        return result ? this.sanitizeOutput(result, this.sensitiveFields) : null;
+      }
     } catch (error) {
       this.logger.error('Failed to find restaurant by ID', {
         id: id ? id.substring(0, 8) + '...' : null,

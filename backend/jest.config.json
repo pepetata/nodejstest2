@@ -9,6 +9,7 @@
   ],
   "testMatch": ["**/tests/**/*.test.js"],
   "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+  "globalTeardown": "<rootDir>/tests/teardown.js",
   "coverageReporters": ["text", "lcov", "html"],
   "coverageDirectory": "coverage",
   "testTimeout": 10000,
