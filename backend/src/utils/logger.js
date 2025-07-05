@@ -8,6 +8,7 @@ const path = require('path');
 class Logger {
   constructor(options = {}) {
     this.levels = {
+      SILENT: -1, // Added silent level to suppress all logs
       ERROR: 0,
       WARN: 1,
       INFO: 2,
