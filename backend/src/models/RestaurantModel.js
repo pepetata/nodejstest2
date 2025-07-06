@@ -1,18 +1,17 @@
 const BaseModel = require('./BaseModel');
 const Joi = require('joi');
-const bcrypt = require('bcrypt');
-const crypto = require('crypto');
 const { logger } = require('../utils/logger');
 
 /**
  * Restaurant Model
- * Handles restaurant registration, authentication, and management
+ * Handles restaurant business information and management
+ * Note: Authentication and user management is now handled by UserModel
  */
 class RestaurantModel extends BaseModel {
   constructor() {
     super();
     this.tableName = 'restaurants';
-    this.sensitiveFields = ['password', 'email_confirmation_token'];
+    this.sensitiveFields = []; // No sensitive fields in restaurant table
     this.logger = logger.child({ model: 'RestaurantModel' });
   }
 
@@ -69,15 +68,6 @@ class RestaurantModel extends BaseModel {
    */
   get createSchema() {
     return Joi.object({
-      owner_name: Joi.string().trim().min(2).max(255).required(),
-      email: Joi.string().email().lowercase().max(255).required(),
-      password: Joi.string().min(8).max(128).required(),
-      phone: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
       restaurant_name: Joi.string().trim().min(2).max(255).required(),
       restaurant_url_name: Joi.string()
         .lowercase()
@@ -85,13 +75,26 @@ class RestaurantModel extends BaseModel {
         .min(2)
         .max(100)
         .required(),
-      business_type: Joi.string().valid('single', 'multi-location').default('single'),
+      business_type: Joi.string().valid('single', 'chain', 'franchise').default('single'),
       cuisine_type: Joi.string().trim().max(100).allow(null),
+      phone: Joi.string()
+        .pattern(/^\d{10,20}$/)
+        .allow(null),
+      whatsapp: Joi.string()
+        .pattern(/^\d{10,20}$/)
+        .allow(null),
       website: Joi.string().uri().max(255).allow(null),
       description: Joi.string().trim().max(2000).allow(null),
-      subscription_plan: Joi.string().valid('starter', 'premium', 'enterprise').default('starter'),
-      marketing_consent: Joi.boolean().default(false),
+      status: Joi.string().valid('pending', 'active', 'inactive', 'suspended').default('pending'),
+      subscription_plan: Joi.string()
+        .valid('starter', 'professional', 'premium', 'enterprise')
+        .default('starter'),
+      subscription_status: Joi.string()
+        .valid('active', 'cancelled', 'expired', 'suspended')
+        .default('active'),
+      subscription_expires_at: Joi.date().iso().allow(null),
       terms_accepted: Joi.boolean().valid(true).required(),
+      marketing_consent: Joi.boolean().default(false),
     });
   }
 
@@ -100,132 +103,66 @@ class RestaurantModel extends BaseModel {
    */
   get updateSchema() {
     return Joi.object({
-      owner_name: Joi.string().trim().min(2).max(255),
-      phone: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
       restaurant_name: Joi.string().trim().min(2).max(255),
       restaurant_url_name: Joi.string()
         .lowercase()
         .pattern(/^[a-z0-9-]+$/)
         .min(2)
         .max(100),
-      business_type: Joi.string().valid('single', 'multi-location'),
+      business_type: Joi.string().valid('single', 'chain', 'franchise'),
       cuisine_type: Joi.string().trim().max(100).allow(null),
+      phone: Joi.string()
+        .pattern(/^\d{10,20}$/)
+        .allow(null),
+      whatsapp: Joi.string()
+        .pattern(/^\d{10,20}$/)
+        .allow(null),
       website: Joi.string().uri().max(255).allow(null),
       description: Joi.string().trim().max(2000).allow(null),
-      subscription_plan: Joi.string().valid('starter', 'premium', 'enterprise'),
+      status: Joi.string().valid('pending', 'active', 'inactive', 'suspended'),
+      subscription_plan: Joi.string().valid('starter', 'professional', 'premium', 'enterprise'),
+      subscription_status: Joi.string().valid('active', 'cancelled', 'expired', 'suspended'),
+      subscription_expires_at: Joi.date().iso().allow(null),
       marketing_consent: Joi.boolean(),
     });
   }
 
   /**
-   * Validation schema for password change
-   */
-  get passwordSchema() {
-    return Joi.object({
-      current_password: Joi.string().required(),
-      new_password: Joi.string().min(8).max(128).required(),
-      confirm_password: Joi.string().valid(Joi.ref('new_password')).required(),
-    });
-  }
-
-  /**
-   * Hash password using bcrypt
-   * @param {String} password - Plain text password
-   * @returns {String} Hashed password
-   */
-  async hashPassword(password) {
-    const saltRounds = 12; // Higher salt rounds for better security
-    return await bcrypt.hash(password, saltRounds);
-  }
-
-  /**
-   * Verify password
-   * @param {String} password - Plain text password
-   * @param {String} hashedPassword - Hashed password from database
-   * @returns {Boolean} Password match result
-   */
-  async verifyPassword(password, hashedPassword) {
-    return await bcrypt.compare(password, hashedPassword);
-  }
-
-  /**
-   * Generate email confirmation token
-   * @returns {Object} Token and expiry date
-   */
-  generateEmailConfirmationToken() {
-    const token = crypto.randomBytes(32).toString('hex');
-    const expires = new Date();
-    expires.setHours(expires.getHours() + 24); // 24 hours from now
-
-    return { token, expires };
-  }
-
-  /**
    * Create new restaurant
    * @param {Object} restaurantData - Restaurant data
-   * @returns {Object} Created restaurant (sanitized)
+   * @returns {Object} Created restaurant
    */
   async create(restaurantData) {
     this.logger.info('Creating new restaurant', {
-      email: restaurantData.email,
       restaurant_name: restaurantData.restaurant_name,
       restaurant_url_name: restaurantData.restaurant_url_name,
+      business_type: restaurantData.business_type,
     });
 
     try {
       // Validate input data
       const validatedData = await this.validate(restaurantData, this.createSchema);
       this.logger.debug('Restaurant data validation successful', {
-        email: validatedData.email,
+        restaurant_name: validatedData.restaurant_name,
+        business_type: validatedData.business_type,
       });
 
-      // Hash password
-      this.logger.debug('Hashing password');
-      const hashedPassword = await this.hashPassword(validatedData.password);
-
-      // Generate email confirmation token
-      this.logger.debug('Generating email confirmation token');
-      const { token, expires } = this.generateEmailConfirmationToken();
-
-      // Prepare data for insertion
-      const insertData = Object.assign({}, validatedData, {
-        password: hashedPassword,
-        email_confirmation_token: token,
-        email_confirmation_expires: expires,
-        terms_accepted_at: new Date(),
-        status: 'pending',
-      });
-
-      // Remove password from validated data for query building
-      delete insertData.password;
-
-      const columns = Object.keys(insertData);
-      const placeholders = columns.map((_, index) => `$${index + 1}`);
-      const values = Object.values(insertData);
-
-      // Add password back to values array at correct position
-      const passwordIndex = columns.indexOf('owner_name'); // Insert after owner_name
-      columns.splice(passwordIndex + 1, 0, 'password');
-      placeholders.splice(passwordIndex + 1, 0, `$${passwordIndex + 2}`);
-      values.splice(passwordIndex + 1, 0, hashedPassword);
-
-      // Update placeholders after password insertion
-      for (let i = passwordIndex + 2; i < placeholders.length; i++) {
-        placeholders[i] = `$${i + 1}`;
+      // Set terms accepted timestamp if not provided
+      if (validatedData.terms_accepted && !validatedData.terms_accepted_at) {
+        validatedData.terms_accepted_at = new Date();
       }
+
+      const columns = Object.keys(validatedData);
+      const placeholders = columns.map((_, index) => `$${index + 1}`);
+      const values = Object.values(validatedData);
 
       const query = `
         INSERT INTO ${this.tableName} (${columns.join(', ')})
         VALUES (${placeholders.join(', ')})
-        RETURNING id, owner_name, email, email_confirmed, restaurant_name,
-                  restaurant_url_name, business_type, cuisine_type, website,
-                  description, subscription_plan, marketing_consent, terms_accepted,
-                  status, created_at, updated_at
+        RETURNING id, restaurant_name, restaurant_url_name, business_type,
+                  cuisine_type, phone, whatsapp, website, description,
+                  status, subscription_plan, subscription_status, subscription_expires_at,
+                  terms_accepted, terms_accepted_at, marketing_consent, created_at, updated_at
       `;
 
       this.logger.debug('Executing restaurant creation query', {
@@ -238,56 +175,19 @@ class RestaurantModel extends BaseModel {
 
       this.logger.info('Restaurant created successfully', {
         id: restaurant.id,
-        email: restaurant.email,
         restaurant_name: restaurant.restaurant_name,
         status: restaurant.status,
       });
 
-      // Return sanitized restaurant data with confirmation token for email sending
-      return Object.assign({}, restaurant, {
-        email_confirmation_token: token,
-        email_confirmation_expires: expires,
-      });
+      return restaurant;
     } catch (error) {
       this.logger.error('Failed to create restaurant', {
-        email: restaurantData.email,
+        restaurant_name: restaurantData.restaurant_name,
         error: error.message,
         stack: error.stack,
       });
       throw error;
     }
-  }
-
-  /**
-   * Find restaurant by email
-   * @param {String} email - Restaurant email
-   * @param {Boolean} includePassword - Whether to include password field
-   * @returns {Object|null} Restaurant data
-   */
-  async findByEmail(email, includePassword = false) {
-    const columns = includePassword
-      ? ['*']
-      : [
-          'id',
-          'owner_name',
-          'email',
-          'email_confirmed',
-          'restaurant_name',
-          'restaurant_url_name',
-          'business_type',
-          'cuisine_type',
-          'website',
-          'description',
-          'subscription_plan',
-          'marketing_consent',
-          'terms_accepted',
-          'status',
-          'created_at',
-          'updated_at',
-        ];
-
-    const result = await this.find({ email: email.toLowerCase() }, {}, columns);
-    return result.length > 0 ? result[0] : null;
   }
 
   /**
@@ -296,98 +196,30 @@ class RestaurantModel extends BaseModel {
    * @returns {Object|null} Restaurant data
    */
   async findByUrlName(urlName) {
-    const result = await this.find({ restaurant_url_name: urlName.toLowerCase() });
-    return result.length > 0 ? this.sanitizeOutput(result[0], this.sensitiveFields) : null;
-  }
-
-  /**
-   * Authenticate restaurant
-   * @param {String} email - Restaurant email
-   * @param {String} password - Plain text password
-   * @returns {Object|null} Restaurant data if authenticated
-   */
-  async authenticate(email, password) {
-    this.logger.info('Attempting restaurant authentication', { email });
+    this.logger.debug('Finding restaurant by URL name', { urlName });
 
     try {
-      const restaurant = await this.findByEmail(email, true);
+      const result = await this.find({ restaurant_url_name: urlName.toLowerCase() });
+      const restaurant = result.length > 0 ? result[0] : null;
 
-      if (!restaurant) {
-        this.logger.warn('Authentication failed - restaurant not found', { email });
-        return null;
-      }
-
-      this.logger.debug('Restaurant found, verifying password', {
-        id: restaurant.id,
-        email: restaurant.email,
-        status: restaurant.status,
-      });
-
-      const isValidPassword = await this.verifyPassword(password, restaurant.password);
-
-      if (!isValidPassword) {
-        this.logger.warn('Authentication failed - invalid password', {
-          id: restaurant.id,
-          email: restaurant.email,
+      if (restaurant) {
+        this.logger.debug('Restaurant found by URL name', {
+          id: restaurant.id.substring(0, 8) + '...',
+          restaurant_name: restaurant.restaurant_name,
         });
-        return null;
+      } else {
+        this.logger.debug('Restaurant not found by URL name', { urlName });
       }
 
-      this.logger.info('Restaurant authentication successful', {
-        id: restaurant.id,
-        email: restaurant.email,
-        restaurant_name: restaurant.restaurant_name,
-        status: restaurant.status,
-      });
-
-      // Return sanitized restaurant data
-      return this.sanitizeOutput(restaurant, this.sensitiveFields);
+      return restaurant;
     } catch (error) {
-      this.logger.error('Authentication process failed', {
-        email,
+      this.logger.error('Failed to find restaurant by URL name', {
+        urlName,
         error: error.message,
         stack: error.stack,
       });
       throw error;
     }
-  }
-
-  /**
-   * Confirm email address
-   * @param {String} token - Email confirmation token
-   * @returns {Object|null} Updated restaurant data
-   */
-  async confirmEmail(token) {
-    const restaurant = await this.find({
-      email_confirmation_token: token,
-      email_confirmed: false,
-      email_confirmation_expires: { operator: '>', value: new Date() },
-    });
-
-    if (restaurant.length === 0) {
-      return null;
-    }
-
-    const updateData = {
-      email_confirmed: true,
-      email_confirmation_token: null,
-      email_confirmation_expires: null,
-      status: 'active',
-    };
-
-    const { clause, params } = this.buildSetClause(updateData);
-    const query = `
-      UPDATE ${this.tableName}
-      SET ${clause}
-      WHERE id = $${params.length + 1}
-      RETURNING id, owner_name, email, email_confirmed, restaurant_name,
-                restaurant_url_name, business_type, cuisine_type, website,
-                description, subscription_plan, marketing_consent, terms_accepted,
-                status, created_at, updated_at
-    `;
-
-    const result = await this.executeQuery(query, [...params, restaurant[0].id]);
-    return result.rows[0];
   }
 
   /**
@@ -430,10 +262,10 @@ class RestaurantModel extends BaseModel {
         UPDATE ${this.tableName}
         SET ${clause}
         WHERE id = $${params.length + 1}
-        RETURNING id, owner_name, email, email_confirmed, restaurant_name,
-                  restaurant_url_name, business_type, cuisine_type, website,
-                  description, subscription_plan, marketing_consent, terms_accepted,
-                  status, created_at, updated_at
+        RETURNING id, restaurant_name, restaurant_url_name, business_type,
+                  cuisine_type, phone, whatsapp, website, description,
+                  status, subscription_plan, subscription_status, subscription_expires_at,
+                  terms_accepted, terms_accepted_at, marketing_consent, created_at, updated_at
       `;
 
       this.logger.debug('Executing restaurant update query', {
@@ -468,83 +300,100 @@ class RestaurantModel extends BaseModel {
   }
 
   /**
-   * Change restaurant password
-   * @param {String} id - Restaurant UUID
-   * @param {Object} passwordData - Password change data
-   * @returns {Boolean} Success status
+   * Get restaurants with pagination and filtering
+   * @param {Object} filters - Filter conditions
+   * @param {Object} pagination - Pagination options
+   * @returns {Object} Restaurants and metadata
    */
-  async changePassword(id, passwordData) {
-    this.logger.info('Changing restaurant password', {
-      id: id ? id.substring(0, 8) + '...' : null,
+  async getRestaurants(filters = {}, pagination = {}) {
+    this.logger.debug('Getting restaurants with filters and pagination', {
+      filters: Object.keys(filters),
+      pagination,
     });
 
     try {
-      // Validate and sanitize UUID
-      if (!this.isValidUuid(id)) {
-        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+      const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC' } = pagination;
+      const offset = (page - 1) * limit;
+
+      // Validate sort parameters to prevent SQL injection
+      const validSortColumns = [
+        'created_at',
+        'updated_at',
+        'restaurant_name',
+        'status',
+        'business_type',
+        'subscription_plan',
+      ];
+      const validSortOrders = ['ASC', 'DESC'];
+
+      if (!validSortColumns.includes(sortBy)) {
+        throw new Error(`Invalid sort column: ${sortBy}`);
       }
 
-      const { sanitizedUuid } = this.validateUuid(id);
-
-      // Validate password data
-      const validatedData = await this.validate(passwordData, this.passwordSchema);
-      this.logger.debug('Password change data validation successful', {
-        id: sanitizedUuid.substring(0, 8) + '...',
-      });
-
-      // Get current restaurant data with password
-      const restaurant = await this.findById(sanitizedUuid, ['id', 'password']);
-      if (!restaurant) {
-        this.logger.warn('Password change failed - restaurant not found', {
-          id: sanitizedUuid.substring(0, 8) + '...',
-        });
-        throw new Error('Restaurant not found');
+      if (!validSortOrders.includes(sortOrder.toUpperCase())) {
+        throw new Error(`Invalid sort order: ${sortOrder}`);
       }
 
-      this.logger.debug('Restaurant found, verifying current password', {
-        id: restaurant.id.substring(0, 8) + '...',
+      // Build filter conditions
+      const conditions = {};
+      if (filters.status) conditions.status = filters.status;
+      if (filters.business_type) conditions.business_type = filters.business_type;
+      if (filters.cuisine_type) conditions.cuisine_type = filters.cuisine_type;
+      if (filters.subscription_plan) conditions.subscription_plan = filters.subscription_plan;
+      if (filters.subscription_status) conditions.subscription_status = filters.subscription_status;
+
+      // Get total count
+      const total = await this.count(conditions);
+
+      // Get restaurants
+      const options = {
+        limit,
+        offset,
+        orderBy: `${sortBy} ${sortOrder.toUpperCase()}`,
+      };
+
+      const columns = [
+        'id',
+        'restaurant_name',
+        'restaurant_url_name',
+        'business_type',
+        'cuisine_type',
+        'phone',
+        'whatsapp',
+        'website',
+        'description',
+        'status',
+        'subscription_plan',
+        'subscription_status',
+        'subscription_expires_at',
+        'terms_accepted',
+        'terms_accepted_at',
+        'marketing_consent',
+        'created_at',
+        'updated_at',
+      ];
+
+      const restaurants = await this.find(conditions, options, columns);
+
+      this.logger.debug('Restaurants retrieved successfully', {
+        count: restaurants.length,
+        total,
+        page,
       });
 
-      // Verify current password
-      const isValidPassword = await this.verifyPassword(
-        validatedData.current_password,
-        restaurant.password
-      );
-
-      if (!isValidPassword) {
-        this.logger.warn('Password change failed - current password incorrect', {
-          id: restaurant.id.substring(0, 8) + '...',
-        });
-        throw new Error('Current password is incorrect');
-      }
-
-      // Hash new password
-      this.logger.debug('Hashing new password', {
-        id: restaurant.id.substring(0, 8) + '...',
-      });
-      const hashedPassword = await this.hashPassword(validatedData.new_password);
-
-      // Update password
-      const query = `
-        UPDATE ${this.tableName}
-        SET password = $1, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2
-      `;
-
-      this.logger.debug('Executing password update query', {
-        id: restaurant.id.substring(0, 8) + '...',
-      });
-
-      await this.executeQuery(query, [hashedPassword, sanitizedUuid]);
-
-      this.logger.info('Restaurant password changed successfully', {
-        id: restaurant.id.substring(0, 8) + '...',
-      });
-
-      return true;
+      return {
+        restaurants,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      };
     } catch (error) {
-      this.logger.error('Failed to change restaurant password', {
-        id: id ? id.substring(0, 8) + '...' : null,
+      this.logger.error('Failed to get restaurants', {
+        filters,
+        pagination,
         error: error.message,
         stack: error.stack,
       });
@@ -553,85 +402,9 @@ class RestaurantModel extends BaseModel {
   }
 
   /**
-   * Get restaurants with pagination and filtering
-   * @param {Object} filters - Filter conditions
-   * @param {Object} pagination - Pagination options
-   * @returns {Object} Restaurants and metadata
-   */
-  async getRestaurants(filters = {}, pagination = {}) {
-    const { page = 1, limit = 10, sortBy = 'created_at', sortOrder = 'DESC' } = pagination;
-    const offset = (page - 1) * limit;
-
-    // Validate sort parameters to prevent SQL injection
-    const validSortColumns = [
-      'created_at',
-      'updated_at',
-      'restaurant_name',
-      'owner_name',
-      'status',
-    ];
-    const validSortOrders = ['ASC', 'DESC'];
-
-    if (!validSortColumns.includes(sortBy)) {
-      throw new Error(`Invalid sort column: ${sortBy}`);
-    }
-
-    if (!validSortOrders.includes(sortOrder.toUpperCase())) {
-      throw new Error(`Invalid sort order: ${sortOrder}`);
-    }
-
-    // Build filter conditions
-    const conditions = {};
-    if (filters.status) conditions.status = filters.status;
-    if (filters.business_type) conditions.business_type = filters.business_type;
-    if (filters.cuisine_type) conditions.cuisine_type = filters.cuisine_type;
-    if (filters.subscription_plan) conditions.subscription_plan = filters.subscription_plan;
-
-    // Get total count
-    const total = await this.count(conditions);
-
-    // Get restaurants
-    const options = {
-      limit,
-      offset,
-      orderBy: `${sortBy} ${sortOrder.toUpperCase()}`,
-    };
-
-    const columns = [
-      'id',
-      'owner_name',
-      'email',
-      'email_confirmed',
-      'restaurant_name',
-      'restaurant_url_name',
-      'business_type',
-      'cuisine_type',
-      'website',
-      'description',
-      'subscription_plan',
-      'marketing_consent',
-      'terms_accepted',
-      'status',
-      'created_at',
-      'updated_at',
-    ];
-
-    const restaurants = await this.find(conditions, options, columns);
-
-    return {
-      restaurants,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  /**
-   * Get restaurant by ID (sanitized output)
+   * Get restaurant by ID
    * @param {String} id - Restaurant UUID
+   * @param {Array} columns - Specific columns to select (optional)
    * @returns {Object|null} Restaurant data
    */
   async findById(id, columns = null) {
@@ -650,19 +423,21 @@ class RestaurantModel extends BaseModel {
 
       const defaultColumns = [
         'id',
-        'owner_name',
-        'email',
-        'email_confirmed',
         'restaurant_name',
         'restaurant_url_name',
         'business_type',
         'cuisine_type',
+        'phone',
+        'whatsapp',
         'website',
         'description',
-        'subscription_plan',
-        'marketing_consent',
-        'terms_accepted',
         'status',
+        'subscription_plan',
+        'subscription_status',
+        'subscription_expires_at',
+        'terms_accepted',
+        'terms_accepted_at',
+        'marketing_consent',
         'created_at',
         'updated_at',
       ];
@@ -687,15 +462,149 @@ class RestaurantModel extends BaseModel {
         });
       }
 
-      // Only sanitize if no specific columns were requested
-      // If specific columns were requested, return exactly what was requested
-      if (columns) {
-        return result;
-      } else {
-        return result ? this.sanitizeOutput(result, this.sensitiveFields) : null;
-      }
+      return result;
     } catch (error) {
       this.logger.error('Failed to find restaurant by ID', {
+        id: id ? id.substring(0, 8) + '...' : null,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete restaurant (soft delete by setting status to inactive)
+   * @param {String} id - Restaurant UUID
+   * @returns {Boolean} Success status
+   */
+  async deleteRestaurant(id) {
+    this.logger.info('Soft deleting restaurant', {
+      id: id ? id.substring(0, 8) + '...' : null,
+    });
+
+    try {
+      // Validate and sanitize UUID
+      if (!this.isValidUuid(id)) {
+        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+      }
+
+      const { sanitizedUuid } = this.validateUuid(id);
+
+      // Soft delete by setting status to inactive
+      const result = await this.update(sanitizedUuid, { status: 'inactive' });
+
+      if (result) {
+        this.logger.info('Restaurant soft deleted successfully', {
+          id: result.id.substring(0, 8) + '...',
+          restaurant_name: result.restaurant_name,
+        });
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      this.logger.error('Failed to delete restaurant', {
+        id: id ? id.substring(0, 8) + '...' : null,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check if restaurant URL name is available
+   * @param {String} urlName - Restaurant URL name to check
+   * @param {String} excludeId - Restaurant ID to exclude from check (for updates)
+   * @returns {Boolean} True if available
+   */
+  async isUrlNameAvailable(urlName, excludeId = null) {
+    this.logger.debug('Checking URL name availability', { urlName, excludeId });
+
+    try {
+      const conditions = { restaurant_url_name: urlName.toLowerCase() };
+
+      if (excludeId) {
+        if (!this.isValidUuid(excludeId)) {
+          throw new Error('Invalid exclude ID format. Must be a valid UUID.');
+        }
+        const { sanitizedUuid } = this.validateUuid(excludeId);
+        conditions.id = { operator: '!=', value: sanitizedUuid };
+      }
+
+      const existing = await this.find(conditions, {}, ['id']);
+      const isAvailable = existing.length === 0;
+
+      this.logger.debug('URL name availability check completed', {
+        urlName,
+        isAvailable,
+        existingCount: existing.length,
+      });
+
+      return isAvailable;
+    } catch (error) {
+      this.logger.error('Failed to check URL name availability', {
+        urlName,
+        excludeId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get restaurant statistics
+   * @param {String} id - Restaurant UUID
+   * @returns {Object} Restaurant statistics
+   */
+  async getRestaurantStats(id) {
+    this.logger.debug('Getting restaurant statistics', {
+      id: id ? id.substring(0, 8) + '...' : null,
+    });
+
+    try {
+      // Validate and sanitize UUID
+      if (!this.isValidUuid(id)) {
+        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+      }
+
+      const { sanitizedUuid } = this.validateUuid(id);
+
+      // Basic stats query - you can expand this based on your needs
+      const query = `
+        SELECT
+          r.id,
+          r.restaurant_name,
+          r.status,
+          r.subscription_plan,
+          r.created_at,
+          (SELECT COUNT(*) FROM restaurant_locations WHERE restaurant_id = r.id) as location_count,
+          (SELECT COUNT(*) FROM users WHERE restaurant_id = r.id) as user_count
+        FROM restaurants r
+        WHERE r.id = $1
+      `;
+
+      const result = await this.executeQuery(query, [sanitizedUuid]);
+      const stats = result.rows[0] || null;
+
+      if (stats) {
+        this.logger.debug('Restaurant statistics retrieved successfully', {
+          id: stats.id.substring(0, 8) + '...',
+          restaurant_name: stats.restaurant_name,
+          location_count: stats.location_count,
+          user_count: stats.user_count,
+        });
+      } else {
+        this.logger.warn('Restaurant not found for statistics', {
+          id: sanitizedUuid.substring(0, 8) + '...',
+        });
+      }
+
+      return stats;
+    } catch (error) {
+      this.logger.error('Failed to get restaurant statistics', {
         id: id ? id.substring(0, 8) + '...' : null,
         error: error.message,
         stack: error.stack,
