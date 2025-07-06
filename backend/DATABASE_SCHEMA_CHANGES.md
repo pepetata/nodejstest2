@@ -202,3 +202,46 @@ Previously, user-related fields were incorrectly placed in the `restaurants` tab
 3. Create user management interfaces for administrators
 4. Update seed data to reflect new structure
 5. Create migration path for existing data
+
+## 7. User Location Assignments (COMPLETED)
+
+### File: `005_user_location_assignments.sql`
+
+This comprehensive seed file creates location assignments for all users across the 4 restaurants:
+
+#### Assignment Strategy:
+
+- **Restaurant Administrators**: No location assignments (restaurant-wide access)
+- **Location Administrators**: Assigned to ALL locations for multi-location restaurants
+- **Other Roles**: Distributed strategically across locations based on operational needs
+
+#### Distribution Summary:
+
+**Single-Location Restaurants:**
+
+- **Pizzaria Bella Vista**: 10 users assigned to 1 location
+- **Tacos El Mariachi**: 10 users assigned to 1 location
+
+**Multi-Location Restaurants:**
+
+- **Burger Empire**: 10 users distributed across 4 locations (Downtown, Vila Madalena, Morumbi, Itaim Bibi)
+- **Sushi Zen**: 10 users distributed across 4 locations (Jardins, Brooklin, Moema, Vila Olimpia)
+
+#### Special Features:
+
+- **Primary Location Tracking**: Each user has a designated primary workplace
+- **KDS Station Assignments**: KDS operators are assigned to specific kitchen stations
+- **Assignment Audit**: Tracks who assigned users and when
+- **Role-Based Logic**: Different assignment patterns for different user roles
+
+#### Total Assignments Created: 72 location assignments
+
+- 20 assignments for single-location restaurants
+- 52 assignments for multi-location restaurants (including location admins assigned to all locations)
+
+### Business Logic Implemented:
+
+1. Location administrators can manage all locations in their restaurant chain
+2. Operational staff (waiters, food runners, KDS, POS) work at specific locations
+3. KDS operators have station-specific assignments for kitchen workflow
+4. Assignment history provides audit trail for management decisions

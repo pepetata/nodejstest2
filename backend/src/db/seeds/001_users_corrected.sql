@@ -169,10 +169,10 @@ INSERT INTO users (
 ),
 (
     '770e8400-e29b-41d4-a716-446655440104',
-    'sofia.ruiz@tacosmariachi.com',
+    'sofia.martinez@tacosmariachi.com',
     null,
     '$2b$12$aIZ5VX2S9KUzXFTBZnIXuei8GCrZq9S5MZLv0ZpfTnDRQnS8KgYfm', -- password: 'location123'
-    'Sofia Ruiz',
+    'Sofia Martinez',
     'location_administrator',
     null,
     'active',
@@ -183,7 +183,7 @@ INSERT INTO users (
 -- Burger Empire Location Administrators
 (
     '770e8400-e29b-41d4-a716-446655440105',
-    'robert.admin@burgerempire.com',
+    'robert.davis@burgerempire.com',
     null,
     '$2b$12$aIZ5VX2S9KUzXFTBZnIXuei8GCrZq9S5MZLv0ZpfTnDRQnS8KgYfm', -- password: 'location123'
     'Robert Davis',
@@ -196,7 +196,7 @@ INSERT INTO users (
 ),
 (
     '770e8400-e29b-41d4-a716-446655440106',
-    'jennifer.admin@burgerempire.com',
+    'jennifer.smith@burgerempire.com',
     null,
     '$2b$12$aIZ5VX2S9KUzXFTBZnIXuei8GCrZq9S5MZLv0ZpfTnDRQnS8KgYfm', -- password: 'location123'
     'Jennifer Smith',

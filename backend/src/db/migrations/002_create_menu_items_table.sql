@@ -2,7 +2,7 @@
 -- Created: 2025-07-02
 
 CREATE TABLE IF NOT EXISTS menu_items (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,

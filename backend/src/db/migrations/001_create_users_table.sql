@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE, -- Optional for non-admin roles
     username VARCHAR(100) UNIQUE, -- For roles that don't require email
-    password VARCHAR(20) NOT NULL,
-    full_name VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
 
     -- Role management
     role VARCHAR(50) NOT NULL CHECK (role IN (
