@@ -4,10 +4,21 @@ const restaurantRoutes = require('../../src/routes/restaurantRoutes');
 const DatabaseTestHelper = require('../helpers/databaseTestHelper');
 const testDataFactory = require('../helpers/testDataFactory');
 
-// Create test app
-const app = express();
-app.use(express.json());
-app.use('/api/restaurants', restaurantRoutes);
+// Mock logger to prevent undefined errors
+jest.mock('../../src/utils/logger', () => ({
+  logger: {
+    child: jest.fn(() => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    })),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
 
 // Mock auth middleware for testing
 jest.mock('../../src/middleware/authMiddleware', () => (req, res, next) => {
@@ -19,6 +30,11 @@ jest.mock('../../src/middleware/restaurantAuth', () => ({
   requireRestaurantAdmin: (req, res, next) => next(),
   requireRestaurantModifyAccess: (req, res, next) => next(),
 }));
+
+// Create test app
+const app = express();
+app.use(express.json());
+app.use('/api/restaurants', restaurantRoutes);
 
 describe('RestaurantController Integration Tests', () => {
   let dbHelper;

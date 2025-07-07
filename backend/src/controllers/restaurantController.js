@@ -1,7 +1,6 @@
 const restaurantModel = require('../models/RestaurantModel');
 const RestaurantValidation = require('../validations/restaurantValidation');
 const ResponseFormatter = require('../utils/responseFormatter');
-const { logger } = require('../utils/logger');
 
 /**
  * Restaurant Controller
@@ -9,8 +8,30 @@ const { logger } = require('../utils/logger');
  * validation, error handling, logging, and response formatting
  */
 class RestaurantController {
-  constructor() {
-    this.logger = logger.child({ controller: 'RestaurantController' });
+  constructor(injectedLogger = null) {
+    // Use injected logger (for testing) or import the real logger
+    if (injectedLogger) {
+      this.logger = injectedLogger;
+    } else {
+      try {
+        const { logger } = require('../utils/logger');
+        this.logger = logger.child({ controller: 'RestaurantController' });
+      } catch (error) {
+        // Fallback logger for testing or when logger is not available
+        this.logger = {
+          child: () => ({
+            info: () => {},
+            warn: () => {},
+            error: () => {},
+            debug: () => {},
+          }),
+          info: () => {},
+          warn: () => {},
+          error: () => {},
+          debug: () => {},
+        };
+      }
+    }
   }
 
   /**
@@ -386,4 +407,4 @@ class RestaurantController {
   }
 }
 
-module.exports = new RestaurantController();
+module.exports = RestaurantController;

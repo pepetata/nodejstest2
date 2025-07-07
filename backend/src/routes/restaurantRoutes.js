@@ -1,5 +1,5 @@
 const express = require('express');
-const restaurantController = require('../controllers/restaurantController');
+const RestaurantController = require('../controllers/restaurantController');
 const ValidationMiddleware = require('../middleware/validationMiddleware');
 const authMiddleware = require('../middleware/authMiddleware');
 const restaurantAuth = require('../middleware/restaurantAuth');
@@ -10,6 +10,7 @@ const Joi = require('joi');
 
 const router = express.Router();
 const routerLogger = logger.child({ module: 'restaurantRoutes' });
+const restaurantController = new RestaurantController(logger);
 
 // Apply request logging for all restaurant routes
 router.use((req, res, next) => {
