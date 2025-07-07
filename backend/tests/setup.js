@@ -8,6 +8,7 @@ require('dotenv').config();
 process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'SILENT'; // Set log level to completely silence logs
 process.env.ENABLE_FILE_LOGGING = 'false'; // Disable file logging during tests
+process.env.DB_NAME = 'alacarte_test'; // Set test database name
 
 // Suppress console output during tests to keep them clean
 const originalConsole = global.console;

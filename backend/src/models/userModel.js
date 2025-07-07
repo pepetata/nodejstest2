@@ -20,9 +20,7 @@ class UserModel extends BaseModel {
    * UUID validation schema
    */
   get uuidSchema() {
-    return Joi.string()
-      .uuid({ version: ['uuidv4'] })
-      .required();
+    return Joi.string().guid().required();
   }
 
   /**
@@ -55,7 +53,7 @@ class UserModel extends BaseModel {
         )
         .required(),
       restaurant_id: Joi.string()
-        .uuid({ version: ['uuidv4'] })
+        .guid()
         .when('role', {
           is: 'restaurant_administrator',
           then: Joi.required(),
@@ -86,9 +84,7 @@ class UserModel extends BaseModel {
         'kds_operator',
         'pos_operator'
       ),
-      restaurant_id: Joi.string()
-        .uuid({ version: ['uuidv4'] })
-        .allow(null),
+      restaurant_id: Joi.string().guid().allow(null),
       status: Joi.string().valid('pending', 'active', 'inactive', 'suspended'),
       email_confirmed: Joi.boolean(),
       first_login_password_change: Joi.boolean(),

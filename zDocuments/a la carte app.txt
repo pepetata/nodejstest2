@@ -1,4 +1,3 @@
-
 à la carte app
 Design
 'A la carte' SaaS application:
@@ -130,6 +129,45 @@ o	AI for Feedback: (Future AI cool stuff!) We'll automatically figure out the vi
 5. Admin Portal (The Restaurant's Command Center!):
 This is the secure hub where restaurant staff manage everything.
 •	This is a secure website that gives restaurant staff super detailed control over their part of the platform.
+•	User Roles and Management: The 'A la carte' platform supports distinct user roles with varying levels of access and management capabilities, ensuring secure and efficient operations.
+•	Restaurant Administrator:
+o	Purpose: The highest level of administrative access, typically for the restaurant owner or a top-level manager. Can manage all aspects across all locations associated with their restaurant account.
+o	Authentication: Requires a unique email address for login.
+o	Confirmation: Email confirmation (e.g., via a verification link) is required upon account creation to ensure email validity and security.
+o	Password Management: Standard password reset and change functionalities.
+o	Location Access: Can view and manage all locations under the restaurant's account.
+o	Creation Rights: Can create and manage Location Administrators, Waiters, and POS Operators.
+•	Location Administrator:
+o	Purpose: Manages operations for one or more specific restaurant locations. Has comprehensive control over assigned locations but cannot access other locations or overall restaurant-level subscription details.
+o	Authentication: Requires a unique email address for login.
+o	Confirmation: Email confirmation (e.g., via a verification link) is required upon account creation.
+o	First Login Password Change: Upon their very first login, the system will prompt them to change their initial password for enhanced security.
+o	Location Access: Assigned to specific locations by a Restaurant Administrator. Can only view and manage data for their assigned locations.
+o	Creation Rights: Can create and manage Waiters and POS Operators within their assigned locations.
+•	Waiter:
+o	Purpose: Primarily focused on order taking, table management, and customer service within a specific location.
+o	Authentication: Uses a simple username/ID and password. An email address is not required, it's not the primary login credential.
+o	Confirmation: Their account is typically already confirmed by a Restaurant Administrator or Location Administrator who created it. No separate email confirmation step for the waiter themselves.
+o	First Login Password Change: Upon their very first login, the system will prompt them to change their initial password for enhanced security.
+o	Location Access: Automatically associated with the location where they were created. If created by a Location Administrator who manages only one location, they default to that location. If the Location Administrator manages multiple, they will specify the waiter's primary location. Can only operate within their assigned location. Can be assigned to more than one location and in this case app will ask what is the current location upon login
+•	Food Runner:
+o	Purpose: Responsible for delivering prepared food from the kitchen pass to the correct tables and seats in the dining area. They focus solely on efficient and accurate delivery, not order taking or payment processing.
+o	Authentication: Uses a simple username/ID and password. An email address is not required, it's not the primary login credential.
+o	Confirmation: Their account is typically already confirmed by an administrator.
+o	First Login Password Change: Upon their very first login, the system will prompt them to change their initial password for enhanced security.
+o	Location Access: Automatically associated with the location where they were created. If created by a Location Administrator who manages only one location, they default to that location. If the Location Administrator manages multiple, they will specify the waiter's primary location. Can only operate within their assigned location. Can be assigned to more than one location and in this case app will ask what is the current location upon login
+•	KDS Operator (Kitchen Display System Operator):
+o	Purpose: Interacts directly with the Kitchen Display System to view incoming orders, mark items as prepared, and manage the flow of food preparation within a specific kitchen station. This role is typically for chefs or line cooks.
+o	Authentication: Uses a simple username/ID and password. An email address is not required, it's not the primary login credential.
+o	Confirmation: Their account is typically already confirmed by an administrator (Restaurant or Location Administrator).
+o	First Login Password Change: Upon their very first login, the system will prompt them to change their initial password for enhanced security.
+o	Location Access: Automatically associated with the specific location and potentially specific KDS stations (e.g., "Grill KDS," "Sauté KDS") where they operate. Can only view and interact with orders for their assigned location/stations.
+•	POS Operator (Point-of-Sale Operator):
+o	Purpose: Handles transactions, payments, and potentially some basic order management at a physical point-of-sale terminal.
+o	Authentication: Uses a simple username/ID and password. An email address is not required, it's not the primary login credential.
+o	Confirmation: Account is typically already confirmed by an administrator.
+o	First Login Password Change: Upon their very first login, the system will prompt them to change their initial password.
+o	Location Access: Automatically associated with the location where they were created. Can only operate within their assigned location.
 •	Waiter Management & Ordering:
 o	Waiter ID: Waiters will log into the app using their own usernames/passwords or unique staff IDs.
 o	Take Orders by Table: Waiters will start taking orders by first picking the right table number.
@@ -191,7 +229,8 @@ o	Orders taking too long!: Alerts staff if prep times are going over what's expe
 o	Priority orders!: Clearly shows orders that need to be rushed, along with why!
 7. How We Build It (Tech Stack & Quality Assurance):
 This section covers the technical foundation and how we ensure everything runs smoothly and securely.
-•	Backend Power: We're using Node.js with Express.js to build strong and scalable APIs.
+•	Node Modules Power for backend: We're using Node.js, Express.js, bcrypt, cors, dotenv, jsonwebtoken, morgan, pg
+•	Node Modules Power for Frontend: We're using react, react, react redux, axios, react bootstrap, formic, yup
 •	Testing, Testing, 1-2-3!:
 o	Unit Tests: Lots of detailed tests for individual parts of the backend and frontend to make sure everything works perfectly.
 o	End-to-End (E2E) Tests: Automated tests that act like a real user, checking the whole app from start to finish.
@@ -316,6 +355,119 @@ Why Native Mobile Apps (Android/iOS) might be less ideal for your initial launch
 In summary:
 Starting with a PWA for the customer-facing side and a responsive web application for the Admin Portal provides the most efficient, flexible, and accessible solution for the 'A la carte' application, perfectly aligning with your current feature set and planned future enhancements. This approach allows you to quickly launch, iterate, and scale across multiple restaurant locations without the overhead of native app development. Native apps could be considered in a later phase if specific, highly specialized native features become absolutely essential.
 
+Process used
+AI
+•	public/index.html
+•	src/main.jsx and its components
+•	src/App.jsx
+frontend
+src/components/common/Navbar.jsx
+src/pages/Register.jsx
+•	tests/Register.test.jsx
+backend
+Postgres tables
+•	create tables
+•	seed tables
+•	create the necessary tables for xxxxx. Check backend/scripts and backend/src/db contents for all database creation and seeds (xxx number etc)
+Input Sanitization (XSS Prevention)
+•	must be a mddleware. Use good practices and the latest development techniques. Use ; instead of &&
+Models
+•	add a model for xxxxx using SQL injection prevention, error handling  and logs. Use good practices and the latest development techniques. Use ; instead of &&
+unit tests
+create a unit test for  xxxxx (model) with coverage of at least 80%.
+Do these tests (when applicable), consider using different files or if one files for the tests, create groups for each of them:
+1. Unit Tests (Isolated Logic Testing)
+•	Schema Validation Tests
+•	Business Logic Tests
+•	Data Transformation Tests
+2. Integration Tests (Database Interaction)
+•	CRUD Operations
+•	Query and Filtering Tests
+•	Relationship Tests
+3. Data Validation and Constraints
+•	Database Constraints
+•	Custom Validation
+4. Error Handling and Edge Cases
+5. Performance Tests
+•	Query Performance
+6. Security Tests
+•	Data Security
+7. State and Lifecycle Tests
+•	Model State Management
+8. Transaction Tests
+•	Transaction Handling
+Use good practices and the latest development techniques. Do not mess with other tests as they are working 100%
+Consider the content of backend/scripts and backend/src/db. use the proper PowerShell syntax:Use ; instead of &&
+Controllers
+•	create a controller for xxxxx (model) with input validations (note that the model has sql injection protection and also there is the xssMiddleware), error handling (use a centralized error-handling), logs, authentication and authorization, Data Transformation, Asynchronous Operations, Dependency Injection, Idempotency (for PUT/PATCH/DELETE), API Versioning, Rate Limiting (if needed) , Consistent Response Formatting. Use best practices and modern development techniques. use the proper PowerShell syntax:Use ; instead of &&
+•
+unit tests
+create (or update/review) a unit test for  XXXXXXX  (controller) with coverage of at least 80%.
+Do these tests (when applicable), consider using different files or if one files for the tests, create groups for each of them:
+1. HTTP Request/Response Tests
+•	Endpoint Testing
+•	Response Format Testing
+2. Request Validation Tests
+•	Input Validation
+•	Authentication & Authorization
+3. Business Logic Tests
+•	CRUD Operations
+•	Business Rules
+4. Error Handling Tests
+•	Client Errors (4xx)
+•	Server Errors (5xx)
+5. Data Processing Tests
+•	Request Processing
+•	Response Processing
+6. Integration Points Tests
+•	Service Layer Integration
+•	Database Integration
+7. Middleware Integration Tests
+•	Middleware Chain
+8. Performance Tests
+•	Response Time
+9. Security Tests
+•	Input Security
+•	Data Protection
+10. Edge Cases and Boundary Tests
+•	Boundary Conditions
+11. State Management Tests
+•	Session and Context
+Testing Approaches for Controllers:
+1. Unit Tests (Isolated)
+•	Mock all dependencies (services, databases, external APIs)
+•	Test controller logic in isolation
+•	Fast execution, high coverage
+2. Integration Tests (End-to-End)
+•	Use real dependencies where possible
+•	Test complete request/response flow
+•	Verify actual system behavior
+3. API Contract Tests
+•	Validate API schema compliance
+•	Test request/response contracts
+•	Ensure backward compatibility
+Key Testing Principles:
+1.	Test Happy Paths and Error Paths
+2.	Mock External Dependencies for Unit Tests
+3.	Use Real Dependencies for Integration Tests
+4.	Test All HTTP Methods and Status Codes
+5.	Validate Request/Response Formats
+6.	Test Security and Authorization
+7.	Test Performance and Scalability
+8.	Test Edge Cases and Boundaries
+9.	Maintain Test Data Isolation
+10.	Keep Tests Fast and Reliable
+
+Use good practices and the latest development techniques. Do not mess with other tests as they are working 100%
+Consider the tests on the model (do not duplicate them) and the content of backend/scripts and backend/src/db. use the proper PowerShell syntax:Use ; instead of &&
+
+
+
+integration tests
+•	create an integration test for xxxxxx (controller)  with coverage of at least 80%. use test database and existing seed if possible (Consider the content of backend/scripts and backend/src/db). Use good practices and the latest development techniques. Use ; instead of &&
+
+frontend
+
 Project Folder Structure
 Project Folder Structure for 'A la carte'
 This structure promotes modularity, separation of concerns, and ease of maintenance for both your backend API and your frontend application.
@@ -433,9 +585,9 @@ o	main.jsx (or .tsx): The entry point for your React application, where you rend
 This structure provides a clear separation of concerns, making it easier for new developers to understand the codebase and for existing developers to find and modify code without breaking other parts of the application.
 
 Functionalities
-All app screens must be in Brazilian Portuguese.
+All screens on the app must be in Brazilian Portuguese except the menus where the customer can choose the language.
 You're looking for a more detailed breakdown of the functionalities required to develop the 'A la carte' app! I can certainly provide that, drawing directly from the "Design Document for 'A la carte' SaaS Application" Canvas.
-Here's a comprehensive list of the functionalities needed, broken down by their respective areas
+Here's a comprehensive list of the functionalities needed, broken down by their respective areas:
 1. Restaurant Onboarding and Subscription Management
 •	Self-Service Signup:
 o	User interface for new restaurants to create an account.
@@ -570,6 +722,112 @@ o	Printouts including seat-specific item tags for accurate delivery.
 o	Logic to split orders by prep station, seat, and combo components.
 This detailed breakdown covers the essential functionalities required for 'A la carte', encompassing everything from initial setup to day-to-day operations and customer experience.
 
+Admin pages
+The are 3 types of admin pages: for A la carte administrators, for restaurant administrators and for location administrators (restaurant administrators can access it)
+A la carte Admin
+Restaurant Admin
+Restaurant Profile
+User Profile
+Location Admin
+Location Profile
+User Profile
+Users
+Menu
+Menu
+•	Id (uuid)
+•	Language id
+•	Status (available, sold out,
+•	Preparation Time (Optional): An estimated time for the item to be prepared.
+•
+Menu languages
+•	Menu id
+•	Language id
+•	Category id
+•	Name
+•	Description: A detailed and enticing description, including key ingredients, flavors, and preparation methods. This is crucial for engaging customers and can be optimized for SEO.
+Menu categories (Menu Sections(
+•	Menu id
+•	Category id
+Menu modifiers
+•	Menu id
+•	Modifier id
+Menu Dietary and Allergen
+•	Menu id
+•	Dietary and Allergen id
+Menu images
+•	Menu id
+•	url
+Menu videos
+•	Menu id
+•	url
+Languages
+•	Id (serial)
+•	Name
+•	Image
+•	Default language for Menu?
+Categories (Menu Sections)
+•	Custom Menu Sections/Categories: Restaurants can define their own logical categories (e.g., "Appetizers," "Main Courses," "Desserts," "Beverages," "Chef's Specials," "Breakfast," "Lunch," "Dinner").
+•	Sub-categories (Optional): Further breakdown within main categories (e.g., "Main Courses" -> "Pasta," "Grill," "Seafood").
+•	Id (serial)
+•	Section?
+•	Sequence
+Categories Languages
+•	Category id
+•	Language id
+•	Name
+Modifiers
+•	Optional Modifiers: Choices that don't affect the base price (e.g., "no onions," "sauce on the side").
+•	Paid Modifiers: Add-ons that increase the price (e.g., "add extra cheese," "side of avocado").
+•	Required Modifiers: Choices that must be made (e.g., "steak doneness: rare, medium, well-done").
+•
+•	Id (serial)
+•	Required?
+•	Paid?
+•	Price
+Modifiers Languages
+•	Modifier id
+•	Language id
+•	Name
+•	Choice: steak doneness: rare, medium, well-done
+•
+Complex Customizations:
+•	Half-and-Half: For items like pizzas, allowing customers to choose different toppings/styles for each half.
+•	Combo/Set Meal Builders: Structured steps for building a meal, guiding customers through choices for main courses, sides, and included/optional add-ons.
+Dietary and Allergen
+•	Id (serial)
+•	Dietary or allergen?
+Dietary and Allergen Languages
+•	Dietary and Allergen id
+•	Language id
+•	Name
+•
+Promotions and Special Offers:
+•	Integration with the Promotions & Discounts Manager to display active deals directly on the menu (e.g., "Happy Hour Special," "Buy One Get One Free").
+•	Id (serial)
+•	Schedule id
+Promotions and Special Offers Languages
+•	Promotions and Special Offers id
+•	Language id
+•	Name
+Schedule Availability
+•	Set specific times or days when certain items or categories are available (e.g., "Breakfast Menu until 11 AM").
+•	Id (serial)
+•	Days of the week
+•	Start time – end time
+
+
+Customers pages
+Menu
+•	Select language -> Default
+•	Display in the correct sections order
+•	Display subcategories when existing
+•	Allow filters:
+o	Allergen -> show only itens for that or display alert?
+o	Dietary -> show only itens for that or display alert?
+o	Subcategories
+o	Text
+o	Price range
+o	Available only items
 Database
 That's a great name! "A la cart app" perfectly fits the restaurant and ordering theme.
 Yes, there are indeed free PostgreSQL services available for your development phase, similar to MongoDB Atlas's free tier. These are excellent for building and testing your "A la cart app" without initial costs.
@@ -642,4 +900,371 @@ Data Backup and Disaster Recovery:
 o	Automated Backups: Implementation of automated, regular backups of all critical data (database, media files) to secure, off-site storage.
 o	Point-in-Time Recovery: Capability for point-in-time recovery to restore data to a specific moment, minimizing data loss in case of corruption or accidental deletion.
 o	Disaster Recovery Plan: A documented disaster recovery plan outlining procedures for restoring service and data in the event of a major system failure or catastrophic event.
+Restaurant Technology Market
+The market for restaurant technology, especially Point of Sale (POS) and online ordering systems, is quite robust. 'A la carte' aims to provide a comprehensive solution, and many existing players offer similar or overlapping functionalities.
+Here are some of the prominent apps and platforms in the market that share similarities with 'A la carte', categorized by their primary focus:
+Comprehensive Restaurant Management & POS Systems (Closest Competitors):
+These platforms often offer a wide range of features, including POS, online ordering, kitchen management, and sometimes even loyalty and marketing.
+1.	Toast POS:
+o	Overview: One of the leading all-in-one restaurant POS systems, offering hardware, software, and payment processing. Known for its robust features for various restaurant types.
+o	Similarities to 'A la carte': Strong POS, KDS, online ordering, table management, loyalty programs, multi-location support.
+o	Key Differentiator (vs. 'A la carte's current design): Toast typically requires using their proprietary payment processing.
+2.	Lightspeed Restaurant:
+o	Overview: A cloud-based POS system designed for restaurants, bars, and cafes. Offers extensive features for order management, inventory, reporting, and customer loyalty.
+o	Similarities to 'A la carte': Comprehensive POS, online ordering, KDS, multi-location capabilities, customer loyalty.
+o	Key Differentiator: Often praised for its advanced inventory management and deeper reporting.
+3.	TouchBistro:
+o	Overview: An iPad-based POS system that focuses on improving front-of-house and kitchen operations. It offers a hybrid cloud/server system.
+o	Similarities to 'A la carte': POS, KDS, tableside ordering, online ordering, reservations, profit management.
+o	Key Differentiator: Designed specifically for Apple devices, offering a user-friendly iPad interface.
+4.	Clover POS:
+o	Overview: An all-in-one POS solution with various hardware options, known for its flexibility and app market for integrations.
+o	Similarities to 'A la carte': Online ordering, payment processing, inventory management, customer engagement.
+o	Key Differentiator: Highly customizable with a wide range of third-party apps and hardware options.
+5.	Square for Restaurants:
+o	Overview: A popular and scalable POS system, especially for small to mid-sized businesses, offering integrated payment processing and online ordering.
+o	Similarities to 'A la carte': Online ordering, menu management, multi-store support, contactless payments.
+o	Key Differentiator: Often praised for its simplicity, ease of use, and competitive pricing for basic features.
+6.	SpotOn:
+o	Overview: Offers a comprehensive restaurant POS system with features for various restaurant types, including analytics and guest data collection.
+o	Similarities to 'A la carte': POS, KDS, online ordering, loyalty programs, delivery management.
+o	Key Differentiator: Strong focus on real-time restaurant analytics and guest data.
+7.	Aloha Cloud (NCR Voyix):
+o	Overview: A long-standing player in the restaurant technology space, offering robust POS and management solutions for various restaurant sizes.
+o	Similarities to 'A la carte': Online ordering features, streamlined food preparation and delivery, mobile management tools.
+o	Key Differentiator: Offers both cloud-based and on-premise solutions, with a large variety of online ordering features.
+Digital Menu & Online Ordering Focused Platforms:
+These often specialize more in the customer-facing digital menu and ordering experience, sometimes integrating with existing POS systems.
+1.	MENU TIGER:
+o	Overview: A multi-feature interactive restaurant menu QR code software that creates a mobile-optimized restaurant website with built-in online ordering and QR code-enabled digital menus.
+o	Similarities to 'A la carte': QR code ordering, contactless payment, multi-store management, menu customization, customer feedback.
+o	Key Differentiator: Strong emphasis on QR code menu customization and integrated website building.
+2.	ChowNow:
+o	Overview: Focuses on commission-free online ordering solutions, helping restaurants build their own branded online ordering channels.
+o	Similarities to 'A la carte': Online ordering, branded app/website.
+o	Key Differentiator: Strong stance on commission-free ordering, prioritizing direct customer relationships.
+3.	BentoBox:
+o	Overview: Offers a comprehensive digital marketing platform for restaurants, including website building and online ordering capabilities.
+o	Similarities to 'A la carte': Online ordering, reservations, marketing tools, website design.
+o	Key Differentiator: Known for building aesthetically pleasing, on-brand websites for restaurants.
+Other Specialized Solutions:
+•	Restaurant365: More focused on accounting, operations, and staffing solutions.
+•	7shifts: Specializes in workforce management (scheduling, time tracking) for restaurants.
+•	OpenTable / Resy: Primarily reservation and table management systems.
+'A la carte' positions itself as a comprehensive SaaS platform, aiming to combine the best features from these various categories into a single, integrated solution, particularly emphasizing multi-location support, flexible ordering (self-service, waiter-assisted, seat-based), and robust kitchen management.
+Brazilian Market
+The Brazilian market for restaurant technology, which 'A la carte' aims to serve, is experiencing significant growth and digital transformation. Here's a breakdown of the market in Brazil:
+Brazil's Restaurant Technology Market Overview
+The restaurant management software market in Brazil is projected to reach US$ 391.5 million by 2030, growing at a Compound Annual Growth Rate (CAGR) of 19.2% from 2025 to 2030. In 2024, the market revenue was estimated at US$ 140.3 million. Brazil is expected to lead the Latin American regional market in terms of revenue for restaurant management software by 2030.
+This growth is driven by several factors:
+•	High Internet Penetration: In 2023, internet penetration in Brazil reached 84.3%, with approximately 181.8 million active internet users, fostering digital adoption in various sectors, including foodservice.
+•	Consumer Preference for Digital: Brazilian consumers increasingly prefer online ordering, digital payments, and online menu choices.
+•	Government Initiatives: Programs like Pix, an immediate payment system, encourage electronic transactions and the adoption of POS technologies in the hospitality and food sectors. Brazil has also developed stringent security rules for POS software and digital technologies.
+Key Trends and Segments
+1.	Front-End Software Dominance: In 2024, "Front End Software" was the largest revenue-generating segment within restaurant management software, holding a 39.06% share. This includes solutions like digital menus, online ordering, and customer-facing apps.
+2.	Table & Delivery Management Growth: This is identified as the fastest-growing segment, indicating a strong demand for systems that streamline order taking, delivery logistics, and table service.
+3.	Digital Menus and QR Codes:
+o	QR code menus are widely adopted for agility and practicality, allowing customers to access menus directly on their smartphones without downloading an app.
+o	These digital menus often support multimedia (photos, videos), detailed descriptions, allergen information, and multiple languages.
+o	They facilitate direct online ordering, bypassing third-party services and potentially saving on fees for restaurants.
+o	A significant portion of restaurants (54.7%) use multiple QR codes, suggesting their use for various purposes beyond just digital menus, including multi-location strategies.
+4.	Automation and AI: There's a growing trend towards incorporating AI and automation in restaurants to improve order accuracy, food quality, service speed, and operational efficiency. This includes conversational commerce, AI-powered cooking, and robotic assistants.
+5.	Integrated POS Systems: Restaurants are increasingly investing in robust POS systems that integrate various functionalities like online ordering, kitchen display systems (KDS), inventory management, and customer loyalty programs into a single platform.
+6.	Cloud Kitchens: These are projected to be the fastest-growing outlet type, driven by the large number of online delivery app users and lower setup/operational costs.
+7.	Payment Innovation: The adoption of QR code payments and integrated payment systems is on the rise, offering dynamic and efficient service. Pix is a major driver in this area.
+8.	Customer Loyalty and Personalization: Restaurants are focusing on rewarding customer loyalty and offering personalized experiences through digital channels, including loyalty programs and tailored promotions.
+Major Players and Competitors
+The Brazilian market sees a mix of global and local players offering restaurant technology solutions. Some of the notable names include:
+•	Global Players with Presence: Toast, Lightspeed, TouchBistro, Square POS, Clover POS, SpotOn, Oracle Simphony, NCR Voyix (Aloha Cloud). Many of these offer comprehensive POS and restaurant management suites that include online ordering, KDS, and other features similar to 'A la carte'.
+•	Digital Menu/Ordering Specialists: MENU TIGER, My Menu, Yumm.menu, Anota AI (acquired by iFood, focusing on WhatsApp ordering and digital menus).
+•	Local/Regional Solutions: While specific market share data for KDS in Brazil is less readily available, the overall POS terminal market is moderately competitive with regional players.
+Opportunities for 'A la carte'
+•	Growing Market: The strong projected growth in restaurant management software, especially in front-end and table/delivery management, presents a significant opportunity.
+•	Digital Transformation: The ongoing digital evolution of the Brazilian foodservice market, with increasing internet penetration and consumer preference for digital interactions, creates fertile ground for solutions like 'A la carte'.
+•	Multi-Location Needs: The ability of 'A la carte' to manage multiple locations centrally is a strong selling point for restaurant chains looking for unified control.
+•	Feature Depth: 'A la carte's detailed features like seat-based ordering, advanced customization, and flexible payment options cater to evolving restaurant and customer needs.
+•	Security Focus: Emphasizing PCI compliance and robust security measures will be crucial in a market that is increasingly concerned with digital payment security.
+In conclusion, the Brazilian market for restaurant technology is dynamic and expanding rapidly, with a clear shift towards digital solutions that enhance efficiency, customer experience, and operational control. 'A la carte' is well-positioned to capitalize on these trends with its comprehensive feature set.
+
+Glossary
+Menu
+The restaurant menu in the 'A la carte' application is designed to be a dynamic, rich, and highly customizable component, serving both as a digital display for customers and a central management tool for restaurant staff.
+Here's a breakdown of its content, what it should contain, and how it's managed and stored:
+Content of the Restaurant Menu
+The menu in 'A la carte' goes far beyond a simple list of names and prices. It's designed to be an interactive and informative experience for the customer, while providing comprehensive detail for the kitchen.
+1.	Core Item Information:
+o	Item Name: Clear and concise name of the dish/drink.
+o	Description: A detailed and enticing description, including key ingredients, flavors, and preparation methods. This is crucial for engaging customers and can be optimized for SEO.
+o	Price: The current price of the item.
+o	Availability Status: Real-time indication of whether an item is "in stock" or "sold out."
+o	Preparation Time (Optional): An estimated time for the item to be prepared.
+2.	Rich Media:
+o	Multiple High-Quality Images: Each menu item can have several high-resolution images, displayed in a carousel or gallery, allowing customers to visualize the dish from different angles.
+o	Videos (Optional): Short videos showcasing preparation or presentation for select items, enhancing the visual appeal.
+3.	Categorization and Structure:
+o	Custom Menu Sections/Categories: Restaurants can define their own logical categories (e.g., "Appetizers," "Main Courses," "Desserts," "Beverages," "Chef's Specials," "Breakfast," "Lunch," "Dinner").
+o	Sub-categories (Optional): Further breakdown within main categories (e.g., "Main Courses" -> "Pasta," "Grill," "Seafood").
+4.	Customization Options (Modifiers):
+o	Optional Modifiers: Choices that don't affect the base price (e.g., "no onions," "sauce on the side").
+o	Paid Modifiers: Add-ons that increase the price (e.g., "add extra cheese," "side of avocado").
+o	Required Modifiers: Choices that must be made (e.g., "steak doneness: rare, medium, well-done").
+o	Complex Customizations:
+	Half-and-Half: For items like pizzas, allowing customers to choose different toppings/styles for each half.
+	Combo/Set Meal Builders: Structured steps for building a meal, guiding customers through choices for main courses, sides, and included/optional add-ons.
+5.	Dietary and Allergen Information:
+o	Dietary Tags: Predefined tags for common dietary preferences (e.g., "Vegetarian," "Vegan," "Gluten-Free," "Dairy-Free," "Keto-Friendly").
+o	Allergen Warnings: Explicit warnings for common allergens (e.g., "Contains Nuts," "Contains Shellfish," "Contains Soy"). This is critical for customer safety.
+o	Customer-Facing Filters: Ability for customers to filter the menu based on their dietary needs or to see warnings on conflicting items.
+6.	Promotions and Special Offers:
+o	Integration with the Promotions & Discounts Manager to display active deals directly on the menu (e.g., "Happy Hour Special," "Buy One Get One Free").
+7.	Multi-Language Support:
+o	The menu content (item names, descriptions, modifier options) can be provided in multiple languages (Brazilian Portuguese, English, Spanish, and others as configured by the restaurant), allowing customers to switch their preferred viewing language.
+How to Keep/Manage the Menu
+The menu content is managed through the Admin Portal and stored in a robust backend system.
+1.	Management Interface (Admin Portal):
+o	Intuitive Editor: A user-friendly interface within the Admin Portal allows restaurant administrators to:
+	Create/Edit Items: Add new dishes, update prices, descriptions, and availability.
+	Upload Media: Easily upload and manage multiple images and videos for each item. -> watch out for the sizes of the medias -> it does not need to be very high quality as it will main be displayed in small screens
+	Organize Categories: Create, rename, and reorder menu sections/categories.
+	Assign Items: Assign menu items to one or more categories.
+	Configure Modifiers: Set up all types of modifiers (optional, paid, required), including their pricing and dependencies.
+	Build Combo Meals: Define the step-by-step choices for complex combo meals.
+	Apply Dietary Tags: Select and apply relevant dietary and allergen tags to each item.
+	Manage Global vs. Local Menus: Decide if an item is available globally across all locations or customized for specific branches.
+	Set Language Translations: Input translations for all menu content.
+	Schedule Availability: Set specific times or days when certain items or categories are available (e.g., "Breakfast Menu until 11 AM").
+2.	Data Storage (Backend):
+o	PostgreSQL Database: The core menu data (item names, descriptions, prices, categories, modifier configurations, dietary tags, availability status, and references to media files) is stored in a PostgreSQL relational database. This allows for complex relationships between items, categories, and modifiers, and ensures data integrity.
+	Example Table Structure:
+	menu_items table: id, name_pt, name_en, description_pt, description_en, price, available, category_id, preparation_time, etc.
+	categories table: id, name_pt, name_en, ``order_index`
+	modifiers table: id, name_pt, name_en, price_adjustment, type (optional, required, etc.)
+	item_modifiers (junction table): menu_item_id, modifier_id
+	item_images table: id, menu_item_id, image_url, order_index
+	dietary_tags table: id, name_pt, name_en
+	item_dietary_tags (junction table): menu_item_id, dietary_tag_id
+	locations table: id, name, address, etc.
+	location_menus (junction table): location_id, menu_item_id, local_price (if different from global), local_availability
+o	Cloud Storage for Media: High-resolution images and videos are stored in scalable and cost-effective cloud storage solutions like Google Cloud Storage or AWS S3. The database only stores the URLs or paths to these media files.
+3.	API Layer:
+o	Backend APIs (Node.js with Express.js): The backend provides RESTful APIs that the frontend (customer-facing PWA and Admin Portal) uses to:
+	Fetch menu data (e.g., /api/menus/location/:locationId).
+	Create, update, and delete menu items, categories, and modifiers.
+	Upload and manage media files.
+	Retrieve analytics on menu item performance.
+4.	Caching:
+o	Server-Side Caching: Frequently accessed menu data can be cached on the server to reduce database load and speed up response times for customer requests.
+o	Client-Side Caching (PWA): As a PWA, the customer-facing application can leverage service workers to cache menu data and assets, allowing for faster loading times and even offline browsing capabilities.
+5.	Versioning (Advanced):
+o	While not explicitly detailed, a robust system might include versioning for menus, allowing restaurants to revert to previous menu configurations or schedule future menu changes.
+By combining a flexible content structure, a powerful management interface, and a scalable backend, 'A la carte' ensures that restaurants have complete control over their digital menu, making it easy to keep it updated, engaging, and accurate for their customers.
+
+Stations
+You're right to ask for more detail on those "areas"! In a professional kitchen, these are often called stations or sections, and they're typically organized based on the type of food prepared, the cooking method, or the stage of preparation. This system is often referred to as the Kitchen Brigade System, a hierarchical structure that ensures efficiency and specialization.
+Here are some real-world examples of common kitchen stations/areas:
+Common Kitchen Stations/Areas in a Restaurant:
+1.	Sauté Station (Saucier):
+o	What they do: This is often considered one of the most vital and skilled stations. Chefs here are responsible for sautéed items, pan-fried dishes, and all the sauces and gravies that accompany various dishes. They often dictate the pace of service.
+o	Examples of items: Pan-seared fish, stir-fries, reductions, hollandaise sauce, demi-glace.
+2.	Grill Station (Grillardin):
+o	What they do: Focuses on items cooked over direct heat, whether it's a charbroiler or a flat-top grill.
+o	Examples of items: Steaks, grilled chicken, burgers, grilled vegetables, kebabs.
+3.	Fry Station (Friturier):
+o	What they do: Handles all deep-fried items. This station requires strict attention to oil temperature and safety.
+o	Examples of items: French fries, onion rings, calamari, fried chicken, tempura.
+4.	Pantry Station (Garde Manger):
+o	What they do: Responsible for preparing cold dishes, salads, cold appetizers, and often plating desserts. This station emphasizes freshness and presentation.
+o	Examples of items: Salads, charcuterie boards, cold appetizers, sandwiches, dressings.
+5.	Pastry Station (Pâtissier):
+o	What they do: Specializes in all things sweet! This includes desserts, baked goods (like bread), and sometimes pasta. In larger operations, this might be a separate, cooler area.
+o	Examples of items: Cakes, pies, tarts, cookies, bread, ice cream, plated desserts.
+6.	Beverage Station (Bar/Barista):
+o	What they do: Prepares all drinks, including alcoholic beverages, soft drinks, coffee, and specialty beverages.
+o	Examples of items: Cocktails, lattes, fresh juices, sodas.
+7.	Vegetable Station (Entremetier):
+o	What they do: Focuses on vegetable dishes, starches, and often soups and eggs. In very large kitchens, this might be further split into a Potager (soups) and Legumier (vegetables).
+o	Examples of items: Roasted vegetables, mashed potatoes, risottos, various soups, omelets.
+8.	Fish Station (Poissonnier):
+o	What they do: Dedicated to preparing and cooking all types of fish and seafood, along with their accompanying sauces.
+o	Examples of items: Baked salmon, pan-seared scallops, ceviche, fish and chips.
+9.	Dishwashing Station (Escuelerie):
+o	What they do: While not a "preparation" area, it's a critical support station responsible for cleaning all dishes, utensils, and cooking equipment.
+10.	The Pass (Expediter/Aboyeur):
+o	What they do: This is the critical hand-off point between the kitchen and the front-of-house staff. The expediter ensures dishes are complete, garnished correctly, and sent out to the dining room efficiently. They often communicate orders to the kitchen line.
+The number and specialization of these stations can vary greatly depending on the restaurant's size, cuisine type, and volume of orders. A small cafe might combine several roles into one, while a large hotel kitchen could have highly specialized chefs at each station.
+The 'A la carte' system's ability to define [area] for the KDS portal (yourrestaurant.com/[location-slug]/kds/[area]) directly supports this real-world kitchen organization, allowing restaurants to route orders precisely to the relevant prep stations.
+Table Management
+Table management in a restaurant context refers to the systematic organization and oversight of a restaurant's dining area, including tables, guest seating, and the flow of customers and service.1 It's about optimizing the use of physical space and staff to maximize efficiency and customer satisfaction.2
+In the context of a restaurant application like 'A la carte', "Table Management" would be a feature within the Admin Portal (and potentially a simplified view for waiters) that provides tools to digitally manage the dining floor.
+Here's a breakdown of what "Table Management" typically entails:
+What is Table Management?
+Table management is the process of efficiently allocating tables to guests, tracking their dining progress, and managing the overall flow of the dining room.3 Its primary goals are to:
+•	Maximize Seating Capacity: Ensure tables are turned over efficiently and no valuable seating space goes unused for too long.
+•	Improve Guest Experience: Minimize wait times, seat guests at appropriate tables, and provide timely service.4
+•	Optimize Staff Workflow: Help hosts, waiters, and food runners understand table status and prioritize tasks.
+•	Provide Data for Operations: Offer insights into table turnover, peak times, and staffing needs.5
+Key Functionalities of a Digital Table Management System:
+1.	Visual Table Layout (Floor Plan):
+o	Purpose: Provides a graphical representation of the restaurant's physical layout, showing all tables, their sizes, and their current status.6
+o	Functionality: A digital map of the dining room where tables can be dragged, dropped, and configured to match the actual restaurant layout.7
+2.	Real-time Table Status Tracking:
+o	Purpose: Allows staff to see the live status of every table at a glance.
+o	Functionality: Tables are color-coded or visually indicated with statuses like:
+	Available/Open: Ready for new guests.
+	Seated/Occupied: Guests are currently dining.
+	Ordering/Eating: Guests are actively engaged in their meal.
+	Needs Service: Guest requires attention (e.g., ready to order, needs a refill).
+	Needs Clearing/Cleaning: Guests have left, and the table needs to be bussed and reset.
+	Reserved: Table is booked for an upcoming reservation.
+	Paid/Closed: Bill has been settled.
+3.	Guest Seating & Assignment:
+o	Purpose: Facilitates the process of seating new guests and assigning them to tables.8
+o	Functionality:
+	Hosts can quickly identify available tables that match the party size.9
+	Ability to "seat" a party at a table, changing its status.
+	Option to assign a specific waiter or section to a table.
+4.	Waitlist Management:
+o	Purpose: Organizes guests waiting for a table, providing estimated wait times.10
+o	Functionality:
+	Adding parties to a digital waitlist with contact information.
+	Estimating and communicating wait times.
+	Notifying guests when their table is ready (e.g., via SMS).11
+5.	Reservation Management (often integrated):
+o	Purpose: Handles pre-booked tables.12
+o	Functionality:
+	Viewing upcoming reservations on the floor plan.
+	Marking tables as reserved for specific times.
+	Checking in reserved parties.
+6.	Table Merging/Splitting:
+o	Purpose: Allows for flexibility in accommodating different party sizes or changing guest needs.
+o	Functionality: Ability to digitally combine two or more smaller tables into one larger table, or split a large table into smaller sections.
+7.	Table Turnover Tracking:
+o	Purpose: Provides data on how long tables are occupied, helping identify bottlenecks and optimize operations.
+o	Functionality: Automatically logs start and end times for table occupancy.
+8.	Staff Communication:
+o	Purpose: Improves coordination between front-of-house staff (hosts, waiters, food runners).13
+o	Functionality: Waiters can update table status (e.g., "Food Served," "Ready for Bill") directly from their handheld devices, which updates the central floor plan for hosts and managers.
+Why is Table Management Important for 'A la carte'?
+For a system like 'A la carte', robust table management is essential because:
+•	It complements QR code ordering: Even with self-service ordering, tables still need to be managed for seating, cleaning, and knowing where to deliver food.
+•	Enhances waiter efficiency: Waiters can quickly see which tables need attention, preventing missed service opportunities.14
+•	Improves customer experience: Reduces wait times, ensures smooth transitions, and contributes to a more organized dining environment.15
+•	Supports multi-location operations: Managers can oversee table status across different branches from a central dashboard.
+•	Provides valuable data: The data collected on table turnover and occupancy can inform staffing decisions, marketing efforts, and operational adjustments.16
+In essence, table management is the operational backbone that connects the physical dining space with the digital ordering and kitchen systems, ensuring a seamless flow from guest arrival to departure.17
+Waitlist
+The primary role of the person who takes arriving customers to their table in a restaurant is the Host or Hostess.
+They are often the first point of contact for guests and play a crucial role in setting the tone for the dining experience.
+Their responsibilities typically include:
+•	Greeting Guests: Warmly welcoming customers as they enter.
+•	Managing Reservations and Waitlists: Checking for reservations, managing walk-ins, and quoting accurate wait times.
+•	Seating Guests: Guiding guests to an appropriate table, considering party size, table availability, and server sections.
+•	Menu Distribution: Providing menus once guests are seated.
+•	Initial Communication: Answering basic questions about the restaurant or menu.
+So, for your 'A la carte' design document, the role would be Host/Hostess.
+You've hit on a critical aspect of restaurant operations that significantly impacts customer satisfaction! Managing a waiting list and accurately calculating wait times is an art and a science, blending human judgment with data and technology.
+What is a Waiting List?
+A waiting list (or waitlist) is a queue of customers who are waiting to be seated at a restaurant when all tables are currently occupied.1 It's a fundamental tool for managing demand during peak hours, ensuring fairness, and preventing overcrowding at the entrance.2
+How Waiting Lists Are Managed
+Traditionally, waiting lists were managed with a pen and paper. Today, digital waitlist management systems are the industry standard due to their efficiency and enhanced customer experience.3
+1. Manual (Pen and Paper - Less Common Now):
+•	Process: Hosts write down names, party sizes, and sometimes phone numbers on a physical list.4
+•	Challenges: Difficult to estimate accurate wait times, prone to errors, hard to track progress, can lead to frustrated customers crowding the entrance.
+2. Digital Waitlist Management Systems (Recommended for 'A la carte'):
+These systems are typically integrated into a restaurant's POS or table management software, or they can be standalone apps.5
+•	Customer Joins the List:
+o	In-person: A host enters the customer's name, party size, and phone number (for SMS notifications) into a tablet or computer.6
+o	Self-check-in Kiosk: Customers can enter their own details on a dedicated tablet.7
+o	QR Code/Web Widget: Customers can scan a QR code or visit a web link on their phone to add themselves to the waitlist remotely.8 This is particularly relevant for 'A la carte's self-service model.
+o	Online/App: If the restaurant uses a reservation system, guests might join a waitlist if no immediate reservations are available.9
+•	Real-time Tracking: The system displays the waitlist digitally, showing:
+o	Party names and sizes.
+o	Time they joined the list.
+o	Their position in the queue.
+o	Estimated wait time (calculated by the system).
+o	Table status (occupied, cleaning, available) on a floor plan, helping hosts make seating decisions.10
+•	Customer Communication:
+o	SMS Notifications: When a customer is added, they receive a text message confirming their place on the list and estimated wait time.11
+o	Real-time Updates: Customers can often check their place in line and updated wait times via a public web page link provided in the SMS.12
+o	"Table Ready" Alerts: When their table is ready, the system sends an automated SMS or push notification, eliminating the need for physical buzzers or shouting names.13
+•	Staff Tools:
+o	Hosts can easily mark parties as seated, remove them if they leave, or send custom messages.14
+o	Integration with table management means hosts see available tables and can quickly match them to waiting parties based on size and preferences.15
+How Waiting Times Are Calculated
+Calculating accurate wait times is crucial for managing customer expectations. It's a dynamic process influenced by several factors:
+1.	Average Table Turn Time:
+o	Concept: This is the historical average time a table of a certain size (e.g., 2-top, 4-top, 6-top) is occupied from seating to payment/clearing.
+o	Calculation: Digital systems track this automatically over time.16 For example, if 4-top tables typically take 60 minutes, that's a key input.
+o	Impact: If a 4-top just got seated, and there are two 4-tops ahead of a new party, the system might estimate 2 x 60 minutes = 120 minutes until the new party is seated (plus buffer).
+2.	Current Table Availability & Occupancy:
+o	Concept: The system knows which tables are currently occupied, which are being cleaned, and which are available.17
+o	Impact: If a 4-top is currently paying, and another 4-top is just getting their dessert, the system can predict when those tables will become available.
+3.	Number of Parties Ahead:
+o	Concept: The most basic factor – how many groups are in front of the current party on the waitlist for a similar table size.
+o	Impact: More parties = longer wait.
+4.	Party Size:
+o	Concept: Larger parties often require larger tables, which may be less frequently available, and can have longer turn times.
+o	Impact: The system matches party size to available tables. A 2-top might get seated faster than a 6-top, even if they joined the list later, if a 2-top table becomes free.
+5.	Kitchen Load/Throttling (Less common for seating wait times, more for order wait times):
+o	While more relevant for online order pickup/delivery times, some advanced systems might factor in kitchen capacity. If the kitchen is slammed, the restaurant might intentionally quote longer wait times to prevent overwhelming the kitchen or to allow for slower table turnover.
+6.	Historical Data and Predictive Analytics:
+o	Concept: Sophisticated systems use past data (e.g., average wait times for a Friday night at 7 PM) to make more accurate predictions.18
+o	Impact: This helps the system "learn" and adjust estimates based on typical patterns.
+7.	Manual Adjustments (Host Override):
+o	Concept: Hosts or managers can manually adjust quoted wait times based on their real-time assessment of the dining room (e.g., a large party just ordered dessert and looks like they'll linger, or a table is about to leave unexpectedly).
+o	Impact: Provides flexibility and allows for human judgment.19
+Benefits of Effective Waitlist Management for 'A la carte':
+•	Reduced Walk-offs: Customers are less likely to leave if they know their accurate wait time and can wait comfortably elsewhere (e.g., at the bar, outside).
+•	Improved Customer Experience: Transparency and communication reduce frustration.
+•	Optimized Table Turnover: Hosts can seat parties more efficiently, maximizing revenue.20
+•	Better Staff Coordination: Clear digital displays help hosts, waiters, and food runners anticipate needs.21
+•	Data Insights: Provides valuable data on peak hours, average wait times, and customer behavior for better operational planning.22
+•	Eliminates Physical Clutter: No more messy paper lists or unreliable buzzers.
+For 'A la carte', the "Table Management" feature would be the core component for implementing this, allowing hosts to manage the waitlist, seat guests, and provide accurate wait time estimates, all integrated with the overall order flow.
+
+Order Flow: Multi-Person, Multi-Station Order at a Table
+Scenario: A Table of Many People Ordering Diverse Dishes
+Imagine a table of four friends – Alice, Bob, Carol, and Dave – at a busy restaurant.
+•	Alice: Orders a Caesar Salad (cold prep/pantry station) and a glass of white wine (bar/beverage station).
+•	Bob: Orders a medium-rare steak (grill station) with mashed potatoes (hot prep/sauté station) and a craft beer (bar/beverage station).
+•	Carol: Orders fried calamari (fry station) as an appetizer, followed by a pasta dish (sauté/pasta station).
+•	Dave: Orders a chocolate lava cake (pastry station) and coffee (bar/beverage station) – he's just joining for dessert.
+________________________________________
+Traditional Restaurant Workflow (No Dedicated Ordering App)
+In a traditional setup, the process relies heavily on the waiter, the Point of Sale (POS) system, and physical communication within the kitchen.
+Order Taking (Waiter & Notepad/Handheld POS):
+o	Waiter's Role: The waiter approaches the table. They are highly skilled at remembering or quickly jotting down orders, often using a specific system:
+	Seat Numbers: They'll mentally (or physically on their notepad) assign "seat numbers" (e.g., clockwise from a reference point).
+	Order Grouping: They'll take drink orders first, then appetizers, then main courses, and finally desserts. They might ask if everyone is ready to order or if some are waiting.
+	Modifications: They meticulously write down any special requests ("no pickles," "sauce on the side").
+o	Entering into POS: The waiter then goes to a central POS terminal (or uses a handheld POS device if available) and inputs the order.
+	Item Entry: Each item is entered.
+	Seat Assignment: Crucially, if the POS supports it, the waiter will assign each item to a specific seat number. This is vital for later bill splitting and delivery.
+	Modifiers/Notes: Special requests are added as modifiers or open notes linked to the specific item.
+Kitchen Communication (POS to KDS/Printer):
+o	Order Transmission: Once the order is "sent" from the POS, it's immediately transmitted to the kitchen.
+o	Kitchen Display System (KDS) or Printers:
+	KDS (Digital): If the restaurant has a KDS, the order appears on a large screen in the kitchen. The KDS is often configured to automatically route items to specific station screens. So, the "Caesar Salad" appears on the Pantry KDS, the "Steak" on the Grill KDS, "Calamari" on the Fry KDS, and "Lava Cake" on the Pastry KDS. Drinks go to the bar KDS/printer.
+	Printers (Paper Tickets): If no KDS, the POS prints physical tickets. These tickets are often duplicated, with different copies going to different stations (e.g., a "bar ticket," a "hot line ticket," a "cold prep ticket"). Each ticket will list only the items relevant to that station, but will typically include the table number and potentially seat numbers.
+o	Expediter's Role (The "Pass"): A key person, the expediter (or "expo"), stands at "the pass" (the window between the kitchen and dining room). They have a master view of all orders (either on a main KDS screen or by managing all printed tickets). They call out orders to the chefs, ensure timing, verify quality, and coordinate dishes coming from different stations so they are all ready at the same time for a table.
+Food Preparation:
+o	Chefs at each station prepare their assigned dishes. The expediter might "fire" (tell chefs to start cooking) courses at different times to ensure everything for a table is ready simultaneously (e.g., start steak first, then fries a few minutes later).
+Delivery to Table (Waiter):
+o	When the expediter confirms all dishes for Table 5 are ready, the waiter is alerted (either verbally by the expediter, via a pager, or a notification on their handheld POS).
+o	The waiter collects the food. Because the items were assigned to seats in the POS, and the kitchen either tagged plates or the waiter remembers, they can deliver each dish directly to the correct person at the table: "Alice, your salad," "Bob, your steak," etc.
+Handling Flexible Payments (Partial/Early Departure)
+This is where the POS system becomes critical.
+1.	Initiating a Split/Partial Payment (Waiter & POS):
+o	Customer Request: Dave wants to pay for his dessert and coffee and leave.
+o	Waiter Action: The waiter goes to the POS terminal and opens Table 5's bill.
+o	POS Functionality: Modern POS systems have robust bill-splitting features:
+	Split by Item: The waiter selects Dave's "Chocolate Lava Cake" and "Coffee" from the bill. The POS calculates the subtotal for these items, plus Dave's proportional share of taxes and any auto-gratuity.
+	Split by Seat: If items were assigned by seat, the waiter can simply select "Split by Seat 4" (or "Split by Dave's items"), and the POS automatically generates a separate bill for all items assigned to that seat.
+	Split by Fixed Amount: Less common for individual departures, but possible if a customer just wants to contribute a specific amount (e.g., "$20 towards the bill").
+	Split Evenly: If the group decided to split the remaining bill equally among the remaining people, the POS can do this too.
+o	Payment Processing: Dave pays his portion via card or cash through the POS.
+o	Remaining Balance: The POS system updates the main bill for Table 5, showing the remaining balance owed by Alice, Bob, and Carol. This remaining balance is what the waiter will present later. The table remains "open" in the POS.
+2.	Tracking & Communication:
+o	The waiter needs to clearly communicate to the remaining party that a portion of the bill has been settled.
+o	The POS system keeps an accurate, real-time record of the bill's status, preventing errors.
 
