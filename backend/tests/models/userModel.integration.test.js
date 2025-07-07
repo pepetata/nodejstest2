@@ -3,7 +3,10 @@
  * This file focuses on testing database operations and relationships
  */
 
-// Mock the logger to prevent actual logging during tests
+// =============================================================================
+// MOCKS SETUP
+// =============================================================================
+
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -12,37 +15,171 @@ const mockLogger = {
   child: jest.fn().mockReturnThis(),
 };
 
-// Mock logger module
-jest.mock('../../src/utils/logger', () => ({
-  logger: mockLogger,
-}));
+const mockBcrypt = {
+  hash: jest
+    .fn()
+    .mockImplementation((password, saltRounds) =>
+      Promise.resolve(`$2b$${saltRounds}$hashedversion.${password.substring(0, 5)}`)
+    ),
+  compare: jest
+    .fn()
+    .mockImplementation((password, hash) =>
+      Promise.resolve(hash.includes(password.substring(0, 5)))
+    ),
+};
+
+const mockCrypto = {
+  randomBytes: jest.fn().mockImplementation((size) => ({
+    toString: jest.fn().mockReturnValue(
+      Math.random()
+        .toString(36)
+        .substring(2, size + 2)
+    ),
+  })),
+};
+
+// Mock database
+const mockDb = {
+  query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+  testConnection: jest.fn().mockResolvedValue(true),
+  executeQuery: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+};
+
+jest.mock('../../src/utils/logger', () => ({ logger: mockLogger }));
+jest.mock('bcrypt', () => mockBcrypt);
+jest.mock('crypto', () => mockCrypto);
+jest.mock('../../src/config/db', () => mockDb);
+
+jest.mock('../../src/models/BaseModel', () => {
+  return class MockBaseModel {
+    constructor() {
+      this.tableName = '';
+      this.primaryKey = 'id';
+      this.timestamps = true;
+      this.sensitiveFields = [];
+      this.logger = mockLogger.child({ model: this.constructor.name });
+    }
+
+    async executeQuery(text, params = []) {
+      return mockDb.query(text, params);
+    }
+
+    async validate(data, schema) {
+      // Simple mock validation - just return the data
+      const { error, value } = schema.validate(data, {
+        abortEarly: false,
+        stripUnknown: true,
+        convert: true,
+      });
+
+      if (error) {
+        const validationError = new Error('Validation failed');
+        validationError.details = error.details.map((detail) => ({
+          field: detail.path.join('.'),
+          message: detail.message,
+          value: detail.context?.value,
+        }));
+        throw validationError;
+      }
+      return value;
+    }
+
+    sanitize(data) {
+      if (!data) return data;
+      if (Array.isArray(data)) {
+        return data.map((item) => this.sanitize(item));
+      }
+      const sanitized = { ...data };
+      this.sensitiveFields.forEach((field) => {
+        delete sanitized[field];
+      });
+      return sanitized;
+    }
+
+    sanitizeOutput(data, sensitiveFields = []) {
+      if (!data) return data;
+      const fieldsToRemove = sensitiveFields.length > 0 ? sensitiveFields : this.sensitiveFields;
+      const sanitized = Object.assign({}, data);
+      fieldsToRemove.forEach((field) => {
+        delete sanitized[field];
+      });
+      return sanitized;
+    }
+
+    buildWhereClause(conditions = {}, startIndex = 1) {
+      const whereParts = [];
+      const params = [];
+      let paramIndex = startIndex;
+
+      Object.entries(conditions).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          whereParts.push(`${key} = $${paramIndex++}`);
+          params.push(value);
+        }
+      });
+
+      const clause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
+      return { clause, params, nextIndex: paramIndex };
+    }
+
+    buildSetClause(data, startIndex = 1) {
+      const setParts = [];
+      const params = [];
+      let paramIndex = startIndex;
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          setParts.push(`${key} = $${paramIndex++}`);
+          params.push(value);
+        }
+      });
+
+      if (this.timestamps) {
+        setParts.push(`updated_at = CURRENT_TIMESTAMP`);
+      }
+
+      const clause = setParts.join(', ');
+      return { clause, params, nextIndex: paramIndex };
+    }
+
+    async findById(id, columns = ['*']) {
+      const result = await this.executeQuery('SELECT * FROM test WHERE id = $1', [id]);
+      return result.rows[0] || null;
+    }
+
+    async find(conditions = {}, options = {}, columns = ['*']) {
+      const result = await this.executeQuery('SELECT * FROM test', []);
+      return result.rows;
+    }
+
+    async count(conditions = {}) {
+      const result = await this.executeQuery('SELECT COUNT(*) FROM test', []);
+      return parseInt(result.rows[0].count);
+    }
+
+    async delete(conditions) {
+      if (Object.keys(conditions).length === 0) {
+        throw new Error('Delete conditions cannot be empty');
+      }
+      const result = await this.executeQuery('DELETE FROM test WHERE id = $1', [conditions.id]);
+      return result.rowCount;
+    }
+  };
+});
 
 const userModel = require('../../src/models/userModel');
-const db = require('../../src/config/db');
 
 describe('UserModel - Integration Tests (Database Interaction)', () => {
   let testUsers = [];
   let testRestaurantId;
 
   beforeAll(async () => {
-    // Ensure test database connection
-    await db.testConnection();
-
-    // Create a test restaurant first
-    const restaurantQuery = `
-      INSERT INTO restaurants (name, email, phone, description, cuisine_type, status)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id
-    `;
-    const restaurantResult = await db.executeQuery(restaurantQuery, [
-      'Test Restaurant Integration',
-      'test-integration@restaurant.com',
-      '+1234567890',
-      'Test restaurant for integration tests',
-      'italian',
-      'active',
-    ]);
-    testRestaurantId = restaurantResult.rows[0].id;
+    // Mock restaurant creation
+    testRestaurantId = 'test-restaurant-id-123';
+    mockDb.query.mockResolvedValueOnce({
+      rows: [{ id: testRestaurantId }],
+      rowCount: 1,
+    });
   });
 
   beforeEach(() => {

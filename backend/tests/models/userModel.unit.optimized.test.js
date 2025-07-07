@@ -538,24 +538,17 @@ describe('UserModel - Unit Tests (Schema Validation & Business Logic)', () => {
       });
 
       it('should handle international email addresses', () => {
-        const internationalEmails = [
-          'test@münchen.de', // IDN domain - might pass in modern Joi
-          'user@中文.域名', // Chinese domain - should fail
+        const invalidEmails = [
           'test@exam ple.com', // Space in domain - should fail
+          'user@.example.com', // Leading dot - should fail
+          'user@example..com', // Double dots - should fail
         ];
 
-        // Test at least one email fails validation
-        let hasError = false;
-        internationalEmails.forEach((email) => {
+        invalidEmails.forEach((email) => {
           const userData = createValidUserData({ email });
           const { error } = userModel.createSchema.validate(userData);
-          if (error) {
-            hasError = true;
-          }
+          expect(error).toBeDefined();
         });
-
-        // At least one should fail
-        expect(hasError).toBe(true);
       });
     });
 
