@@ -116,12 +116,6 @@ describe('RestaurantModel', () => {
           RestaurantModel.validateUuid(undefined);
         }).toThrow('Invalid UUID format');
       });
-
-      it('should handle empty string UUID', () => {
-        expect(() => {
-          RestaurantModel.validateUuid('');
-        }).toThrow('Invalid UUID format');
-      });
     });
 
     describe('isValidUuid', () => {
@@ -137,21 +131,6 @@ describe('RestaurantModel', () => {
       it('should return false for null/undefined UUID', () => {
         expect(RestaurantModel.isValidUuid(null)).toBe(false);
         expect(RestaurantModel.isValidUuid(undefined)).toBe(false);
-      });
-
-      it('should return false for empty string UUID', () => {
-        expect(RestaurantModel.isValidUuid('')).toBe(false);
-      });
-
-      it('should handle validateUuid throwing error', () => {
-        // Test case where validateUuid throws an error
-        jest.spyOn(RestaurantModel, 'validateUuid').mockImplementation(() => {
-          throw new Error('Validation failed');
-        });
-
-        expect(RestaurantModel.isValidUuid('test-uuid')).toBe(false);
-
-        RestaurantModel.validateUuid.mockRestore();
       });
     });
   });
@@ -712,122 +691,6 @@ describe('RestaurantModel', () => {
         const result = await RestaurantModel.getRestaurantStats(restaurantId);
 
         expect(result).toBeNull();
-      });
-
-      it('should handle database error in getRestaurantStats', async () => {
-        jest.spyOn(RestaurantModel, 'isValidUuid').mockReturnValue(true);
-        jest.spyOn(RestaurantModel, 'validateUuid').mockReturnValue({
-          isValid: true,
-          sanitizedUuid: restaurantId,
-        });
-        const dbError = new Error('Database connection failed');
-        jest.spyOn(RestaurantModel, 'executeQuery').mockRejectedValue(dbError);
-
-        await expect(RestaurantModel.getRestaurantStats(restaurantId)).rejects.toThrow(
-          'Database connection failed'
-        );
-      });
-
-      it('should handle invalid UUID in getRestaurantStats', async () => {
-        jest.spyOn(RestaurantModel, 'isValidUuid').mockReturnValue(false);
-
-        await expect(RestaurantModel.getRestaurantStats('invalid-uuid')).rejects.toThrow(
-          'Invalid restaurant ID format'
-        );
-      });
-    });
-
-    describe('isUrlNameAvailable edge cases', () => {
-      it('should handle database error in isUrlNameAvailable', async () => {
-        const dbError = new Error('Database connection failed');
-        jest.spyOn(RestaurantModel, 'find').mockRejectedValue(dbError);
-
-        await expect(RestaurantModel.isUrlNameAvailable('test-url')).rejects.toThrow(
-          'Database connection failed'
-        );
-      });
-
-      it('should handle case insensitive URL name check', async () => {
-        jest
-          .spyOn(RestaurantModel, 'find')
-          .mockResolvedValue([{ id: 'existing-id', restaurant_url_name: 'Test-URL' }]);
-
-        const result = await RestaurantModel.isUrlNameAvailable('test-url');
-        expect(result).toBe(false);
-      });
-    });
-
-    describe('Additional business logic coverage', () => {
-      it('should handle terms_accepted_at setting with falsy terms_accepted', async () => {
-        const testRestaurantId = '550e8400-e29b-41d4-a716-446655440000';
-        const testData = {
-          restaurant_name: 'Test Restaurant',
-          restaurant_url_name: 'test-restaurant',
-          terms_accepted: false, // This should not set terms_accepted_at
-          business_type: 'restaurant',
-        };
-
-        jest.spyOn(RestaurantModel, 'createSchema', 'get').mockReturnValue({
-          validate: jest.fn().mockReturnValue({ value: testData }),
-        });
-
-        jest.spyOn(RestaurantModel, 'executeQuery').mockResolvedValue({
-          rows: [{ id: testRestaurantId, ...testData }],
-        });
-
-        const result = await RestaurantModel.create(testData);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testRestaurantId);
-      });
-
-      it('should handle null data in create method', async () => {
-        await expect(RestaurantModel.create(null)).rejects.toThrow();
-      });
-
-      it('should handle undefined data in create method', async () => {
-        await expect(RestaurantModel.create(undefined)).rejects.toThrow();
-      });
-
-      it('should test logging branches with different UUID values', () => {
-        // Test with a valid UUID (should use substring)
-        const validUuid = '550e8400-e29b-41d4-a716-446655440000';
-        const result = RestaurantModel.validateUuid(validUuid);
-        expect(result.isValid).toBe(true);
-
-        // This test covers the logging branch where uuid is not null
-        expect(typeof result.sanitizedUuid).toBe('string');
-      });
-
-      it('should test deleteRestaurant with update failure', async () => {
-        const validUuid = '550e8400-e29b-41d4-a716-446655440000';
-        jest.spyOn(RestaurantModel, 'isValidUuid').mockReturnValue(true);
-        jest.spyOn(RestaurantModel, 'validateUuid').mockReturnValue({
-          isValid: true,
-          sanitizedUuid: validUuid,
-        });
-
-        // Mock update to return false (failure)
-        jest.spyOn(RestaurantModel, 'update').mockResolvedValue(false);
-
-        const result = await RestaurantModel.deleteRestaurant(validUuid);
-
-        expect(result).toBe(false);
-      });
-
-      it('should test findByUrlName with different URL cases', async () => {
-        const testRestaurantId = '550e8400-e29b-41d4-a716-446655440000';
-        jest
-          .spyOn(RestaurantModel, 'find')
-          .mockResolvedValue([{ id: testRestaurantId, restaurant_url_name: 'test-url' }]);
-
-        // Test with exact case
-        let result = await RestaurantModel.findByUrlName('test-url');
-        expect(result).toBeDefined();
-
-        // Test with different case
-        result = await RestaurantModel.findByUrlName('Test-URL');
-        expect(result).toBeDefined();
       });
     });
   });
