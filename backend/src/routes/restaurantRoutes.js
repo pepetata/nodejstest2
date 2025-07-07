@@ -35,7 +35,7 @@ router.use(ValidationMiddleware.sanitize());
 router.get(
   '/',
   ValidationMiddleware.validateQuery(RestaurantValidation.querySchema),
-  restaurantController.getRestaurants
+  restaurantController.getRestaurants.bind(restaurantController)
 );
 
 // GET /api/restaurants/by-url/:urlName - Get restaurant by URL name
@@ -46,7 +46,7 @@ router.get(
       urlName: RestaurantValidation.urlNameSchema,
     })
   ),
-  restaurantController.getRestaurantByUrlName
+  restaurantController.getRestaurantByUrlName.bind(restaurantController)
 );
 
 // GET /api/restaurants/check-url/:urlName - Check URL name availability
@@ -57,7 +57,7 @@ router.get(
       urlName: RestaurantValidation.urlNameSchema,
     })
   ),
-  restaurantController.checkUrlAvailability
+  restaurantController.checkUrlAvailability.bind(restaurantController)
 );
 
 // GET /api/restaurants/:id - Get restaurant by ID
@@ -68,7 +68,7 @@ router.get(
       id: RestaurantValidation.uuidSchema,
     })
   ),
-  restaurantController.getRestaurantById
+  restaurantController.getRestaurantById.bind(restaurantController)
 );
 
 // GET /api/restaurants/:id/stats - Get restaurant statistics
@@ -79,7 +79,7 @@ router.get(
       id: RestaurantValidation.uuidSchema,
     })
   ),
-  restaurantController.getRestaurantStats
+  restaurantController.getRestaurantStats.bind(restaurantController)
 );
 
 /**
@@ -93,7 +93,7 @@ router.post(
   authMiddleware,
   restaurantAuth.requireRestaurantAdmin,
   ValidationMiddleware.validateBody(RestaurantValidation.createSchema),
-  restaurantController.createRestaurant
+  restaurantController.createRestaurant.bind(restaurantController)
 );
 
 // PUT /api/restaurants/:id - Update a restaurant
@@ -108,7 +108,7 @@ router.put(
   ),
   restaurantAuth.requireRestaurantModifyAccess, // Check if user can modify this restaurant
   ValidationMiddleware.validateBody(RestaurantValidation.updateSchema),
-  restaurantController.updateRestaurant
+  restaurantController.updateRestaurant.bind(restaurantController)
 );
 
 // DELETE /api/restaurants/:id - Delete a restaurant
@@ -122,7 +122,7 @@ router.delete(
     })
   ),
   restaurantAuth.requireRestaurantModifyAccess, // Check if user can delete this restaurant
-  restaurantController.deleteRestaurant
+  restaurantController.deleteRestaurant.bind(restaurantController)
 );
 
 /**

@@ -32,6 +32,22 @@ class RestaurantController {
         };
       }
     }
+
+    // Ensure logger is always defined with fallback
+    if (!this.logger) {
+      this.logger = {
+        child: () => ({
+          info: () => {},
+          warn: () => {},
+          error: () => {},
+          debug: () => {},
+        }),
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+      };
+    }
   }
 
   /**
@@ -40,11 +56,24 @@ class RestaurantController {
    */
   async createRestaurant(req, res, next) {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
-    const controllerLogger = this.logger.child({
-      method: 'createRestaurant',
-      requestId,
-      userId: req.user?.id,
-    });
+
+    // Defensive logger access with fallback
+    let controllerLogger;
+    if (this.logger && typeof this.logger.child === 'function') {
+      controllerLogger = this.logger.child({
+        method: 'createRestaurant',
+        requestId,
+        userId: req.user?.id,
+      });
+    } else {
+      // Fallback noop logger
+      controllerLogger = {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+      };
+    }
 
     try {
       controllerLogger.info('Creating new restaurant', {
