@@ -92,6 +92,10 @@ describe('UserModel', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe('Constructor and Properties', () => {
     it('should initialize with correct properties', () => {
       expect(userModel.tableName).toBe('users');
@@ -355,7 +359,7 @@ describe('UserModel', () => {
         const result = await userModel.create(mockUserData);
 
         expect(userModel.validate).toHaveBeenCalledWith(mockUserData, expect.any(Object));
-        expect(userModel.hashPassword).toHaveBeenCalledWith(mockUserData.password);
+        expect(userModel.hashPassword).toHaveBeenCalledWith('password123');
         expect(result).toEqual(
           expect.objectContaining({
             id: mockCreatedUser.id,
@@ -392,8 +396,14 @@ describe('UserModel', () => {
           password: 'hashed_password',
         };
 
-        const originalFindById = userModel.__proto__.findById;
-        userModel.__proto__.findById = jest.fn().mockResolvedValue(mockUser);
+        jest.spyOn(userModel.__proto__.__proto__, 'findById').mockResolvedValue(mockUser);
+
+        // Mock sanitizeOutput to remove password
+        jest.spyOn(userModel, 'sanitizeOutput').mockImplementation((data, sensitiveFields) => {
+          const sanitized = { ...data };
+          sensitiveFields.forEach((field) => delete sanitized[field]);
+          return sanitized;
+        });
 
         const result = await userModel.findById(userId);
 
@@ -405,21 +415,15 @@ describe('UserModel', () => {
           })
         );
         expect(result.password).toBeUndefined(); // Should be sanitized
-
-        // Restore original method
-        userModel.__proto__.findById = originalFindById;
       });
 
       it('should throw error for invalid UUID', async () => {
-        const originalIsValidUuid = userModel.isValidUuid;
-        userModel.isValidUuid = jest.fn().mockReturnValue(false);
+        // Mock isValidUuid to return false for invalid UUID
+        jest.spyOn(userModel, 'isValidUuid').mockReturnValue(false);
 
         await expect(userModel.findById('invalid-uuid')).rejects.toThrow(
           'Invalid user ID format. Must be a valid UUID.'
         );
-
-        // Restore original method
-        userModel.isValidUuid = originalIsValidUuid;
       });
     });
 
@@ -432,8 +436,14 @@ describe('UserModel', () => {
           password: 'hashed_password',
         };
 
-        const originalFind = userModel.find;
-        userModel.find = jest.fn().mockResolvedValue([mockUser]);
+        jest.spyOn(userModel, 'find').mockResolvedValue([mockUser]);
+
+        // Mock sanitizeOutput to remove password
+        jest.spyOn(userModel, 'sanitizeOutput').mockImplementation((data, sensitiveFields) => {
+          const sanitized = { ...data };
+          sensitiveFields.forEach((field) => delete sanitized[field]);
+          return sanitized;
+        });
 
         const result = await userModel.findByEmail('test@example.com');
 
@@ -445,21 +455,14 @@ describe('UserModel', () => {
           })
         );
         expect(result.password).toBeUndefined(); // Should be sanitized
-
-        // Restore original method
-        userModel.find = originalFind;
       });
 
       it('should return null when user not found', async () => {
-        const originalFind = userModel.find;
-        userModel.find = jest.fn().mockResolvedValue([]);
+        jest.spyOn(userModel, 'find').mockResolvedValue([]);
 
         const result = await userModel.findByEmail('nonexistent@example.com');
 
         expect(result).toBeNull();
-
-        // Restore original method
-        userModel.find = originalFind;
       });
     });
 
@@ -540,24 +543,29 @@ describe('UserModel', () => {
         const mockUpdatedUser = {
           ...mockCurrentUser,
           ...updateData,
+          password: 'hashed_password',
         };
 
-        const originalIsValidUuid = userModel.isValidUuid;
-        const originalFindById = userModel.__proto__.findById;
-        const originalBuildSetClause = userModel.buildSetClause;
-        const originalExecuteQuery = userModel.executeQuery;
-
-        userModel.isValidUuid = jest.fn().mockReturnValue(true);
-        userModel.__proto__.findById = jest.fn().mockResolvedValue(mockCurrentUser);
-        userModel.buildSetClause = jest.fn().mockReturnValue({
+        jest.spyOn(userModel, 'isValidUuid').mockReturnValue(true);
+        jest
+          .spyOn(userModel, 'validateUuid')
+          .mockReturnValue({ isValid: true, sanitizedUuid: userId });
+        jest.spyOn(userModel, 'validate').mockResolvedValue(updateData);
+        jest.spyOn(userModel.__proto__.__proto__, 'findById').mockResolvedValue(mockCurrentUser);
+        jest.spyOn(userModel, 'buildSetClause').mockReturnValue({
           clause: 'full_name = $1, status = $2',
           params: [updateData.full_name, updateData.status],
         });
-        userModel.executeQuery = jest.fn().mockResolvedValue({
+        jest.spyOn(userModel, 'executeQuery').mockResolvedValue({
           rows: [mockUpdatedUser],
         });
 
-        jest.spyOn(userModel, 'validate').mockResolvedValue(updateData);
+        // Mock sanitizeOutput to remove password
+        jest.spyOn(userModel, 'sanitizeOutput').mockImplementation((data, sensitiveFields) => {
+          const sanitized = { ...data };
+          sensitiveFields.forEach((field) => delete sanitized[field]);
+          return sanitized;
+        });
 
         const result = await userModel.update(userId, updateData);
 
@@ -568,40 +576,26 @@ describe('UserModel', () => {
             status: updateData.status,
           })
         );
-
-        // Restore original methods
-        userModel.isValidUuid = originalIsValidUuid;
-        userModel.__proto__.findById = originalFindById;
-        userModel.buildSetClause = originalBuildSetClause;
-        userModel.executeQuery = originalExecuteQuery;
+        expect(result.password).toBeUndefined(); // Should be sanitized
       });
 
       it('should throw error for invalid UUID', async () => {
-        const originalIsValidUuid = userModel.isValidUuid;
-        userModel.isValidUuid = jest.fn().mockReturnValue(false);
+        jest.spyOn(userModel, 'isValidUuid').mockReturnValue(false);
 
         await expect(userModel.update('invalid-uuid', updateData)).rejects.toThrow(
           'Invalid user ID format. Must be a valid UUID.'
         );
-
-        // Restore original method
-        userModel.isValidUuid = originalIsValidUuid;
       });
 
       it('should throw error when user not found', async () => {
-        const originalIsValidUuid = userModel.isValidUuid;
-        const originalFindById = userModel.__proto__.findById;
-
-        userModel.isValidUuid = jest.fn().mockReturnValue(true);
-        userModel.__proto__.findById = jest.fn().mockResolvedValue(null);
-
+        jest.spyOn(userModel, 'isValidUuid').mockReturnValue(true);
+        jest
+          .spyOn(userModel, 'validateUuid')
+          .mockReturnValue({ isValid: true, sanitizedUuid: userId });
         jest.spyOn(userModel, 'validate').mockResolvedValue(updateData);
+        jest.spyOn(userModel.__proto__.__proto__, 'findById').mockResolvedValue(null);
 
         await expect(userModel.update(userId, updateData)).rejects.toThrow('User not found');
-
-        // Restore original methods
-        userModel.isValidUuid = originalIsValidUuid;
-        userModel.__proto__.findById = originalFindById;
       });
     });
 
@@ -813,14 +807,10 @@ describe('UserModel', () => {
 
     it('should log errors appropriately', async () => {
       const error = new Error('Test error');
-      const originalFind = userModel.find;
-      userModel.find = jest.fn().mockRejectedValue(error);
+      jest.spyOn(userModel, 'find').mockRejectedValue(error);
 
       await expect(userModel.findByEmail('test@example.com')).rejects.toThrow('Test error');
       expect(mockLogger.error).toHaveBeenCalled();
-
-      // Restore original method
-      userModel.find = originalFind;
     });
   });
 
