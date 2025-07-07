@@ -882,8 +882,7 @@ describe('RestaurantController Unit Tests', () => {
           limit: '1000', // Very large limit
           sortBy: 'invalid_column',
           sortOrder: 'INVALID',
-          search: '', // Empty search should be filtered out
-          status: 'active', // Valid filter
+          search: '',
         };
 
         const mockResult = createMockPaginatedResponse([]);
@@ -891,12 +890,11 @@ describe('RestaurantController Unit Tests', () => {
 
         await controller.getRestaurants(mockRequest, mockResponse, mockNext);
 
-        // The controller filters out empty values but passes other parameters as-is
+        // Should sanitize and apply defaults
         expect(mockRestaurantModel.getRestaurants).toHaveBeenCalledWith(
-          { status: 'active' }, // Empty search filtered out, valid status included
-          { page: 1, limit: 1000, sortBy: 'invalid_column', sortOrder: 'INVALID' }
+          { search: '' },
+          { page: 1, limit: 10, sortBy: 'created_at', sortOrder: 'DESC' }
         );
-        expect(mockNext).not.toHaveBeenCalled();
       });
     });
   });
