@@ -84,9 +84,9 @@ class TestDataFactory {
       pizzariaBella: {
         id: '550e8400-e29b-41d4-a716-446655440001',
         email: 'joao@pizzariabella.com.br',
-        restaurant_name: 'Pizzaria Bella',
+        restaurant_name: 'Pizzaria Bella Vista',
         owner_name: 'João Silva',
-        restaurant_url_name: 'pizzaria-bella',
+        restaurant_url_name: 'pizzaria-bella-vista',
         password: 'pizza123', // Plain text password for auth tests
       },
     };

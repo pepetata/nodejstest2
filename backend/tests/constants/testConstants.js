@@ -9,9 +9,9 @@ const TEST_CONSTANTS = {
     PIZZARIA_BELLA_ID: '550e8400-e29b-41d4-a716-446655440001',
     PIZZARIA_BELLA_EMAIL: 'joao@pizzariabella.com.br',
     PIZZARIA_BELLA_PASSWORD: 'pizza123',
-    PIZZARIA_BELLA_NAME: 'Pizzaria Bella',
+    PIZZARIA_BELLA_NAME: 'Pizzaria Bella Vista',
     PIZZARIA_BELLA_OWNER: 'João Silva',
-    PIZZARIA_BELLA_URL: 'pizzaria-bella',
+    PIZZARIA_BELLA_URL: 'pizzaria-bella-vista',
   },
 
   // Test values

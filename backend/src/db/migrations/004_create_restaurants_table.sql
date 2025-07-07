@@ -1,5 +1,6 @@
 -- Migration: Create restaurants table
 -- Created: 2025-07-06
+-- Updated: 2025-07-07 - Fixed constraints to match working test database
 -- Purpose: Stores restaurant business information (separated from user management)
 
 CREATE TABLE IF NOT EXISTS restaurants (

@@ -580,8 +580,7 @@ class RestaurantModel extends BaseModel {
           r.status,
           r.subscription_plan,
           r.created_at,
-          (SELECT COUNT(*) FROM restaurant_locations WHERE restaurant_id = r.id) as location_count,
-          (SELECT COUNT(*) FROM users WHERE restaurant_id = r.id) as user_count
+          (SELECT COUNT(*) FROM restaurant_locations WHERE restaurant_id = r.id) as location_count
         FROM restaurants r
         WHERE r.id = $1
       `;
@@ -594,7 +593,6 @@ class RestaurantModel extends BaseModel {
           id: stats.id.substring(0, 8) + '...',
           restaurant_name: stats.restaurant_name,
           location_count: stats.location_count,
-          user_count: stats.user_count,
         });
       } else {
         this.logger.warn('Restaurant not found for statistics', {
