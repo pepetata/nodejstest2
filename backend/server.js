@@ -6,8 +6,13 @@ const db = require('./src/config/db');
 const errorHandler = require('./src/middleware/errorHandler');
 const requestLogger = require('./src/middleware/requestLogger');
 const XSSMiddleware = require('./src/middleware/xssMiddleware');
+const ApiVersioningMiddleware = require('./src/middleware/apiVersioningMiddleware');
+const RateLimitMiddleware = require('./src/middleware/rateLimitMiddleware');
 
-// Import routes
+// Import versioned routes
+const v1Routes = require('./src/routes/v1');
+
+// Import legacy routes (for backward compatibility)
 const authRoutes = require('./src/routes/authRoutes');
 const locationRoutes = require('./src/routes/locationRoutes');
 const menuRoutes = require('./src/routes/menuRoutes');
@@ -26,18 +31,53 @@ app.use(express.urlencoded({ extended: true }));
 // XSS Protection - MUST come after body parsing
 app.use(XSSMiddleware.sanitizeAll);
 
+// API Versioning - MUST come before routes
+app.use('/api', ApiVersioningMiddleware.apply());
+
+// Global rate limiting for health and test endpoints
+app.use(RateLimitMiddleware.general());
+
 // Logging
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 app.use(requestLogger);
 
-// Routes
-app.use('/api/auth', authRoutes);
+// Versioned API Routes
+app.use('/api/v1', v1Routes);
+
+// Legacy routes (for backward compatibility) - will be deprecated
+app.use('/api/auth', RateLimitMiddleware.auth(), authRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/restaurants', restaurantRoutes);
+
+// Main API documentation endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'Restaurant Ordering System API',
+    description: 'RESTful API for restaurant management and ordering',
+    versions: {
+      v1: {
+        status: 'stable',
+        endpoint: '/api/v1',
+        documentation: '/api/v1/docs',
+      },
+    },
+    endpoints: {
+      '/api/v1': 'Version 1 API endpoints',
+      '/api/v1/docs': 'API v1 documentation',
+      '/health': 'System health check',
+    },
+    rateLimit: {
+      enabled: true,
+      general: '100 requests per 15 minutes',
+      auth: '5 requests per 15 minutes',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
