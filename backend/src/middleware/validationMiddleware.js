@@ -54,13 +54,30 @@ class ValidationMiddleware {
           value: detail.context?.value,
         }));
 
+        // Compose a user-friendly error message
+        let userMessage = 'Dados inválidos. Por favor, verifique os campos e tente novamente.';
+        if (validationErrors.length === 1) {
+          // Try to make it more specific for common fields
+          const ve = validationErrors[0];
+          if (ve.field === 'website' && ve.message.includes('valid website URL')) {
+            userMessage =
+              'O campo Website deve ser uma URL válida (ex: https://www.seurestaurante.com)';
+          } else if (ve.field === 'restaurant_name') {
+            userMessage = 'O nome do restaurante é obrigatório e deve ter pelo menos 2 caracteres.';
+          } else if (ve.field === 'restaurant_url_name') {
+            userMessage = 'O nome para URL deve ter apenas letras minúsculas, números e hífens.';
+          } else {
+            userMessage = ve.message;
+          }
+        }
+
         validationLogger.warn('Validation failed', {
           target,
           errors: validationErrors,
         });
 
         return res.status(400).json(
-          ResponseFormatter.error('Validation failed', 400, {
+          ResponseFormatter.error(userMessage, 400, {
             validationErrors,
             target,
           })

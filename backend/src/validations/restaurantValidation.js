@@ -16,6 +16,8 @@ class RestaurantValidation {
         'string.max': 'Restaurant name cannot exceed 255 characters',
       }),
 
+      userPayload: Joi.object().optional().unknown(true), // this  is to allow the register to send the userPayload object with the restaurant data
+
       restaurant_url_name: Joi.string()
         .trim()
         .lowercase()
@@ -193,12 +195,27 @@ class RestaurantValidation {
   }
 
   /**
+   * Decode HTML-encoded slashes in a string (e.g., &#x2F; to /)
+   * @param {string} str
+   * @returns {string}
+   */
+  static decodeHtmlSlashes(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/&#x2F;/g, '/');
+  }
+
+  /**
    * Validate restaurant creation data
    * @param {Object} data - Restaurant data to validate
    * @returns {Object} Validation result
    */
   static validateCreate(data) {
-    return this.createSchema.validate(data, { abortEarly: false });
+    // Decode HTML-encoded slashes in website before validation
+    const preprocessed = { ...data };
+    if (preprocessed.website) {
+      preprocessed.website = this.decodeHtmlSlashes(preprocessed.website);
+    }
+    return this.createSchema.validate(preprocessed, { abortEarly: false });
   }
 
   /**
@@ -207,7 +224,12 @@ class RestaurantValidation {
    * @returns {Object} Validation result
    */
   static validateUpdate(data) {
-    return this.updateSchema.validate(data, { abortEarly: false });
+    // Decode HTML-encoded slashes in website before validation
+    const preprocessed = { ...data };
+    if (preprocessed.website) {
+      preprocessed.website = this.decodeHtmlSlashes(preprocessed.website);
+    }
+    return this.updateSchema.validate(preprocessed, { abortEarly: false });
   }
 
   /**

@@ -32,7 +32,15 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message: options.message.message || 'Too many requests, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
       skip: (req, res) => {
         // Skip rate limiting for health checks and test endpoints in development
@@ -67,7 +75,17 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message:
+              options.message.message ||
+              'Too many authentication attempts, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }
@@ -95,7 +113,20 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        const msg =
+          (options && options.message && options.message.message) ||
+          'Too many restaurant creation attempts, please try again later.';
+        const retryAfter =
+          (options && options.message && options.message.retryAfter) || 60 * 60 * 1000;
+        res.status(429).json({
+          success: false,
+          error: {
+            message: msg,
+            code: 429,
+            retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }
@@ -118,7 +149,15 @@ class RateLimitMiddleware {
             path: req.path,
             method: req.method,
           });
-          res.status(options.statusCode).json(options.message);
+          res.status(429).json({
+            success: false,
+            error: {
+              message: options.message.message || 'Too many requests, please try again later.',
+              code: 429,
+              retryAfter: options.message.retryAfter,
+              timestamp: new Date().toISOString(),
+            },
+          });
         },
       }),
       rateLimit({
@@ -139,7 +178,15 @@ class RateLimitMiddleware {
             path: req.path,
             method: req.method,
           });
-          res.status(options.statusCode).json(options.message);
+          res.status(429).json({
+            success: false,
+            error: {
+              message: options.message.message || 'Too many requests, please try again later.',
+              code: 429,
+              retryAfter: options.message.retryAfter,
+              timestamp: new Date().toISOString(),
+            },
+          });
         },
       }),
     ];
@@ -168,7 +215,15 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message: options.message.message || 'Too many upload attempts, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }
@@ -196,7 +251,15 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message: options.message.message || 'Too many search requests, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }
@@ -224,7 +287,17 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message:
+              options.message.message ||
+              'Too many user management requests, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }
@@ -252,7 +325,16 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message:
+              options.message.message || 'Too many user creation attempts, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }
@@ -280,7 +362,17 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
-        res.status(options.statusCode).json(options.message);
+        res.status(429).json({
+          success: false,
+          error: {
+            message:
+              options.message.message ||
+              'Too many password change attempts, please try again later.',
+            code: 429,
+            retryAfter: options.message.retryAfter,
+            timestamp: new Date().toISOString(),
+          },
+        });
       },
     });
   }

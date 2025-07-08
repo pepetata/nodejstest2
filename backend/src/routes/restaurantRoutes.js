@@ -86,10 +86,19 @@ router.get(
  * Protected Routes (authentication required)
  */
 
+// Middleware to decode HTML-encoded slashes in website before validation
+function decodeWebsiteField(req, res, next) {
+  if (req.body && typeof req.body.website === 'string') {
+    req.body.website = req.body.website.replace(/&#x2F;/g, '/');
+  }
+  next();
+}
+
 // POST /api/restaurants - Create a new restaurant
 // Requires authentication and admin role
 router.post(
   '/',
+  decodeWebsiteField, // <-- decode before validation
   ValidationMiddleware.validateBody(RestaurantValidation.createSchema),
   restaurantController.createRestaurant.bind(restaurantController)
 );
@@ -105,6 +114,7 @@ router.put(
     })
   ),
   restaurantAuth.requireRestaurantModifyAccess, // Check if user can modify this restaurant
+  decodeWebsiteField, // <-- decode before validation
   ValidationMiddleware.validateBody(RestaurantValidation.updateSchema),
   restaurantController.updateRestaurant.bind(restaurantController)
 );

@@ -133,7 +133,7 @@ class RestaurantModel extends BaseModel {
    * @returns {Object} Created restaurant
    */
   async create(restaurantData) {
-    this.logger.info('Creating new restaurant', {
+    this.logger.info('Creating new restaurant (model)', {
       restaurant_name: restaurantData.restaurant_name,
       restaurant_url_name: restaurantData.restaurant_url_name,
       business_type: restaurantData.business_type,

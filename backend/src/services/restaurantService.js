@@ -1,6 +1,8 @@
 const restaurantModel = require('../models/RestaurantModel');
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
+const UserService = require('./userService');
+const userService = new UserService();
 
 /**
  * Restaurant Service
@@ -72,7 +74,11 @@ class RestaurantService {
    * @param {Object} currentUser - Current authenticated user
    * @returns {Promise<Object>} Created restaurant
    */
-  async createRestaurant(restaurantData, currentUser = null) {
+  async createRestaurant(data, currentUser = null) {
+    const restaurantData = data;
+    const userData = data.userPayload;
+    // remove userPayload from restaurantData
+    delete restaurantData.userPayload;
     const operationId = `create_restaurant_${Date.now()}`;
 
     const serviceLogger = this._createServiceLogger({
@@ -81,12 +87,13 @@ class RestaurantService {
       currentUserId: currentUser?.id,
     });
 
-    serviceLogger.info('Creating new restaurant', {
+    serviceLogger.info('Creating new restaurant (service)', {
       name: restaurantData.restaurant_name,
       urlName: restaurantData.restaurant_url_name,
       businessType: restaurantData.business_type,
     });
 
+    console.log(`Creating new restaurant (service) ======`);
     try {
       // Add created_by field if current user exists
       if (currentUser) {
@@ -97,12 +104,33 @@ class RestaurantService {
       await this.validateUrlNameUniqueness(restaurantData.restaurant_url_name);
 
       const newRestaurant = await this.restaurantModel.create(restaurantData);
+      userData.restaurant_id = newRestaurant.id;
 
       serviceLogger.info('Restaurant created successfully', {
         restaurantId: newRestaurant.id,
         name: newRestaurant.restaurant_name,
         status: newRestaurant.status,
       });
+
+      try {
+        //check if user email exists in the database before Creating
+        const existingUser = await userService.getUserByEmail(userData.email);
+        if (!existingUser) {
+          await userService.createUser(userData);
+        }
+      } catch (error) {
+        serviceLogger.error('Failed to create user', {
+          error: error.message,
+          userData,
+        });
+        serviceLogger.info('Deleting new restaurant (service)', {
+          name: restaurantData.restaurant_name,
+          urlName: restaurantData.restaurant_url_name,
+          businessType: restaurantData.business_type,
+        });
+        await this.restaurantModel.deleteRestaurant(newRestaurant.id);
+        throw error;
+      }
 
       return newRestaurant;
     } catch (error) {

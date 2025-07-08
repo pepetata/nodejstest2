@@ -81,9 +81,11 @@ class RestaurantController {
     }
 
     try {
-      controllerLogger.info('Creating new restaurant', {
+      controllerLogger.info('Creating new restaurant (controller)', {
         restaurantName: req.body.restaurant_name,
         urlName: req.body.restaurant_url_name,
+        websiteRaw: req.body.website,
+        requestBody: req.body,
       });
 
       const restaurant = await this.restaurantService.createRestaurant(req.body, req.user);

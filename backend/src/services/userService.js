@@ -110,6 +110,40 @@ class UserService {
     }
   }
 
+  async getUserByEmail(email) {
+    const logMeta = {
+      operation: 'getUserByEmail',
+      email,
+    };
+
+    this.logger.debug('Fetching user by email', logMeta);
+
+    try {
+      const user = await this.userModel.findByEmail(email);
+
+      if (!user) {
+        this.logger.warn('User not found', { ...logMeta, email });
+        return null;
+      }
+
+      this.logger.debug('User retrieved successfully', {
+        ...logMeta,
+        userId: user.id,
+        role: user.role,
+        status: user.status,
+      });
+
+      return user;
+    } catch (error) {
+      this.logger.error('Failed to get user by email', {
+        ...logMeta,
+        error: error.message,
+        email,
+      });
+      throw error;
+    }
+  }
+
   /**
    * Get users with filtering and pagination
    * @param {Object} options - Query options

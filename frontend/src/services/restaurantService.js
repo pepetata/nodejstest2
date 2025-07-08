@@ -12,7 +12,10 @@ const restaurantService = {
   getById: (id) => axios.get(`${API_BASE}/${id}`),
 
   // Create a new restaurant
-  create: (data) => axios.post(API_BASE, data),
+  create: (data) => {
+    console.log(`service - restaurantPayload=`, data);
+    return axios.post(API_BASE, data);
+  },
 
   // Update a restaurant
   update: (id, data) => axios.put(`${API_BASE}/${id}`, data),

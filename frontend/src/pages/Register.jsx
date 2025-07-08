@@ -26,7 +26,7 @@ function RegisterPage() {
     restaurantUrlName: 'padre',
     businessType: 'single', // single or multi-location
     cuisineType: 'American',
-    website: 'padre.com',
+    website: 'http://www.padre.com',
     description: 'nao tem',
 
     // Step 3: Locations & Hours (array for multi-location support)
@@ -771,27 +771,18 @@ function RegisterPage() {
   };
 
   const validateWebsite = (url) => {
-    if (!url) return true; // Optional field
-
+    if (url === null || url === undefined || url.trim() === '') return true; // Optional field
+    if (typeof url !== 'string') return false;
+    if (url.length > 255) return false;
     try {
       const urlObj = new URL(url);
-      // Check if it's http or https and has a valid domain
+      // Must be http or https
       return (
         (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') &&
         urlObj.hostname.includes('.')
       );
     } catch {
-      // Try with https prefix if no protocol provided
-      try {
-        const urlWithHttps = url.startsWith('http') ? url : `https://${url}`;
-        const urlObj = new URL(urlWithHttps);
-        return (
-          (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') &&
-          urlObj.hostname.includes('.')
-        );
-      } catch {
-        return false;
-      }
+      return false;
     }
   };
 
@@ -1333,6 +1324,15 @@ function RegisterPage() {
 
     try {
       // 1. Save restaurant
+      const userPayload = {
+        full_name: formData.ownerName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        role: 'restaurant_administrator',
+        // restaurant_id: restaurantId,
+        status: 'pending',
+      };
       const restaurantPayload = {
         restaurant_name: formData.restaurantName,
         restaurant_url_name: formData.restaurantUrlName,
@@ -1340,38 +1340,49 @@ function RegisterPage() {
         cuisine_type: formData.cuisineType,
         phone: formData.phone,
         whatsapp: formData.whatsapp,
-        website: formData.website,
+        // Ensure website is sent as a plain string (decode if needed)
+        website:
+          typeof formData.website === 'string'
+            ? formData.website.replace(/&#x2F;/g, '/')
+            : formData.website,
         description: formData.description,
         status: 'pending',
         subscription_plan: getRecommendedPlan(),
         marketing_consent: formData.marketingConsent,
         terms_accepted: formData.termsAccepted,
-        // Add more fields as needed
+        userPayload: userPayload,
       };
-      const restaurantRes = await restaurantService.create(restaurantPayload);
-      console.log(`restaurant restaurantRes=`, restaurantRes.data);
-      const restaurantId = restaurantRes.data.data.id;
-
       // 2. Save user (restaurant administrator)
-      const userPayload = {
-        full_name: formData.ownerName,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        role: 'restaurant_administrator',
-        restaurant_id: restaurantId,
-        status: 'pending',
-      };
-      console.log(`user payload=`, userPayload);
-      await userService.register(userPayload);
+
+      console.log(`restaurantPayload=`, restaurantPayload);
+      const restaurantRes = await restaurantService.create(restaurantPayload);
+      console.log(`restaurant restaurantRes=`, restaurantRes.data.data);
+      // const restaurantId = restaurantRes.data.data.id;
+
+      // console.log(`user payload=`, userPayload);
+      // await userService.register(userPayload);
 
       // Clear saved form data on successful registration
       localStorage.removeItem('registerFormData');
       localStorage.removeItem('registerCurrentStep');
       navigate('/dashboard');
     } catch (err) {
+      console.log(`error returned`, err);
       let errorMessage = 'Falha no registro. Por favor, tente novamente.';
-      if (err.response?.data?.message) {
+      // Check for validation errors from backend (correct path)
+      if (err.response?.data?.error?.details?.validationErrors) {
+        errorMessage = err.response.data.error.details.validationErrors
+          .map((e) => `${e.field}: ${e.message}`)
+          .join('\n');
+      } else if (err.response?.data?.error?.validationErrors) {
+        // fallback for legacy or other error shape
+        errorMessage = err.response.data.error.validationErrors
+          .map((e) => `${e.field}: ${e.message}`)
+          .join('\n');
+      } else if (err.response?.data?.error?.message) {
+        // fallback for legacy or other error shape
+        errorMessage = err.response.data.error.message;
+      } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.message) {
         if (err.message.includes('network') || err.message.includes('fetch')) {
@@ -1383,10 +1394,18 @@ function RegisterPage() {
         } else {
           errorMessage = err.message;
         }
+      } else if (err.response?.data?.error) {
+        // Show backend error message for known business logic errors (e.g., URL name taken)
+        const backendMsg = err.response.data.error.message;
+        const backendField = err.response.data.error.details?.field;
+        if (backendMsg === 'URL name is already taken' || backendField === 'restaurant_url_name') {
+          errorMessage = 'O nome para URL do restaurante já está em uso. Escolha outro nome.';
+        } else {
+          errorMessage = backendMsg;
+        }
       }
       setError(errorMessage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } finally {
       setIsSubmitting(false);
     }
   };
