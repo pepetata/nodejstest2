@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import TermsModal from '../components/common/TermsModal';
+import restaurantService from '../services/restaurantService';
+import userService from '../services/userService';
 import '../styles/Auth.scss';
 import '../styles/register.scss';
 
@@ -1327,29 +1329,49 @@ function RegisterPage() {
     setError('');
 
     if (!validateStep(5)) return;
-
     setIsSubmitting(true);
 
     try {
-      // Call the register function from AuthContext with restaurant data
-      await register({
-        type: 'restaurant',
-        ...formData,
-        subscriptionPlan: getRecommendedPlan(),
-      });
+      // 1. Save restaurant
+      const restaurantPayload = {
+        restaurant_name: formData.restaurantName,
+        restaurant_url_name: formData.restaurantUrlName,
+        business_type: formData.businessType,
+        cuisine_type: formData.cuisineType,
+        phone: formData.phone,
+        whatsapp: formData.whatsapp,
+        website: formData.website,
+        description: formData.description,
+        status: 'pending',
+        subscription_plan: getRecommendedPlan(),
+        marketing_consent: formData.marketingConsent,
+        terms_accepted: formData.termsAccepted,
+        // Add more fields as needed
+      };
+      const restaurantRes = await restaurantService.create(restaurantPayload);
+      const restaurantId = restaurantRes.data.id;
+
+      // 2. Save user (restaurant administrator)
+      const userPayload = {
+        full_name: formData.ownerName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        role: 'restaurant_administrator',
+        restaurant_id: restaurantId,
+        status: 'pending',
+      };
+      await userService.create(userPayload);
 
       // Clear saved form data on successful registration
       localStorage.removeItem('registerFormData');
       localStorage.removeItem('registerCurrentStep');
-
       navigate('/dashboard');
     } catch (err) {
-      console.error('Registration error:', err);
-
-      // Enhanced error handling for different scenarios
       let errorMessage = 'Falha no registro. Por favor, tente novamente.';
-
-      if (err.message) {
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
         if (err.message.includes('network') || err.message.includes('fetch')) {
           errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
         } else if (err.message.includes('email') && err.message.includes('exists')) {
@@ -1360,7 +1382,6 @@ function RegisterPage() {
           errorMessage = err.message;
         }
       }
-
       setError(errorMessage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
