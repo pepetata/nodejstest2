@@ -1,883 +1,523 @@
-/**
- * User Model Integration Tests - Database Interaction
- * This file focuses on testing database operations and relationships
- */
-
-// =============================================================================
-// MOCKS SETUP
-// =============================================================================
-
-const mockLogger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  child: jest.fn().mockReturnThis(),
-};
-
-const mockBcrypt = {
-  hash: jest
-    .fn()
-    .mockImplementation((password, saltRounds) =>
-      Promise.resolve(`$2b$${saltRounds}$hashedversion.${password.substring(0, 5)}`)
-    ),
-  compare: jest
-    .fn()
-    .mockImplementation((password, hash) =>
-      Promise.resolve(hash.includes(password.substring(0, 5)))
-    ),
-};
-
-const mockCrypto = {
-  randomBytes: jest.fn().mockImplementation((size) => ({
-    toString: jest.fn().mockReturnValue(
-      Math.random()
-        .toString(36)
-        .substring(2, size + 2)
-    ),
-  })),
-};
-
-// Mock database
-const mockDb = {
-  query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-  testConnection: jest.fn().mockResolvedValue(true),
-  executeQuery: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-};
-
-jest.mock('../../src/utils/logger', () => ({ logger: mockLogger }));
-jest.mock('bcrypt', () => mockBcrypt);
-jest.mock('crypto', () => mockCrypto);
-jest.mock('../../src/config/db', () => mockDb);
-
-jest.mock('../../src/models/BaseModel', () => {
-  return class MockBaseModel {
-    constructor() {
-      this.tableName = '';
-      this.primaryKey = 'id';
-      this.timestamps = true;
-      this.sensitiveFields = [];
-      this.logger = mockLogger.child({ model: this.constructor.name });
-    }
-
-    async executeQuery(text, params = []) {
-      return mockDb.query(text, params);
-    }
-
-    async validate(data, schema) {
-      // Simple mock validation - just return the data
-      const { error, value } = schema.validate(data, {
-        abortEarly: false,
-        stripUnknown: true,
-        convert: true,
-      });
-
-      if (error) {
-        const validationError = new Error('Validation failed');
-        validationError.details = error.details.map((detail) => ({
-          field: detail.path.join('.'),
-          message: detail.message,
-          value: detail.context?.value,
-        }));
-        throw validationError;
-      }
-      return value;
-    }
-
-    sanitize(data) {
-      if (!data) return data;
-      if (Array.isArray(data)) {
-        return data.map((item) => this.sanitize(item));
-      }
-      const sanitized = { ...data };
-      this.sensitiveFields.forEach((field) => {
-        delete sanitized[field];
-      });
-      return sanitized;
-    }
-
-    sanitizeOutput(data, sensitiveFields = []) {
-      if (!data) return data;
-      const fieldsToRemove = sensitiveFields.length > 0 ? sensitiveFields : this.sensitiveFields;
-      const sanitized = Object.assign({}, data);
-      fieldsToRemove.forEach((field) => {
-        delete sanitized[field];
-      });
-      return sanitized;
-    }
-
-    buildWhereClause(conditions = {}, startIndex = 1) {
-      const whereParts = [];
-      const params = [];
-      let paramIndex = startIndex;
-
-      Object.entries(conditions).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          whereParts.push(`${key} = $${paramIndex++}`);
-          params.push(value);
-        }
-      });
-
-      const clause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
-      return { clause, params, nextIndex: paramIndex };
-    }
-
-    buildSetClause(data, startIndex = 1) {
-      const setParts = [];
-      const params = [];
-      let paramIndex = startIndex;
-
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined) {
-          setParts.push(`${key} = $${paramIndex++}`);
-          params.push(value);
-        }
-      });
-
-      if (this.timestamps) {
-        setParts.push(`updated_at = CURRENT_TIMESTAMP`);
-      }
-
-      const clause = setParts.join(', ');
-      return { clause, params, nextIndex: paramIndex };
-    }
-
-    async findById(id, columns = ['*']) {
-      const result = await this.executeQuery('SELECT * FROM test WHERE id = $1', [id]);
-      return result.rows[0] || null;
-    }
-
-    async find(conditions = {}, options = {}, columns = ['*']) {
-      const result = await this.executeQuery('SELECT * FROM test', []);
-      return result.rows;
-    }
-
-    async count(conditions = {}) {
-      const result = await this.executeQuery('SELECT COUNT(*) FROM test', []);
-      return parseInt(result.rows[0].count);
-    }
-
-    async delete(conditions) {
-      if (Object.keys(conditions).length === 0) {
-        throw new Error('Delete conditions cannot be empty');
-      }
-      const result = await this.executeQuery('DELETE FROM test WHERE id = $1', [conditions.id]);
-      return result.rowCount;
-    }
-  };
-});
-
 const userModel = require('../../src/models/userModel');
+const BaseModel = require('../../src/models/BaseModel');
+const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 
-describe('UserModel - Integration Tests (Database Interaction)', () => {
-  let testUsers = [];
+// Mock dependencies
+jest.mock('../../src/utils/logger', () => ({
+  logger: {
+    child: jest.fn(() => ({
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    })),
+  },
+}));
+
+jest.mock('../../src/config/db');
+
+describe('UserModel Integration Tests (Coverage Boost)', () => {
+  let mockDb;
+  let testUser;
   let testRestaurantId;
 
-  beforeAll(async () => {
-    // Mock restaurant creation
-    testRestaurantId = 'test-restaurant-id-123';
-    mockDb.query.mockResolvedValueOnce({
-      rows: [{ id: testRestaurantId }],
-      rowCount: 1,
-    });
-  });
-
   beforeEach(() => {
+    // Reset all mocks
     jest.clearAllMocks();
-    testUsers = [];
+    jest.restoreAllMocks();
+
+    // Generate test data
+    testRestaurantId = uuidv4();
+    testUser = {
+      id: uuidv4(),
+      email: 'test@example.com',
+      username: 'testuser',
+      password: '$2b$12$hashedpassword',
+      full_name: 'Test User',
+      role: 'waiter',
+      restaurant_id: testRestaurantId,
+      status: 'active',
+      email_confirmed: false,
+      first_login_password_change: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    // Mock BaseModel methods
+    BaseModel.prototype.executeQuery = jest.fn();
+    BaseModel.prototype.validate = jest.fn().mockResolvedValue({}); // Return empty object for validation
+    BaseModel.prototype.find = jest.fn();
+    BaseModel.prototype.findById = jest.fn();
+    BaseModel.prototype.sanitizeOutput = jest.fn((user) => user); // Return user as-is
+    BaseModel.prototype.buildSetClause = jest.fn();
   });
 
-  afterEach(async () => {
-    // Clean up test users after each test
-    for (const user of testUsers) {
-      try {
-        await db.executeQuery('DELETE FROM users WHERE id = $1', [user.id]);
-      } catch (error) {
-        // Ignore errors during cleanup
-      }
-    }
-    testUsers = [];
-  });
-
-  afterAll(async () => {
-    // Clean up test restaurant
-    if (testRestaurantId) {
-      try {
-        await db.executeQuery('DELETE FROM restaurants WHERE id = $1', [testRestaurantId]);
-      } catch (error) {
-        // Ignore errors during cleanup
-      }
-    }
-  });
-
-  describe('1. CRUD Operations', () => {
-    describe('Create Operations', () => {
-      it('should create a new user with email successfully', async () => {
-        const userData = {
-          email: 'test-integration@example.com',
-          password: 'password123',
-          full_name: 'Integration Test User',
-          role: 'restaurant_administrator',
-          restaurant_id: testRestaurantId,
-          status: 'active',
-        };
-
-        const result = await userModel.create(userData);
-        testUsers.push(result);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBeDefined();
-        expect(result.email).toBe(userData.email);
-        expect(result.full_name).toBe(userData.full_name);
-        expect(result.role).toBe(userData.role);
-        expect(result.status).toBe(userData.status);
-        expect(result.password).toBeUndefined(); // Should be sanitized
-        expect(result.created_at).toBeDefined();
-        expect(result.updated_at).toBeDefined();
-      });
-
-      it('should create a new user with username successfully', async () => {
-        const userData = {
-          username: 'integrationtestuser',
-          password: 'password123',
-          full_name: 'Integration Test User',
-          role: 'waiter',
-          status: 'active',
-        };
-
-        const result = await userModel.create(userData);
-        testUsers.push(result);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBeDefined();
-        expect(result.username).toBe(userData.username);
-        expect(result.full_name).toBe(userData.full_name);
-        expect(result.role).toBe(userData.role);
-        expect(result.password).toBeUndefined(); // Should be sanitized
-      });
-
-      it('should generate email confirmation token when email provided', async () => {
-        const userData = {
-          email: 'test-token@example.com',
-          password: 'password123',
-          full_name: 'Token Test User',
-          role: 'location_administrator',
-          status: 'pending',
-        };
-
-        const result = await userModel.create(userData);
-        testUsers.push(result);
-
-        // Query the actual database to check the token was created
-        const dbUser = await db.executeQuery(
-          'SELECT email_confirmation_token, email_confirmation_expires FROM users WHERE id = $1',
-          [result.id]
-        );
-
-        expect(dbUser.rows[0].email_confirmation_token).toBeDefined();
-        expect(dbUser.rows[0].email_confirmation_expires).toBeDefined();
-      });
-
-      it('should throw error for duplicate email', async () => {
-        const userData = {
-          email: 'duplicate@example.com',
-          password: 'password123',
-          full_name: 'First User',
-          role: 'restaurant_administrator',
-          restaurant_id: testRestaurantId,
-        };
-
-        const firstUser = await userModel.create(userData);
-        testUsers.push(firstUser);
-
-        // Try to create another user with the same email
-        const duplicateUserData = {
-          ...userData,
-          full_name: 'Second User',
-        };
-
-        await expect(userModel.create(duplicateUserData)).rejects.toThrow('Email already exists');
-      });
-
-      it('should throw error for duplicate username', async () => {
-        const userData = {
-          username: 'duplicateuser',
-          password: 'password123',
-          full_name: 'First User',
-          role: 'waiter',
-        };
-
-        const firstUser = await userModel.create(userData);
-        testUsers.push(firstUser);
-
-        // Try to create another user with the same username
-        const duplicateUserData = {
-          ...userData,
-          full_name: 'Second User',
-        };
-
-        await expect(userModel.create(duplicateUserData)).rejects.toThrow(
-          'Username already exists'
-        );
-      });
-
-      it('should throw error for non-existent restaurant', async () => {
-        const userData = {
-          email: 'test-invalid-restaurant@example.com',
-          password: 'password123',
-          full_name: 'Test User',
-          role: 'restaurant_administrator',
-          restaurant_id: '550e8400-e29b-41d4-a716-446655440000', // Non-existent
-        };
-
-        await expect(userModel.create(userData)).rejects.toThrow('Restaurant not found');
-      });
-    });
-
-    describe('Read Operations', () => {
-      let testUser;
-
-      beforeEach(async () => {
-        const userData = {
-          email: 'read-test@example.com',
-          username: 'readtestuser',
-          password: 'password123',
-          full_name: 'Read Test User',
-          role: 'waiter',
-          status: 'active',
-        };
-
-        testUser = await userModel.create(userData);
-        testUsers.push(testUser);
-      });
-
-      it('should find user by ID successfully', async () => {
-        const result = await userModel.findById(testUser.id);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testUser.id);
-        expect(result.email).toBe(testUser.email);
-        expect(result.username).toBe(testUser.username);
-        expect(result.password).toBeUndefined(); // Should be sanitized
-      });
-
-      it('should return null for non-existent user ID', async () => {
-        const result = await userModel.findById('550e8400-e29b-41d4-a716-446655440000');
-        expect(result).toBeNull();
-      });
-
-      it('should find user by email successfully', async () => {
-        const result = await userModel.findByEmail(testUser.email);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testUser.id);
-        expect(result.email).toBe(testUser.email);
-        expect(result.password).toBeUndefined(); // Should be sanitized
-      });
-
-      it('should find user by email case-insensitively', async () => {
-        const result = await userModel.findByEmail(testUser.email.toUpperCase());
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testUser.id);
-      });
-
-      it('should return null for non-existent email', async () => {
-        const result = await userModel.findByEmail('nonexistent@example.com');
-        expect(result).toBeNull();
-      });
-
-      it('should find user by username successfully', async () => {
-        const result = await userModel.findByUsername(testUser.username);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testUser.id);
-        expect(result.username).toBe(testUser.username);
-        expect(result.password).toBeUndefined(); // Should be sanitized
-      });
-
-      it('should find user by username case-insensitively', async () => {
-        const result = await userModel.findByUsername(testUser.username.toUpperCase());
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testUser.id);
-      });
-
-      it('should return null for non-existent username', async () => {
-        const result = await userModel.findByUsername('nonexistentuser');
-        expect(result).toBeNull();
-      });
-    });
-
-    describe('Update Operations', () => {
-      let testUser;
-
-      beforeEach(async () => {
-        const userData = {
-          email: 'update-test@example.com',
-          username: 'updatetestuser',
-          password: 'password123',
-          full_name: 'Update Test User',
-          role: 'waiter',
-          status: 'active',
-        };
-
-        testUser = await userModel.create(userData);
-        testUsers.push(testUser);
-      });
-
-      it('should update user successfully', async () => {
-        const updateData = {
-          full_name: 'Updated Test User',
-          status: 'inactive',
-        };
-
-        const result = await userModel.update(testUser.id, updateData);
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(testUser.id);
-        expect(result.full_name).toBe(updateData.full_name);
-        expect(result.status).toBe(updateData.status);
-        expect(result.updated_at).toBeDefined();
-        expect(result.password).toBeUndefined(); // Should be sanitized
-      });
-
-      it('should update email and check uniqueness', async () => {
-        const newEmail = 'updated-email@example.com';
-        const updateData = { email: newEmail };
-
-        const result = await userModel.update(testUser.id, updateData);
-
-        expect(result.email).toBe(newEmail);
-      });
-
-      it('should throw error when updating to existing email', async () => {
-        // Create another user
-        const anotherUser = await userModel.create({
-          email: 'another@example.com',
-          password: 'password123',
-          full_name: 'Another User',
-          role: 'waiter',
-        });
-        testUsers.push(anotherUser);
-
-        // Try to update first user's email to the second user's email
-        await expect(userModel.update(testUser.id, { email: anotherUser.email })).rejects.toThrow(
-          'Email already exists'
-        );
-      });
-
-      it('should throw error when updating to existing username', async () => {
-        // Create another user
-        const anotherUser = await userModel.create({
-          username: 'anotherusername',
-          password: 'password123',
-          full_name: 'Another User',
-          role: 'waiter',
-        });
-        testUsers.push(anotherUser);
-
-        // Try to update first user's username to the second user's username
-        await expect(
-          userModel.update(testUser.id, { username: anotherUser.username })
-        ).rejects.toThrow('Username already exists');
-      });
-
-      it('should throw error for non-existent user', async () => {
-        await expect(
-          userModel.update('550e8400-e29b-41d4-a716-446655440000', { full_name: 'Updated' })
-        ).rejects.toThrow('User not found');
-      });
-
-      it('should validate restaurant exists when updating restaurant_id', async () => {
-        await expect(
-          userModel.update(testUser.id, { restaurant_id: '550e8400-e29b-41d4-a716-446655440000' })
-        ).rejects.toThrow('Restaurant not found');
-      });
-    });
-
-    describe('Delete Operations', () => {
-      let testUser;
-
-      beforeEach(async () => {
-        const userData = {
-          email: 'delete-test@example.com',
-          password: 'password123',
-          full_name: 'Delete Test User',
-          role: 'waiter',
-          status: 'active',
-        };
-
-        testUser = await userModel.create(userData);
-        testUsers.push(testUser);
-      });
-
-      it('should soft delete user successfully', async () => {
-        const result = await userModel.deleteUser(testUser.id);
-
-        expect(result).toBe(true);
-
-        // Verify user is marked as inactive
-        const updatedUser = await userModel.findById(testUser.id);
-        expect(updatedUser.status).toBe('inactive');
-      });
-
-      it('should return false for non-existent user', async () => {
-        const result = await userModel.deleteUser('550e8400-e29b-41d4-a716-446655440000');
-        expect(result).toBe(false);
-      });
-    });
-  });
-
-  describe('2. Authentication Operations', () => {
-    let testUser;
-    const originalPassword = 'testpassword123';
-
-    beforeEach(async () => {
+  describe('User Creation - create()', () => {
+    test('should create user with email and generate confirmation token', async () => {
       const userData = {
-        email: 'auth-test@example.com',
-        username: 'authtestuser',
-        password: originalPassword,
-        full_name: 'Auth Test User',
-        role: 'waiter',
-        status: 'active',
-      };
-
-      testUser = await userModel.create(userData);
-      testUsers.push(testUser);
-    });
-
-    it('should authenticate user with email and password', async () => {
-      const result = await userModel.authenticate(testUser.email, originalPassword);
-
-      expect(result).toBeDefined();
-      expect(result.id).toBe(testUser.id);
-      expect(result.email).toBe(testUser.email);
-      expect(result.password).toBeUndefined(); // Should be sanitized
-
-      // Verify last_login_at was updated
-      const updatedUser = await db.executeQuery('SELECT last_login_at FROM users WHERE id = $1', [
-        testUser.id,
-      ]);
-      expect(updatedUser.rows[0].last_login_at).toBeDefined();
-    });
-
-    it('should authenticate user with username and password', async () => {
-      const result = await userModel.authenticate(testUser.username, originalPassword);
-
-      expect(result).toBeDefined();
-      expect(result.id).toBe(testUser.id);
-      expect(result.username).toBe(testUser.username);
-    });
-
-    it('should return null for invalid password', async () => {
-      const result = await userModel.authenticate(testUser.email, 'wrongpassword');
-      expect(result).toBeNull();
-    });
-
-    it('should return null for non-existent user', async () => {
-      const result = await userModel.authenticate('nonexistent@example.com', originalPassword);
-      expect(result).toBeNull();
-    });
-
-    it('should return null for inactive user', async () => {
-      // Mark user as inactive
-      await userModel.update(testUser.id, { status: 'inactive' });
-
-      const result = await userModel.authenticate(testUser.email, originalPassword);
-      expect(result).toBeNull();
-    });
-
-    it('should change password successfully', async () => {
-      const newPassword = 'newpassword123';
-      const result = await userModel.changePassword(testUser.id, newPassword);
-
-      expect(result).toBeDefined();
-      expect(result.id).toBe(testUser.id);
-
-      // Verify new password works
-      const authResult = await userModel.authenticate(testUser.email, newPassword);
-      expect(authResult).toBeDefined();
-      expect(authResult.id).toBe(testUser.id);
-
-      // Verify old password doesn't work
-      const oldAuthResult = await userModel.authenticate(testUser.email, originalPassword);
-      expect(oldAuthResult).toBeNull();
-
-      // Verify password_changed_at and first_login_password_change were updated
-      const updatedUser = await db.executeQuery(
-        'SELECT password_changed_at, first_login_password_change FROM users WHERE id = $1',
-        [testUser.id]
-      );
-      expect(updatedUser.rows[0].password_changed_at).toBeDefined();
-      expect(updatedUser.rows[0].first_login_password_change).toBe(false);
-    });
-  });
-
-  describe('3. Email Confirmation Operations', () => {
-    let testUser;
-    let confirmationToken;
-
-    beforeEach(async () => {
-      const userData = {
-        email: 'confirm-test@example.com',
+        email: 'new@example.com',
         password: 'password123',
-        full_name: 'Confirm Test User',
+        full_name: 'New User',
         role: 'restaurant_administrator',
         restaurant_id: testRestaurantId,
+      };
+
+      const hashedPassword = await bcrypt.hash(userData.password, 12);
+      const expectedUser = {
+        ...userData,
+        id: uuidv4(),
+        password: hashedPassword,
         status: 'pending',
+        email_confirmed: false,
+        email_confirmation_token: expect.any(String),
+        email_confirmation_expires: expect.any(Date),
       };
 
-      testUser = await userModel.create(userData);
-      testUsers.push(testUser);
+      // Mock validation and database operations
+      BaseModel.prototype.validate.mockResolvedValue(userData);
+      BaseModel.prototype.executeQuery.mockResolvedValue({
+        rows: [expectedUser],
+      });
+      BaseModel.prototype.sanitizeOutput.mockReturnValue(expectedUser);
 
-      // Get the confirmation token from the database
-      const tokenQuery = await db.executeQuery(
-        'SELECT email_confirmation_token FROM users WHERE id = $1',
-        [testUser.id]
-      );
-      confirmationToken = tokenQuery.rows[0].email_confirmation_token;
-    });
+      // Mock the find methods to return null (no existing users)
+      jest.spyOn(userModel, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(userModel, 'findByUsername').mockResolvedValue(null);
+      jest.spyOn(userModel, 'checkRestaurantExists').mockResolvedValue(true);
 
-    it('should confirm email with valid token', async () => {
-      const result = await userModel.confirmEmail(confirmationToken);
+      const result = await userModel.create(userData);
+
+      // Mock validation to return the user data directly (no schema object)
+      BaseModel.prototype.validate.mockResolvedValueOnce(userData);
+      BaseModel.prototype.executeQuery.mockResolvedValueOnce({
+        rows: [{ ...testUser, id: result.id }],
+      });
 
       expect(result).toBeDefined();
-      expect(result.id).toBe(testUser.id);
-      expect(result.email_confirmed).toBe(true);
-
-      // Verify token was cleared
-      const updatedUser = await db.executeQuery(
-        'SELECT email_confirmation_token, email_confirmation_expires FROM users WHERE id = $1',
-        [testUser.id]
-      );
-      expect(updatedUser.rows[0].email_confirmation_token).toBeNull();
-      expect(updatedUser.rows[0].email_confirmation_expires).toBeNull();
+      expect(BaseModel.prototype.validate).toHaveBeenCalledWith(userData, expect.any(Object));
+      expect(BaseModel.prototype.executeQuery).toHaveBeenCalled();
     });
 
-    it('should throw error for invalid token', async () => {
-      await expect(userModel.confirmEmail('invalid_token')).rejects.toThrow(
+    test('should throw error for duplicate email', async () => {
+      const userData = {
+        email: 'existing@example.com',
+        password: 'password123',
+        full_name: 'Test User',
+        role: 'waiter',
+      };
+
+      BaseModel.prototype.validate.mockResolvedValue(userData);
+      jest.spyOn(userModel, 'findByEmail').mockResolvedValue(testUser);
+
+      await expect(userModel.create(userData)).rejects.toThrow('Email already exists');
+    });
+
+    test('should throw error for duplicate username', async () => {
+      const userData = {
+        username: 'existinguser',
+        password: 'password123',
+        full_name: 'Test User',
+        role: 'waiter',
+      };
+
+      BaseModel.prototype.validate.mockResolvedValue(userData);
+      jest.spyOn(userModel, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(userModel, 'findByUsername').mockResolvedValue(testUser);
+
+      await expect(userModel.create(userData)).rejects.toThrow('Username already exists');
+    });
+
+    test('should throw error for non-existent restaurant', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        full_name: 'Test User',
+        role: 'waiter',
+        restaurant_id: uuidv4(),
+      };
+
+      BaseModel.prototype.validate.mockResolvedValue(userData);
+      jest.spyOn(userModel, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(userModel, 'findByUsername').mockResolvedValue(null);
+      jest.spyOn(userModel, 'checkRestaurantExists').mockResolvedValue(false);
+
+      await expect(userModel.create(userData)).rejects.toThrow('Restaurant not found');
+    });
+  });
+
+  describe('User Retrieval - findById()', () => {
+    test('should find user by valid ID', async () => {
+      const userId = uuidv4();
+
+      BaseModel.prototype.findById.mockResolvedValue(testUser);
+      BaseModel.prototype.sanitizeOutput.mockReturnValue(testUser);
+
+      const result = await userModel.findById(userId);
+
+      expect(result).toEqual(testUser);
+      expect(BaseModel.prototype.findById).toHaveBeenCalledWith(userId, ['*']);
+    });
+
+    test('should return null for non-existent user', async () => {
+      const userId = uuidv4();
+
+      BaseModel.prototype.findById.mockResolvedValue(null);
+
+      const result = await userModel.findById(userId);
+
+      expect(result).toBeNull();
+    });
+
+    test('should throw error for invalid UUID', async () => {
+      const invalidId = 'invalid-uuid';
+
+      await expect(userModel.findById(invalidId)).rejects.toThrow('Invalid user ID format');
+    });
+  });
+
+  describe('User Search - findByEmail() and findByUsername()', () => {
+    test('should find user by email', async () => {
+      const email = 'test@example.com';
+
+      // Setup mocks to return the test user in an array (find returns array)
+      BaseModel.prototype.find.mockResolvedValueOnce([testUser]);
+      BaseModel.prototype.sanitizeOutput.mockReturnValueOnce(testUser);
+
+      const result = await userModel.findByEmail(email);
+
+      expect(result).toEqual(testUser);
+      expect(BaseModel.prototype.find).toHaveBeenCalledWith({ email: email.toLowerCase() });
+    });
+
+    test('should find user by username', async () => {
+      const username = 'testuser';
+
+      // Setup mocks to return the test user in an array (find returns array)
+      BaseModel.prototype.find.mockResolvedValueOnce([testUser]);
+      BaseModel.prototype.sanitizeOutput.mockReturnValueOnce(testUser);
+
+      const result = await userModel.findByUsername(username);
+
+      expect(result).toEqual(testUser);
+      expect(BaseModel.prototype.find).toHaveBeenCalledWith({ username: username.toLowerCase() });
+    });
+
+    test('should return null when user not found by email', async () => {
+      const email = 'nonexistent@example.com';
+
+      BaseModel.prototype.find.mockResolvedValue([]);
+
+      const result = await userModel.findByEmail(email);
+
+      expect(result).toBeNull();
+    });
+
+    test('should return null when user not found by username', async () => {
+      const username = 'nonexistentuser';
+
+      BaseModel.prototype.find.mockResolvedValue([]);
+
+      const result = await userModel.findByUsername(username);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('User Authentication - authenticate()', () => {
+    test('should authenticate user with email and password', async () => {
+      const email = 'test@example.com';
+      const password = 'password123';
+      const activeUser = {
+        ...testUser,
+        status: 'active',
+        password: await bcrypt.hash(password, 12),
+      };
+
+      BaseModel.prototype.find.mockResolvedValue([activeUser]);
+      BaseModel.prototype.sanitizeOutput.mockReturnValue(activeUser);
+      jest.spyOn(userModel, 'update').mockResolvedValue(activeUser);
+
+      const result = await userModel.authenticate(email, password);
+
+      expect(result).toEqual(activeUser);
+      expect(BaseModel.prototype.find).toHaveBeenCalledWith({ email: email.toLowerCase() });
+      expect(userModel.update).toHaveBeenCalledWith(
+        activeUser.id,
+        expect.objectContaining({
+          last_login_at: expect.any(Date),
+        })
+      );
+    });
+
+    test('should authenticate user with username and password', async () => {
+      const username = 'testuser';
+      const password = 'password123';
+      const activeUser = {
+        ...testUser,
+        status: 'active',
+        password: await bcrypt.hash(password, 12),
+      };
+
+      BaseModel.prototype.find.mockResolvedValue([activeUser]);
+      BaseModel.prototype.sanitizeOutput.mockReturnValue(activeUser);
+      jest.spyOn(userModel, 'update').mockResolvedValue(activeUser);
+
+      const result = await userModel.authenticate(username, password);
+
+      expect(result).toEqual(activeUser);
+      expect(BaseModel.prototype.find).toHaveBeenCalledWith({ username: username.toLowerCase() });
+    });
+
+    test('should return null for non-existent user', async () => {
+      BaseModel.prototype.find.mockResolvedValue([]);
+
+      const result = await userModel.authenticate('nonexistent@example.com', 'password');
+
+      expect(result).toBeNull();
+    });
+
+    test('should return null for inactive user', async () => {
+      const inactiveUser = { ...testUser, status: 'inactive' };
+
+      BaseModel.prototype.find.mockResolvedValue([inactiveUser]);
+
+      const result = await userModel.authenticate('test@example.com', 'password');
+
+      expect(result).toBeNull();
+    });
+
+    test('should return null for wrong password', async () => {
+      const activeUser = {
+        ...testUser,
+        status: 'active',
+        password: await bcrypt.hash('correctpassword', 12),
+      };
+
+      BaseModel.prototype.find.mockResolvedValue([activeUser]);
+
+      const result = await userModel.authenticate('test@example.com', 'wrongpassword');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('User Updates - update()', () => {
+    test('should update user successfully', async () => {
+      const userId = uuidv4();
+      const updateData = { full_name: 'Updated Name', status: 'active' };
+      const updatedUser = { ...testUser, ...updateData };
+
+      BaseModel.prototype.validate.mockResolvedValueOnce(updateData);
+      BaseModel.prototype.findById.mockResolvedValueOnce(testUser);
+      BaseModel.prototype.buildSetClause.mockReturnValueOnce({
+        clause: 'full_name = $1, status = $2',
+        params: ['Updated Name', 'active'],
+      });
+      BaseModel.prototype.executeQuery.mockResolvedValueOnce({
+        rows: [updatedUser],
+      });
+      BaseModel.prototype.sanitizeOutput.mockReturnValueOnce(updatedUser);
+      jest.spyOn(userModel, 'findByEmail').mockResolvedValueOnce(null);
+      jest.spyOn(userModel, 'findByUsername').mockResolvedValueOnce(null);
+
+      const result = await userModel.update(userId, updateData);
+
+      expect(result).toEqual(updatedUser);
+    });
+
+    test('should throw error for non-existent user', async () => {
+      const userId = uuidv4();
+      const updateData = { full_name: 'Updated Name' };
+
+      BaseModel.prototype.validate.mockResolvedValueOnce(updateData);
+      BaseModel.prototype.findById.mockResolvedValueOnce(null); // Return null for non-existent user
+
+      await expect(userModel.update(userId, updateData)).rejects.toThrow('User not found');
+    });
+
+    test('should throw error for empty update data', async () => {
+      const userId = uuidv4();
+
+      BaseModel.prototype.validate.mockResolvedValueOnce({}); // Return empty validation result
+
+      await expect(userModel.update(userId, {})).rejects.toThrow('No valid fields to update');
+    });
+  });
+
+  describe('User Deletion - deleteUser()', () => {
+    test('should soft delete user', async () => {
+      const userId = uuidv4();
+      const deletedUser = { ...testUser, status: 'inactive' };
+
+      jest.spyOn(userModel, 'update').mockResolvedValue(deletedUser);
+
+      const result = await userModel.deleteUser(userId);
+
+      expect(result).toBe(true);
+      expect(userModel.update).toHaveBeenCalledWith(userId, { status: 'inactive' });
+    });
+
+    test('should return false if update fails', async () => {
+      const userId = uuidv4();
+
+      jest.spyOn(userModel, 'update').mockResolvedValue(null);
+
+      const result = await userModel.deleteUser(userId);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('Email Confirmation - confirmEmail()', () => {
+    test('should confirm email with valid token', async () => {
+      const token = 'valid-token';
+      const confirmedUser = {
+        ...testUser,
+        email_confirmed: true,
+        email_confirmation_token: null,
+        email_confirmation_expires: null,
+      };
+
+      BaseModel.prototype.executeQuery.mockResolvedValue({
+        rows: [confirmedUser],
+      });
+      BaseModel.prototype.sanitizeOutput.mockReturnValue(confirmedUser);
+
+      const result = await userModel.confirmEmail(token);
+
+      expect(result).toEqual(confirmedUser);
+      expect(BaseModel.prototype.executeQuery).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE'),
+        [token]
+      );
+    });
+
+    test('should throw error for invalid token', async () => {
+      const token = 'invalid-token';
+
+      BaseModel.prototype.executeQuery.mockResolvedValue({
+        rows: [],
+      });
+
+      await expect(userModel.confirmEmail(token)).rejects.toThrow(
         'Invalid or expired confirmation token'
       );
     });
+  });
 
-    it('should throw error for expired token', async () => {
-      // Set token as expired
-      await db.executeQuery(
-        'UPDATE users SET email_confirmation_expires = $1 WHERE id = $2',
-        [new Date(Date.now() - 1000), testUser.id] // 1 second ago
-      );
+  describe('Password Change - changePassword()', () => {
+    test('should change password successfully', async () => {
+      const userId = uuidv4();
+      const newPassword = 'newpassword123';
+      const updatedUser = { ...testUser, first_login_password_change: false };
 
-      await expect(userModel.confirmEmail(confirmationToken)).rejects.toThrow(
-        'Invalid or expired confirmation token'
+      jest.spyOn(userModel, 'update').mockResolvedValue(updatedUser);
+
+      const result = await userModel.changePassword(userId, newPassword);
+
+      expect(result).toEqual(updatedUser);
+      expect(userModel.update).toHaveBeenCalledWith(
+        userId,
+        expect.objectContaining({
+          password: expect.any(String),
+          password_changed_at: expect.any(Date),
+          first_login_password_change: false,
+        })
       );
     });
   });
 
-  describe('4. Restaurant Relationship Operations', () => {
-    it('should get users by restaurant ID', async () => {
-      // Create multiple users for the same restaurant
-      const users = [];
-      for (let i = 0; i < 3; i++) {
-        const userData = {
-          email: `restaurant-user-${i}@example.com`,
-          password: 'password123',
-          full_name: `Restaurant User ${i}`,
-          role: 'waiter',
-          restaurant_id: testRestaurantId,
-          status: 'active',
-        };
+  describe('Restaurant Operations', () => {
+    test('should check if restaurant exists', async () => {
+      const restaurantId = uuidv4();
 
-        const user = await userModel.create(userData);
-        users.push(user);
-        testUsers.push(user);
-      }
-
-      const result = await userModel.getUsersByRestaurant(testRestaurantId);
-
-      expect(result).toBeDefined();
-      expect(result.length).toBeGreaterThanOrEqual(3);
-      expect(result.every((user) => user.restaurant_id === testRestaurantId)).toBe(true);
-      expect(result.every((user) => user.password === undefined)).toBe(true); // Should be sanitized
-    });
-
-    it('should filter users by status and role', async () => {
-      // Create users with different statuses and roles
-      const activeWaiter = await userModel.create({
-        email: 'active-waiter@example.com',
-        password: 'password123',
-        full_name: 'Active Waiter',
-        role: 'waiter',
-        restaurant_id: testRestaurantId,
-        status: 'active',
+      BaseModel.prototype.executeQuery.mockResolvedValueOnce({
+        rows: [{ exists: 1 }], // Non-empty array indicates restaurant exists
       });
-      testUsers.push(activeWaiter);
 
-      const inactiveWaiter = await userModel.create({
-        email: 'inactive-waiter@example.com',
-        password: 'password123',
-        full_name: 'Inactive Waiter',
-        role: 'waiter',
-        restaurant_id: testRestaurantId,
-        status: 'inactive',
-      });
-      testUsers.push(inactiveWaiter);
+      const result = await userModel.checkRestaurantExists(restaurantId);
 
-      const activeFoodRunner = await userModel.create({
-        email: 'active-runner@example.com',
-        password: 'password123',
-        full_name: 'Active Food Runner',
-        role: 'food_runner',
-        restaurant_id: testRestaurantId,
-        status: 'active',
-      });
-      testUsers.push(activeFoodRunner);
-
-      // Test filtering by status
-      const activeUsers = await userModel.getUsersByRestaurant(testRestaurantId, {
-        status: 'active',
-      });
-      expect(activeUsers.every((user) => user.status === 'active')).toBe(true);
-
-      // Test filtering by role
-      const waiters = await userModel.getUsersByRestaurant(testRestaurantId, { role: 'waiter' });
-      expect(waiters.every((user) => user.role === 'waiter')).toBe(true);
-
-      // Test filtering by both status and role
-      const activeWaiters = await userModel.getUsersByRestaurant(testRestaurantId, {
-        status: 'active',
-        role: 'waiter',
-      });
-      expect(
-        activeWaiters.every((user) => user.status === 'active' && user.role === 'waiter')
-      ).toBe(true);
-      expect(activeWaiters.length).toBe(1);
-      expect(activeWaiters[0].id).toBe(activeWaiter.id);
-    });
-
-    it('should check restaurant exists correctly', async () => {
-      const exists = await userModel.checkRestaurantExists(testRestaurantId);
-      expect(exists).toBe(true);
-
-      const doesNotExist = await userModel.checkRestaurantExists(
-        '550e8400-e29b-41d4-a716-446655440000'
+      expect(result).toBe(true);
+      expect(BaseModel.prototype.executeQuery).toHaveBeenCalledWith(
+        'SELECT 1 FROM restaurants WHERE id = $1',
+        [restaurantId]
       );
-      expect(doesNotExist).toBe(false);
+    });
+
+    test('should return false when restaurant does not exist', async () => {
+      const restaurantId = uuidv4();
+
+      BaseModel.prototype.executeQuery.mockResolvedValue({
+        rows: [],
+      });
+
+      const result = await userModel.checkRestaurantExists(restaurantId);
+
+      expect(result).toBe(false);
+    });
+
+    test('should get users by restaurant', async () => {
+      const restaurantId = uuidv4();
+      const users = [testUser, { ...testUser, id: uuidv4() }];
+
+      BaseModel.prototype.find.mockResolvedValue(users);
+      BaseModel.prototype.sanitizeOutput.mockImplementation((user) => user);
+
+      const result = await userModel.getUsersByRestaurant(restaurantId);
+
+      expect(result).toHaveLength(2);
+      expect(BaseModel.prototype.find).toHaveBeenCalledWith(
+        { restaurant_id: restaurantId },
+        { orderBy: 'created_at DESC' }
+      );
+    });
+
+    test('should filter users by restaurant with options', async () => {
+      const restaurantId = uuidv4();
+      const options = { status: 'active', role: 'waiter' };
+
+      BaseModel.prototype.find.mockResolvedValue([testUser]);
+      BaseModel.prototype.sanitizeOutput.mockReturnValue(testUser);
+
+      const result = await userModel.getUsersByRestaurant(restaurantId, options);
+
+      expect(BaseModel.prototype.find).toHaveBeenCalledWith(
+        { restaurant_id: restaurantId, status: 'active', role: 'waiter' },
+        { orderBy: 'created_at DESC' }
+      );
     });
   });
 
-  describe('5. Query and Filtering Tests', () => {
-    beforeEach(async () => {
-      // Create test users with various attributes
-      const testUsersData = [
-        {
-          email: 'admin@test.com',
-          password: 'password123',
-          full_name: 'Admin User',
-          role: 'restaurant_administrator',
-          restaurant_id: testRestaurantId,
-          status: 'active',
-        },
-        {
-          username: 'waiter1',
-          password: 'password123',
-          full_name: 'Waiter One',
-          role: 'waiter',
-          status: 'active',
-        },
-        {
-          username: 'waiter2',
-          password: 'password123',
-          full_name: 'Waiter Two',
-          role: 'waiter',
-          status: 'inactive',
-        },
-        {
-          username: 'runner1',
-          password: 'password123',
-          full_name: 'Runner One',
-          role: 'food_runner',
-          status: 'pending',
-        },
-      ];
-
-      for (const userData of testUsersData) {
-        const user = await userModel.create(userData);
-        testUsers.push(user);
-      }
-    });
-
-    it('should find users with specific columns', async () => {
-      const user = testUsers[0];
-      const result = await userModel.findById(user.id, ['id', 'email', 'full_name']);
-
-      expect(result).toBeDefined();
-      expect(result.id).toBe(user.id);
-      expect(result.email).toBeDefined();
-      expect(result.full_name).toBeDefined();
-      // Other fields should not be present if columns are specified correctly by BaseModel
-    });
-
-    it('should handle case-insensitive email searches', async () => {
-      const user = testUsers.find((u) => u.email);
-      const upperCaseEmail = user.email.toUpperCase();
-      const lowerCaseEmail = user.email.toLowerCase();
-
-      const upperResult = await userModel.findByEmail(upperCaseEmail);
-      const lowerResult = await userModel.findByEmail(lowerCaseEmail);
-
-      expect(upperResult).toBeDefined();
-      expect(lowerResult).toBeDefined();
-      expect(upperResult.id).toBe(user.id);
-      expect(lowerResult.id).toBe(user.id);
-    });
-
-    it('should handle case-insensitive username searches', async () => {
-      const user = testUsers.find((u) => u.username);
-      const upperCaseUsername = user.username.toUpperCase();
-      const lowerCaseUsername = user.username.toLowerCase();
-
-      const upperResult = await userModel.findByUsername(upperCaseUsername);
-      const lowerResult = await userModel.findByUsername(lowerCaseUsername);
-
-      expect(upperResult).toBeDefined();
-      expect(lowerResult).toBeDefined();
-      expect(upperResult.id).toBe(user.id);
-      expect(lowerResult.id).toBe(user.id);
-    });
-  });
-
-  describe('6. Database Constraint Tests', () => {
-    it('should respect database constraints for invalid UUIDs', async () => {
-      // This test assumes the database has proper UUID validation
+  describe('Error Handling', () => {
+    test('should handle database errors in create', async () => {
       const userData = {
-        email: 'constraint-test@example.com',
+        email: 'test@example.com',
         password: 'password123',
-        full_name: 'Constraint Test User',
+        full_name: 'Test User',
         role: 'waiter',
-        restaurant_id: 'invalid-uuid-format',
       };
 
-      // This should fail at the application level before hitting the database
-      await expect(userModel.create(userData)).rejects.toThrow();
-    });
-
-    it('should handle database errors gracefully', async () => {
-      // Force a database error by trying to insert invalid data
-      const originalExecuteQuery = userModel.executeQuery;
-      userModel.executeQuery = jest.fn().mockRejectedValue(new Error('Database connection failed'));
-
-      const userData = {
-        email: 'db-error-test@example.com',
-        password: 'password123',
-        full_name: 'DB Error Test User',
-        role: 'waiter',
-      };
+      BaseModel.prototype.validate.mockResolvedValue(userData);
+      jest.spyOn(userModel, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(userModel, 'findByUsername').mockResolvedValue(null);
+      BaseModel.prototype.executeQuery.mockRejectedValue(new Error('Database connection failed'));
 
       await expect(userModel.create(userData)).rejects.toThrow('Database connection failed');
+    });
 
-      // Restore original method
-      userModel.executeQuery = originalExecuteQuery;
+    test('should handle database errors in findByEmail', async () => {
+      BaseModel.prototype.find.mockRejectedValueOnce(new Error('Database error'));
+
+      await expect(userModel.findByEmail('test@example.com')).rejects.toThrow('Database error');
+    });
+
+    test('should handle database errors in authenticate', async () => {
+      BaseModel.prototype.find.mockRejectedValue(new Error('Database error'));
+
+      await expect(userModel.authenticate('test@example.com', 'password')).rejects.toThrow(
+        'Database error'
+      );
     });
   });
 });

@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 
     -- Role management
     role VARCHAR(50) NOT NULL CHECK (role IN (
+        'superadmin', -- a la carte management
         'restaurant_administrator',
         'location_administrator',
         'waiter',
