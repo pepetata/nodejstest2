@@ -57,12 +57,27 @@ class UserService {
 
       return newUser;
     } catch (error) {
+      // Translate error for end user
+      let mensagemErro = error.message;
+      if (mensagemErro.includes('duplicate key') && mensagemErro.includes('email')) {
+        mensagemErro = 'Já existe um usuário cadastrado com este e-mail.';
+      } else if (mensagemErro === 'User not found') {
+        mensagemErro = 'Usuário não encontrado.';
+      } else if (mensagemErro === 'Insufficient permissions to access this user') {
+        mensagemErro = 'Permissões insuficientes para acessar este usuário.';
+      } else if (mensagemErro === 'Cannot deactivate your own account') {
+        mensagemErro = 'Não é possível desativar a sua própria conta.';
+      } else if (mensagemErro === 'Unauthorized to change this password') {
+        mensagemErro = 'Não autorizado a alterar esta senha.';
+      } else if (mensagemErro === 'Current password is incorrect') {
+        mensagemErro = 'A senha atual está incorreta.';
+      }
       this.logger.error('Failed to create user', {
         ...logMeta,
-        error: error.message,
+        error: mensagemErro,
         code: error.code,
       });
-      throw error;
+      throw new Error(mensagemErro);
     }
   }
 
@@ -86,7 +101,8 @@ class UserService {
 
       if (!user) {
         this.logger.warn('User not found', { ...logMeta, userId });
-        return null;
+        // Translate error for end user
+        throw new Error('Usuário não encontrado.');
       }
 
       // Check if current user can access this user's data
@@ -249,7 +265,8 @@ class UserService {
       // Get existing user to validate access
       const existingUser = await this.userModel.findById(userId);
       if (!existingUser) {
-        const error = new Error('User not found');
+        // Translate error for end user
+        const error = new Error('Usuário não encontrado.');
         error.statusCode = 404;
         throw error;
       }
@@ -264,7 +281,8 @@ class UserService {
 
       // Prevent self-status changes for certain scenarios
       if (currentUser.id === userId && updateData.status === 'inactive') {
-        const error = new Error('Cannot deactivate your own account');
+        // Translate error for end user
+        const error = new Error('Não é possível desativar a sua própria conta.');
         error.statusCode = 403;
         throw error;
       }
@@ -308,14 +326,16 @@ class UserService {
       // Get existing user to validate access
       const existingUser = await this.userModel.findById(userId);
       if (!existingUser) {
-        const error = new Error('User not found');
+        // Translate error for end user
+        const error = new Error('Usuário não encontrado.');
         error.statusCode = 404;
         throw error;
       }
 
       // Prevent self-deletion
       if (currentUser.id === userId) {
-        const error = new Error('Cannot delete your own account');
+        // Translate error for end user
+        const error = new Error('Não é possível excluir a sua própria conta.');
         error.statusCode = 403;
         throw error;
       }
@@ -362,14 +382,16 @@ class UserService {
       // Get existing user
       const existingUser = await this.userModel.findById(userId);
       if (!existingUser) {
-        const error = new Error('User not found');
+        // Translate error for end user
+        const error = new Error('Usuário não encontrado.');
         error.statusCode = 404;
         throw error;
       }
 
       // Only allow users to change their own password or admin to change any
       if (currentUser.id !== userId && !this.isAdmin(currentUser)) {
-        const error = new Error('Unauthorized to change this password');
+        // Translate error for end user
+        const error = new Error('Não autorizado a alterar esta senha.');
         error.statusCode = 403;
         throw error;
       }
@@ -382,7 +404,8 @@ class UserService {
         );
 
         if (!isValidPassword) {
-          const error = new Error('Current password is incorrect');
+          // Translate error for end user
+          const error = new Error('A senha atual está incorreta.');
           error.statusCode = 400;
           throw error;
         }
@@ -422,7 +445,8 @@ class UserService {
       const user = await this.userModel.confirmEmail(token);
 
       if (!user) {
-        const error = new Error('Invalid or expired confirmation token');
+        // Translate error for end user
+        const error = new Error('Token de confirmação inválido ou expirado.');
         error.statusCode = 400;
         throw error;
       }
@@ -507,7 +531,8 @@ class UserService {
     // Restaurant administrators can manage users in their restaurant
     if (currentUser.role === 'restaurant_administrator') {
       if (targetUser.restaurant_id !== currentUser.restaurant_id) {
-        const error = new Error('Insufficient permissions to access this user');
+        // Translate error for end user
+        const error = new Error('Permissões insuficientes para acessar este usuário.');
         error.statusCode = 403;
         serviceLogger.warn('Access denied - different restaurant', {
           currentUserRestaurant: currentUser.restaurant_id,
@@ -523,7 +548,7 @@ class UserService {
       return true;
     }
 
-    const error = new Error('Insufficient permissions to access this user');
+    const error = new Error('Permissões insuficientes para acessar este usuário.');
     error.statusCode = 403;
     serviceLogger.warn('Access denied - insufficient permissions');
     throw error;

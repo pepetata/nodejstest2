@@ -129,16 +129,54 @@ class RestaurantService {
           businessType: restaurantData.business_type,
         });
         await this.restaurantModel.deleteRestaurant(newRestaurant.id);
-        throw error;
+        // Translate user-related errors for end user
+        let mensagemErroUsuario = error.message;
+        if (
+          mensagemErroUsuario.includes('duplicate key') &&
+          mensagemErroUsuario.includes('email')
+        ) {
+          mensagemErroUsuario = 'Já existe um usuário cadastrado com este e-mail.';
+        } else if (mensagemErroUsuario === 'User not found') {
+          mensagemErroUsuario = 'Usuário não encontrado.';
+        } else if (mensagemErroUsuario === 'Insufficient permissions to access this user') {
+          mensagemErroUsuario = 'Permissões insuficientes para acessar este usuário.';
+        } else if (mensagemErroUsuario === 'Cannot deactivate your own account') {
+          mensagemErroUsuario = 'Não é possível desativar a sua própria conta.';
+        } else if (mensagemErroUsuario === 'Unauthorized to change this password') {
+          mensagemErroUsuario = 'Não autorizado a alterar esta senha.';
+        } else if (mensagemErroUsuario === 'Current password is incorrect') {
+          mensagemErroUsuario = 'A senha atual está incorreta.';
+        } else if (mensagemErroUsuario === 'User not found') {
+          mensagemErroUsuario = 'Usuário não encontrado.';
+        }
+        throw new Error(
+          'Erro ao criar o usuário. O restaurante foi removido. Detalhes: ' + mensagemErroUsuario
+        );
       }
 
       return newRestaurant;
     } catch (error) {
+      // Translate error for end user
+      let mensagemErro = error.message;
+      if (mensagemErro === 'URL name is already taken') {
+        mensagemErro = 'O nome da URL já está em uso.';
+      } else if (mensagemErro === 'Restaurant not found') {
+        mensagemErro = 'Restaurante não encontrado.';
+      } else if (mensagemErro === 'Cannot delete restaurant with active locations') {
+        mensagemErro = 'Não é possível excluir o restaurante com localizações ativas.';
+      } else if (mensagemErro.startsWith('Location limit reached')) {
+        mensagemErro = 'Limite de localizações atingido para o plano de assinatura.';
+      } else if (mensagemErro === 'Insufficient permissions to access this restaurant') {
+        mensagemErro = 'Permissões insuficientes para acessar este restaurante.';
+      } else if (mensagemErro === 'Insufficient permissions to access this user') {
+        mensagemErro = 'Permissões insuficientes para acessar este usuário.';
+      }
       serviceLogger.error('Failed to create restaurant', {
-        error: error.message,
+        error: mensagemErro,
         code: error.code,
       });
-      throw error;
+      // Always throw error in Portuguese for end user
+      throw new Error(mensagemErro);
     }
   }
 
