@@ -585,6 +585,63 @@ class UserController {
   });
 
   /**
+   * Get users by restaurant
+   * GET /api/v1/users/restaurant/:restaurantId
+   *
+   * @route GET /api/v1/users/restaurant/:restaurantId
+   * @access Private - Admin or restaurant members
+   * @param {String} restaurantId - Restaurant UUID
+   * @query {Object} filters - Optional filters
+   * @returns {Object} 200 - List of users
+   * @returns {Object} 400 - Validation error
+   * @returns {Object} 403 - Insufficient permissions
+   * @returns {Object} 404 - Restaurant not found
+   */
+  getUsersByRestaurant = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const { restaurantId } = req.params;
+
+    const controllerLogger = this.logger.child({
+      operation: 'getUsersByRestaurant',
+      requestId,
+      userId: req.user?.id,
+      restaurantId,
+      method: req.method,
+      path: req.path,
+    });
+
+    controllerLogger.info('Retrieving users by restaurant', {
+      restaurantId,
+      filters: req.query,
+    });
+
+    try {
+      const result = await this.userService.getUsersByRestaurant(restaurantId, req.query, req.user);
+
+      controllerLogger.info('Users retrieved successfully', {
+        userCount: result.users.length,
+        totalCount: result.pagination.total,
+      });
+
+      return res.status(200).json(
+        ResponseFormatter.success(result.users, 'Users retrieved successfully', {
+          pagination: result.pagination,
+          restaurant: result.restaurant,
+        })
+      );
+    } catch (error) {
+      if (error.statusCode === 403) {
+        return res.status(403).json(ResponseFormatter.error(error.message, 403, null, requestId));
+      }
+      if (error.statusCode === 404) {
+        return res.status(404).json(ResponseFormatter.error(error.message, 404, null, requestId));
+      }
+
+      throw error;
+    }
+  });
+
+  /**
    * Check if user is authorized to manage users
    * @param {Object} user - Current user
    * @returns {Boolean} Authorization status

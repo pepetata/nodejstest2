@@ -394,6 +394,49 @@ class UserService {
   }
 
   /**
+   * Get users by restaurant
+   * @param {String} restaurantId - Restaurant ID
+   * @param {Object} filters - Optional filters
+   * @param {Object} currentUser - Current authenticated user
+   * @returns {Promise<Object>} Users and pagination info
+   */
+  async getUsersByRestaurant(restaurantId, filters = {}, currentUser = null) {
+    const operationId = `get_users_by_restaurant_${Date.now()}`;
+    const serviceLogger = this.logger.child({
+      operation: 'getUsersByRestaurant',
+      operationId,
+      restaurantId,
+      currentUserId: currentUser?.id,
+    });
+
+    serviceLogger.info('Retrieving users by restaurant', {
+      restaurantId,
+      filters,
+    });
+
+    try {
+      // Validate restaurant access
+      await this.validateRestaurantAccess(restaurantId, currentUser);
+
+      // Get users from restaurant
+      const result = await this.userModel.getUsersByRestaurant(restaurantId, filters);
+
+      serviceLogger.info('Users retrieved successfully', {
+        userCount: result.users.length,
+        totalCount: result.pagination.total,
+      });
+
+      return result;
+    } catch (error) {
+      serviceLogger.error('Error retrieving users by restaurant', {
+        error: error.message,
+        restaurantId,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Validate user access permissions
    * @param {Object} targetUser - User being accessed
    * @param {Object} currentUser - Current authenticated user

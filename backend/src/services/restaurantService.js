@@ -10,7 +10,60 @@ const ResponseFormatter = require('../utils/responseFormatter');
 class RestaurantService {
   constructor(restaurantModelInstance = restaurantModel) {
     this.restaurantModel = restaurantModelInstance;
-    this.logger = logger.child({ service: 'RestaurantService' });
+
+    // Defensive logger initialization
+    try {
+      if (logger && typeof logger.child === 'function') {
+        this.logger = logger.child({ service: 'RestaurantService' });
+      } else {
+        // Fallback logger if child method is not available
+        this.logger = {
+          child: (context) => ({
+            info: () => {},
+            warn: () => {},
+            error: () => {},
+            debug: () => {},
+          }),
+          info: () => {},
+          warn: () => {},
+          error: () => {},
+          debug: () => {},
+        };
+      }
+    } catch (error) {
+      // Fallback noop logger
+      this.logger = {
+        child: (context) => ({
+          info: () => {},
+          warn: () => {},
+          error: () => {},
+          debug: () => {},
+        }),
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+      };
+    }
+  }
+
+  /**
+   * Helper method to safely create a service logger with fallback
+   * @param {Object} context - Additional context for logging
+   * @returns {Object} Logger instance
+   */
+  _createServiceLogger(context = {}) {
+    if (this.logger && typeof this.logger.child === 'function') {
+      return this.logger.child(context);
+    } else {
+      // Fallback noop logger
+      return {
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+        debug: () => {},
+      };
+    }
   }
 
   /**
@@ -21,7 +74,8 @@ class RestaurantService {
    */
   async createRestaurant(restaurantData, currentUser = null) {
     const operationId = `create_restaurant_${Date.now()}`;
-    const serviceLogger = this.logger.child({
+
+    const serviceLogger = this._createServiceLogger({
       operation: 'createRestaurant',
       operationId,
       currentUserId: currentUser?.id,
@@ -67,7 +121,7 @@ class RestaurantService {
    * @returns {Promise<Object|null>} Restaurant data or null
    */
   async getRestaurantById(restaurantId, includeLocations = false) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'getRestaurantById',
       restaurantId,
     });
@@ -79,7 +133,9 @@ class RestaurantService {
 
       if (!restaurant) {
         serviceLogger.warn('Restaurant not found', { restaurantId });
-        return null;
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
       }
 
       // Include locations if requested
@@ -111,7 +167,7 @@ class RestaurantService {
    * @returns {Promise<Object|null>} Restaurant data or null
    */
   async getRestaurantByUrlName(urlName, includeLocations = false) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'getRestaurantByUrlName',
       urlName,
     });
@@ -123,7 +179,9 @@ class RestaurantService {
 
       if (!restaurant) {
         serviceLogger.warn('Restaurant not found', { urlName });
-        return null;
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
       }
 
       // Include locations if requested
@@ -153,7 +211,7 @@ class RestaurantService {
    * @returns {Promise<Object>} Paginated restaurants list
    */
   async getRestaurants(options) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'getRestaurants',
       filters: options,
     });
@@ -200,27 +258,29 @@ class RestaurantService {
         };
       }
 
-      const result = await this.restaurantModel.findWithPagination(filters, queryOptions);
+      const result = await this.restaurantModel.find(filters, queryOptions);
+      const total = await this.restaurantModel.count(filters);
 
-      const totalPages = Math.ceil(result.total / limit);
+      const totalPages = Math.ceil(total / limit);
 
       serviceLogger.info('Restaurants retrieved successfully', {
-        total: result.total,
+        total,
         page,
         totalPages,
-        returned: result.restaurants.length,
+        returned: result.length,
       });
 
       return {
-        restaurants: result.restaurants,
+        restaurants: result,
         pagination: {
           page,
           limit,
-          total: result.total,
+          total,
           totalPages,
           hasNext: page < totalPages,
           hasPrev: page > 1,
         },
+        filters: filters,
       };
     } catch (error) {
       serviceLogger.error('Failed to get restaurants', {
@@ -240,7 +300,7 @@ class RestaurantService {
    */
   async updateRestaurant(restaurantId, updateData, currentUser) {
     const operationId = `update_restaurant_${restaurantId}_${Date.now()}`;
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'updateRestaurant',
       operationId,
       restaurantId,
@@ -296,7 +356,7 @@ class RestaurantService {
    * @returns {Promise<Boolean>} Success status
    */
   async deleteRestaurant(restaurantId, currentUser) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'deleteRestaurant',
       restaurantId,
       currentUserId: currentUser?.id,
@@ -349,7 +409,7 @@ class RestaurantService {
    * @returns {Promise<Object>} Created location
    */
   async addLocation(restaurantId, locationData, currentUser) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'addLocation',
       restaurantId,
       currentUserId: currentUser?.id,
@@ -405,7 +465,7 @@ class RestaurantService {
    * @returns {Promise<Array>} Locations list
    */
   async getLocations(restaurantId, currentUser = null) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'getLocations',
       restaurantId,
       currentUserId: currentUser?.id,
@@ -453,6 +513,62 @@ class RestaurantService {
   }
 
   /**
+   * Get restaurant statistics
+   * @param {String} restaurantId - Restaurant ID
+   * @param {Object} currentUser - Current authenticated user
+   * @returns {Promise<Object>} Restaurant statistics
+   */
+  async getRestaurantStats(restaurantId, currentUser = null) {
+    const serviceLogger = this._createServiceLogger({
+      operation: 'getRestaurantStats',
+      restaurantId,
+      currentUserId: currentUser?.id,
+    });
+
+    serviceLogger.info('Getting restaurant statistics');
+
+    try {
+      // First verify the restaurant exists
+      const restaurant = await this.restaurantModel.findById(restaurantId);
+      if (!restaurant) {
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // For now, return basic stats with the restaurant info
+      // In a real application, you might query orders, reviews, etc.
+      const stats = {
+        id: restaurant.id,
+        restaurant_name: restaurant.restaurant_name,
+        status: restaurant.status,
+        created_at: restaurant.created_at,
+        updated_at: restaurant.updated_at,
+        // Add more statistics as needed
+        total_orders: 0, // Placeholder - would query orders table
+        total_reviews: 0, // Placeholder - would query reviews table
+        average_rating: 0, // Placeholder - would calculate from reviews
+        total_menu_items: 0, // Placeholder - would query menu items
+        location_count: 0, // Placeholder - would query locations
+      };
+
+      serviceLogger.info('Restaurant statistics retrieved successfully', {
+        restaurantId,
+        statsKeys: Object.keys(stats).length,
+      });
+
+      return stats;
+    } catch (error) {
+      serviceLogger.error('Failed to get restaurant statistics', {
+        restaurantId,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Validate URL name uniqueness
    * @param {String} urlName - Restaurant URL name
    * @throws {Error} If URL name already exists
@@ -461,7 +577,7 @@ class RestaurantService {
     const existingRestaurant = await this.restaurantModel.findByUrlName(urlName);
 
     if (existingRestaurant) {
-      const error = new Error('Restaurant URL name already exists');
+      const error = new Error('URL name is already taken');
       error.statusCode = 409; // Conflict
       throw error;
     }
@@ -475,7 +591,7 @@ class RestaurantService {
    * @throws {Error} If user doesn't have sufficient permissions
    */
   async validateRestaurantOwnership(restaurant, currentUser, operation = 'update') {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'validateRestaurantOwnership',
       restaurantId: restaurant.id,
       currentUserId: currentUser?.id,
@@ -514,7 +630,7 @@ class RestaurantService {
    * @throws {Error} If user doesn't have sufficient permissions
    */
   async validateRestaurantAccess(restaurant, currentUser) {
-    const serviceLogger = this.logger.child({
+    const serviceLogger = this._createServiceLogger({
       operation: 'validateRestaurantAccess',
       restaurantId: restaurant.id,
       currentUserId: currentUser?.id,
@@ -582,6 +698,46 @@ class RestaurantService {
         `Location limit reached for ${restaurant.subscription_plan} plan (${maxLocations} locations)`
       );
       error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  /**
+   * Check URL name availability
+   * @param {String} urlName - URL name to check
+   * @param {String} excludeId - Restaurant ID to exclude from check (for updates)
+   * @param {Object} currentUser - Current authenticated user
+   * @returns {Promise<Boolean>} True if available
+   */
+  async checkUrlAvailability(urlName, excludeId = null, currentUser = null) {
+    const operationId = `check_url_availability_${Date.now()}`;
+    const serviceLogger = this._createServiceLogger({
+      operation: 'checkUrlAvailability',
+      operationId,
+      urlName,
+      excludeId,
+      currentUserId: currentUser?.id,
+    });
+
+    serviceLogger.info('Checking URL name availability', {
+      urlName,
+      excludeId,
+    });
+
+    try {
+      const isAvailable = await this.restaurantModel.isUrlNameAvailable(urlName, excludeId);
+
+      serviceLogger.info('URL availability check completed', {
+        urlName,
+        isAvailable,
+      });
+
+      return isAvailable;
+    } catch (error) {
+      serviceLogger.error('Error checking URL availability', {
+        error: error.message,
+        urlName,
+      });
       throw error;
     }
   }

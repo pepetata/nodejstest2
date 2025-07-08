@@ -275,13 +275,13 @@ class RestaurantController {
 
       next(error);
     }
-  });
+  }
 
   /**
    * Update a restaurant
    * PUT /api/restaurants/:id
    */
-  updateRestaurant = asyncHandler(async (req, res, next) => {
+  async updateRestaurant(req, res, next) {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
 
     // Defensive logger access with fallback
@@ -341,13 +341,13 @@ class RestaurantController {
 
       next(error);
     }
-  });
+  }
 
   /**
    * Delete a restaurant
    * DELETE /api/restaurants/:id
    */
-  deleteRestaurant = asyncHandler(async (req, res, next) => {
+  async deleteRestaurant(req, res, next) {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
 
     // Defensive logger access with fallback
@@ -393,13 +393,13 @@ class RestaurantController {
 
       next(error);
     }
-  });
+  }
 
   /**
    * Get restaurant statistics
    * GET /api/restaurants/:id/stats
    */
-  getRestaurantStats = asyncHandler(async (req, res, next) => {
+  async getRestaurantStats(req, res, next) {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
 
     // Defensive logger access with fallback
@@ -443,13 +443,13 @@ class RestaurantController {
 
       next(error);
     }
-  });
+  }
 
   /**
    * Check if URL name is available
    * GET /api/restaurants/check-url/:urlName
    */
-  checkUrlAvailability = asyncHandler(async (req, res, next) => {
+  async checkUrlAvailability(req, res, next) {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
 
     // Defensive logger access with fallback
@@ -498,7 +498,7 @@ class RestaurantController {
       });
       next(error);
     }
-  });
+  }
 }
 
 module.exports = RestaurantController;

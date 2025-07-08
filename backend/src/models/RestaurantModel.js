@@ -237,7 +237,9 @@ class RestaurantModel extends BaseModel {
     try {
       // Validate and sanitize UUID
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        const error = new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        error.statusCode = 400;
+        throw error;
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -416,7 +418,9 @@ class RestaurantModel extends BaseModel {
     try {
       // Validate and sanitize UUID
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        const error = new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        error.statusCode = 400;
+        throw error;
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -486,7 +490,9 @@ class RestaurantModel extends BaseModel {
     try {
       // Validate and sanitize UUID
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        const error = new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        error.statusCode = 400;
+        throw error;
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -567,7 +573,9 @@ class RestaurantModel extends BaseModel {
     try {
       // Validate and sanitize UUID
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        const error = new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        error.statusCode = 400;
+        throw error;
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -606,6 +614,29 @@ class RestaurantModel extends BaseModel {
         id: id ? id.substring(0, 8) + '...' : null,
         error: error.message,
         stack: error.stack,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check if restaurant has active locations
+   * @param {String} restaurantId - Restaurant ID
+   * @returns {Promise<Boolean>} Whether restaurant has active locations
+   */
+  async hasActiveLocations(restaurantId) {
+    this.logger.debug('Checking for active locations', {
+      restaurantId: restaurantId ? restaurantId.substring(0, 8) + '...' : null,
+    });
+
+    try {
+      // For now, return false as we don't have a locations table implemented
+      // In a real application, this would query the locations table
+      return false;
+    } catch (error) {
+      this.logger.error('Failed to check active locations', {
+        restaurantId: restaurantId ? restaurantId.substring(0, 8) + '...' : null,
+        error: error.message,
       });
       throw error;
     }

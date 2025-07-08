@@ -279,6 +279,53 @@ const userValidationSchemas = {
       'any.required': 'Password confirmation is required',
     }),
   }),
+
+  // Get users by restaurant validation
+  getUsersByRestaurant: Joi.object({
+    restaurantId: Joi.string().uuid({ version: 'uuidv4' }).required().messages({
+      'string.guid': 'Restaurant ID must be a valid UUID',
+      'any.required': 'Restaurant ID is required',
+    }),
+  }),
+
+  // Get users by restaurant query validation
+  getUsersByRestaurantQuery: Joi.object({
+    page: Joi.number().integer().min(1).default(1).messages({
+      'number.base': 'Page must be a number',
+      'number.integer': 'Page must be an integer',
+      'number.min': 'Page must be at least 1',
+    }),
+
+    limit: Joi.number().integer().min(1).max(100).default(20).messages({
+      'number.base': 'Limit must be a number',
+      'number.integer': 'Limit must be an integer',
+      'number.min': 'Limit must be at least 1',
+      'number.max': 'Limit cannot exceed 100',
+    }),
+
+    role: Joi.string()
+      .valid(
+        'restaurant_administrator',
+        'location_administrator',
+        'kitchen_manager',
+        'server',
+        'cook',
+        'cashier',
+        'delivery_driver'
+      )
+      .messages({
+        'any.only': 'Role must be a valid user role',
+      }),
+
+    status: Joi.string().valid('active', 'inactive', 'suspended').messages({
+      'any.only': 'Status must be one of: active, inactive, suspended',
+    }),
+
+    search: Joi.string().min(1).max(100).messages({
+      'string.min': 'Search term must be at least 1 character',
+      'string.max': 'Search term cannot exceed 100 characters',
+    }),
+  }),
 };
 
 module.exports = userValidationSchemas;
