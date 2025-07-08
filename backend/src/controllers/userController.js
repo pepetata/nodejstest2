@@ -38,24 +38,26 @@ class UserController {
    */
   createUser = asyncHandler(async (req, res) => {
     const requestId = req.requestId || `req_${Date.now()}`;
-    const controllerLogger = this.logger.child({
+    const logMeta = {
       operation: 'createUser',
       requestId,
       userId: req.user?.id,
       method: req.method,
       path: req.path,
-    });
+    };
 
-    controllerLogger.info('Creating new user', {
+    this.logger.info('Creating new user', {
+      ...logMeta,
       role: req.body.role,
       hasEmail: !!req.body.email,
       hasUsername: !!req.body.username,
     });
 
     try {
-      // Check authorization - only admins can create users
-      if (!this.isAuthorizedToManageUsers(req.user)) {
-        controllerLogger.warn('Unauthorized user creation attempt', {
+      // Only check authorization if req.user exists (admin endpoint)
+      if (req.user && !this.isAuthorizedToManageUsers(req.user)) {
+        this.logger.warn('Unauthorized user creation attempt', {
+          ...logMeta,
           userRole: req.user.role,
         });
 
@@ -74,7 +76,8 @@ class UserController {
       const userData = req.body;
       const newUser = await this.userService.createUser(userData, req.user);
 
-      controllerLogger.info('User created successfully', {
+      this.logger.info('User created successfully', {
+        ...logMeta,
         newUserId: newUser.id,
         role: newUser.role,
         status: newUser.status,
@@ -87,7 +90,8 @@ class UserController {
         })
       );
     } catch (error) {
-      controllerLogger.error('Failed to create user', {
+      this.logger.error('Failed to create user', {
+        ...logMeta,
         error: error.message,
         code: error.code,
         statusCode: error.statusCode,
@@ -217,6 +221,7 @@ class UserController {
       const result = await this.userService.getUsers(options, req.user);
 
       controllerLogger.info('Users retrieved successfully', {
+        ...logMeta,
         total: result.pagination.total,
         page: result.pagination.page,
         returned: result.users.length,

@@ -25,13 +25,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
       legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for general API', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
       skip: (req, res) => {
         // Skip rate limiting for health checks and test endpoints in development
@@ -59,13 +60,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for auth endpoints', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }
@@ -86,13 +88,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for restaurant creation', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }
@@ -108,13 +111,14 @@ class RateLimitMiddleware {
         delayAfter: 50, // allow 50 requests per 15 minutes at full speed
         delayMs: 500, // add 500ms delay per request after delayAfter
         maxDelayMs: 20000, // max delay of 20 seconds
-        onLimitReached: (req, res, options) => {
+        handler: (req, res, options) => {
           rateLimitLogger.warn('Slow down limit reached', {
             ip: req.ip,
             userAgent: req.get('User-Agent'),
             path: req.path,
             method: req.method,
           });
+          res.status(options.statusCode).json(options.message);
         },
       }),
       rateLimit({
@@ -128,13 +132,14 @@ class RateLimitMiddleware {
         },
         standardHeaders: true,
         legacyHeaders: false,
-        onLimitReached: (req, res, options) => {
+        handler: (req, res, options) => {
           rateLimitLogger.warn('Rate limit reached for API with slow down', {
             ip: req.ip,
             userAgent: req.get('User-Agent'),
             path: req.path,
             method: req.method,
           });
+          res.status(options.statusCode).json(options.message);
         },
       }),
     ];
@@ -156,13 +161,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for uploads', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }
@@ -183,13 +189,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for search endpoints', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }
@@ -210,13 +217,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for user management', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }
@@ -237,13 +245,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for user creation', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }
@@ -264,13 +273,14 @@ class RateLimitMiddleware {
       },
       standardHeaders: true,
       legacyHeaders: false,
-      onLimitReached: (req, res, options) => {
+      handler: (req, res, options) => {
         rateLimitLogger.warn('Rate limit reached for password changes', {
           ip: req.ip,
           userAgent: req.get('User-Agent'),
           path: req.path,
           method: req.method,
         });
+        res.status(options.statusCode).json(options.message);
       },
     });
   }

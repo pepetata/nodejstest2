@@ -207,20 +207,33 @@ class XSSMiddleware {
 
         // Apply more restrictive sanitization to user bio/description fields if present
         if (userData.bio) {
-          userData.bio = XSSSanitizer.sanitizeHTML(userData.bio, {
-            allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br'],
-            allowedAttributes: {},
-          });
+          userData.bio = XSSSanitizer.sanitizeHtml(userData.bio);
         }
 
         if (userData.full_name) {
-          userData.full_name = XSSSanitizer.sanitize(userData.full_name);
+          userData.full_name = XSSSanitizer.sanitizeName(userData.full_name);
         }
 
         // Extra protection for username
         if (userData.username) {
           // Ensure username only contains alphanumeric characters
           userData.username = userData.username.replace(/[^a-zA-Z0-9]/g, '');
+        }
+
+        // Sanitize email if present
+        if (userData.email) {
+          userData.email = XSSSanitizer.sanitizeText(userData.email);
+        }
+
+        // Sanitize other string fields as plain text
+        if (userData.phone) {
+          userData.phone = XSSSanitizer.sanitizeText(userData.phone);
+        }
+        if (userData.role) {
+          userData.role = XSSSanitizer.sanitizeText(userData.role);
+        }
+        if (userData.status) {
+          userData.status = XSSSanitizer.sanitizeText(userData.status);
         }
 
         // Apply general sanitization to all fields

@@ -55,7 +55,7 @@ class RestaurantValidation {
             'WhatsApp number must contain only digits and be 10-20 characters long',
         }),
 
-      website: Joi.string().uri().trim().max(255).allow(null).messages({
+      website: Joi.string().uri().trim().max(255).allow(null, '').optional().messages({
         'string.uri': 'Please provide a valid website URL',
         'string.max': 'Website URL cannot exceed 255 characters',
       }),

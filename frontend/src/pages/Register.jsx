@@ -1349,7 +1349,8 @@ function RegisterPage() {
         // Add more fields as needed
       };
       const restaurantRes = await restaurantService.create(restaurantPayload);
-      const restaurantId = restaurantRes.data.id;
+      console.log(`restaurant restaurantRes=`, restaurantRes.data);
+      const restaurantId = restaurantRes.data.data.id;
 
       // 2. Save user (restaurant administrator)
       const userPayload = {
@@ -1361,7 +1362,8 @@ function RegisterPage() {
         restaurant_id: restaurantId,
         status: 'pending',
       };
-      await userService.create(userPayload);
+      console.log(`user payload=`, userPayload);
+      await userService.register(userPayload);
 
       // Clear saved form data on successful registration
       localStorage.removeItem('registerFormData');

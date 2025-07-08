@@ -31,6 +31,18 @@ const userSearchLimiter = RateLimitMiddleware.search();
 const passwordChangeLimiter = RateLimitMiddleware.passwordChange();
 
 /**
+ * @route POST /api/v1/users/register
+ * @desc Register a new user (public endpoint)
+ * @access Public
+ * @middleware ValidationMiddleware, XSSMiddleware
+ */
+router.post(
+  '/register',
+  ValidationMiddleware.validate(userValidationSchemas.createUser, 'body'),
+  userController.createUser
+);
+
+/**
  * @route POST /api/v1/users
  * @desc Create a new user
  * @access Private - Admin only
@@ -43,7 +55,6 @@ router.post(
   ValidationMiddleware.validate(userValidationSchemas.createUser, 'body'),
   userController.createUser
 );
-
 /**
  * @route GET /api/v1/users
  * @desc Get all users with filtering and pagination

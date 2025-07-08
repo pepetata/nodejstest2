@@ -9,6 +9,7 @@ const orderRoutes = require('../orderRoutes');
 const restaurantRoutes = require('../restaurantRoutes');
 const userRoutes = require('../userRoutes');
 
+const restaurantCreationLimiter = RateLimitMiddleware.restaurantCreation();
 const router = express.Router();
 
 /**
@@ -37,7 +38,7 @@ router.use(
   (req, res, next) => {
     // Apply stricter rate limiting for restaurant creation
     if (req.method === 'POST' && req.path === '/') {
-      return RateLimitMiddleware.restaurantCreation()(req, res, next);
+      return restaurantCreationLimiter(req, res, next);
     }
     next();
   },

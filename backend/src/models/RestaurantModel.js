@@ -83,7 +83,7 @@ class RestaurantModel extends BaseModel {
       whatsapp: Joi.string()
         .pattern(/^\d{10,20}$/)
         .allow(null),
-      website: Joi.string().uri().max(255).allow(null),
+      website: Joi.string().uri().trim().max(255).allow(null, '').optional(),
       description: Joi.string().trim().max(2000).allow(null),
       status: Joi.string().valid('pending', 'active', 'inactive', 'suspended').default('pending'),
       subscription_plan: Joi.string()

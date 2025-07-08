@@ -90,8 +90,6 @@ router.get(
 // Requires authentication and admin role
 router.post(
   '/',
-  authMiddleware,
-  restaurantAuth.requireRestaurantAdmin,
   ValidationMiddleware.validateBody(RestaurantValidation.createSchema),
   restaurantController.createRestaurant.bind(restaurantController)
 );

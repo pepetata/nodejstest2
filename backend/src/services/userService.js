@@ -21,13 +21,14 @@ class UserService {
    */
   async createUser(userData, currentUser = null) {
     const operationId = `create_user_${Date.now()}`;
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'createUser',
       operationId,
       currentUserId: currentUser?.id,
-    });
+    };
 
-    serviceLogger.info('Creating new user', {
+    this.logger.info('Creating new user', {
+      ...logMeta,
       role: userData.role,
       hasEmail: !!userData.email,
       hasUsername: !!userData.username,
@@ -47,7 +48,8 @@ class UserService {
 
       const newUser = await this.userModel.create(userData);
 
-      serviceLogger.info('User created successfully', {
+      this.logger.info('User created successfully', {
+        ...logMeta,
         userId: newUser.id,
         role: newUser.role,
         status: newUser.status,
@@ -55,7 +57,8 @@ class UserService {
 
       return newUser;
     } catch (error) {
-      serviceLogger.error('Failed to create user', {
+      this.logger.error('Failed to create user', {
+        ...logMeta,
         error: error.message,
         code: error.code,
       });
@@ -70,26 +73,27 @@ class UserService {
    * @returns {Promise<Object|null>} User data or null
    */
   async getUserById(userId, currentUser) {
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'getUserById',
       userId,
       currentUserId: currentUser?.id,
-    });
+    };
 
-    serviceLogger.debug('Fetching user by ID');
+    this.logger.debug('Fetching user by ID', logMeta);
 
     try {
       const user = await this.userModel.findById(userId);
 
       if (!user) {
-        serviceLogger.warn('User not found', { userId });
+        this.logger.warn('User not found', { ...logMeta, userId });
         return null;
       }
 
       // Check if current user can access this user's data
       await this.validateUserAccess(user, currentUser);
 
-      serviceLogger.debug('User retrieved successfully', {
+      this.logger.debug('User retrieved successfully', {
+        ...logMeta,
         targetUserId: user.id,
         role: user.role,
         status: user.status,
@@ -97,7 +101,8 @@ class UserService {
 
       return user;
     } catch (error) {
-      serviceLogger.error('Failed to get user by ID', {
+      this.logger.error('Failed to get user by ID', {
+        ...logMeta,
         error: error.message,
         userId,
       });
@@ -112,13 +117,13 @@ class UserService {
    * @returns {Promise<Object>} Paginated users list
    */
   async getUsers(options, currentUser) {
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'getUsers',
       currentUserId: currentUser?.id,
       filters: options,
-    });
+    };
 
-    serviceLogger.debug('Fetching users with filters');
+    this.logger.debug('Fetching users list', logMeta);
 
     try {
       const { page, limit, restaurant_id, role, status, search, sort_by, sort_order } = options;
@@ -156,7 +161,8 @@ class UserService {
 
       const totalPages = Math.ceil(result.total / limit);
 
-      serviceLogger.info('Users retrieved successfully', {
+      this.logger.info('Users retrieved successfully', {
+        ...logMeta,
         total: result.total,
         page,
         totalPages,
@@ -175,7 +181,8 @@ class UserService {
         },
       };
     } catch (error) {
-      serviceLogger.error('Failed to get users', {
+      this.logger.error('Failed to get users', {
+        ...logMeta,
         error: error.message,
         options,
       });
@@ -192,14 +199,15 @@ class UserService {
    */
   async updateUser(userId, updateData, currentUser) {
     const operationId = `update_user_${userId}_${Date.now()}`;
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'updateUser',
       operationId,
       userId,
       currentUserId: currentUser?.id,
-    });
+    };
 
-    serviceLogger.info('Updating user', {
+    this.logger.info('Updating user', {
+      ...logMeta,
       fieldsToUpdate: Object.keys(updateData),
     });
 
@@ -229,14 +237,16 @@ class UserService {
 
       const updatedUser = await this.userModel.update(userId, updateData);
 
-      serviceLogger.info('User updated successfully', {
+      this.logger.info('User updated successfully', {
+        ...logMeta,
         userId: updatedUser.id,
         updatedFields: Object.keys(updateData),
       });
 
       return updatedUser;
     } catch (error) {
-      serviceLogger.error('Failed to update user', {
+      this.logger.error('Failed to update user', {
+        ...logMeta,
         error: error.message,
         userId,
         updateData: Object.keys(updateData),
@@ -252,13 +262,13 @@ class UserService {
    * @returns {Promise<Boolean>} Success status
    */
   async deleteUser(userId, currentUser) {
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'deleteUser',
       userId,
       currentUserId: currentUser?.id,
-    });
+    };
 
-    serviceLogger.info('Deleting user');
+    this.logger.info('Deleting user', logMeta);
 
     try {
       // Get existing user to validate access
@@ -281,14 +291,15 @@ class UserService {
 
       const result = await this.userModel.deleteUser(userId);
 
-      serviceLogger.info('User deleted successfully', {
-        userId,
+      this.logger.info('User deleted successfully', {
+        ...logMeta,
         deleted: result,
       });
 
       return result;
     } catch (error) {
-      serviceLogger.error('Failed to delete user', {
+      this.logger.error('Failed to delete user', {
+        ...logMeta,
         error: error.message,
         userId,
       });
@@ -305,13 +316,13 @@ class UserService {
    * @returns {Promise<Object>} Updated user
    */
   async changePassword(userId, currentPassword, newPassword, currentUser) {
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'changePassword',
       userId,
       currentUserId: currentUser?.id,
-    });
+    };
 
-    serviceLogger.info('Changing user password');
+    this.logger.info('Changing user password', logMeta);
 
     try {
       // Get existing user
@@ -345,13 +356,15 @@ class UserService {
 
       const updatedUser = await this.userModel.changePassword(userId, newPassword);
 
-      serviceLogger.info('Password changed successfully', {
+      this.logger.info('Password changed successfully', {
+        ...logMeta,
         userId,
       });
 
       return updatedUser;
     } catch (error) {
-      serviceLogger.error('Failed to change password', {
+      this.logger.error('Failed to change password', {
+        ...logMeta,
         error: error.message,
         userId,
       });
@@ -402,15 +415,15 @@ class UserService {
    */
   async getUsersByRestaurant(restaurantId, filters = {}, currentUser = null) {
     const operationId = `get_users_by_restaurant_${Date.now()}`;
-    const serviceLogger = this.logger.child({
+    const logMeta = {
       operation: 'getUsersByRestaurant',
       operationId,
       restaurantId,
       currentUserId: currentUser?.id,
-    });
+    };
 
-    serviceLogger.info('Retrieving users by restaurant', {
-      restaurantId,
+    this.logger.info('Retrieving users by restaurant', {
+      ...logMeta,
       filters,
     });
 
@@ -421,14 +434,16 @@ class UserService {
       // Get users from restaurant
       const result = await this.userModel.getUsersByRestaurant(restaurantId, filters);
 
-      serviceLogger.info('Users retrieved successfully', {
+      this.logger.info('Users retrieved successfully', {
+        ...logMeta,
         userCount: result.users.length,
         totalCount: result.pagination.total,
       });
 
       return result;
     } catch (error) {
-      serviceLogger.error('Error retrieving users by restaurant', {
+      this.logger.error('Error retrieving users by restaurant', {
+        ...logMeta,
         error: error.message,
         restaurantId,
       });

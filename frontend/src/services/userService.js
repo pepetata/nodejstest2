@@ -11,6 +11,12 @@ const userService = {
   // Get a user by ID
   getById: (id) => axios.get(`${API_BASE}/${id}`),
 
+  // Register a new user
+  register: (data) => {
+    console.log(`register data=`, data);
+    return axios.post(`${API_BASE}/register`, data);
+  },
+
   // Create a new user
   create: (data) => axios.post(API_BASE, data),
 

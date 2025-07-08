@@ -39,7 +39,7 @@ const userValidationSchemas = {
     password: Joi.string()
       .min(8)
       .max(255)
-      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+      // .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
