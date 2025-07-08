@@ -193,6 +193,87 @@ class RateLimitMiddleware {
       },
     });
   }
+
+  /**
+   * User management operations rate limiting
+   * 20 requests per 15 minutes for user CRUD operations
+   */
+  static userManagement() {
+    return rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 20, // limit each IP to 20 requests per windowMs
+      message: {
+        error: 'Too many user management requests',
+        message: 'Too many user management requests from this IP, please try again later.',
+        retryAfter: 15 * 60 * 1000,
+        timestamp: new Date().toISOString(),
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      onLimitReached: (req, res, options) => {
+        rateLimitLogger.warn('Rate limit reached for user management', {
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          path: req.path,
+          method: req.method,
+        });
+      },
+    });
+  }
+
+  /**
+   * User creation rate limiting
+   * 5 requests per hour - strict for user creation
+   */
+  static userCreation() {
+    return rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 5, // limit each IP to 5 requests per hour
+      message: {
+        error: 'Too many user creation attempts',
+        message: 'Too many user creation attempts from this IP, please try again later.',
+        retryAfter: 60 * 60 * 1000,
+        timestamp: new Date().toISOString(),
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      onLimitReached: (req, res, options) => {
+        rateLimitLogger.warn('Rate limit reached for user creation', {
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          path: req.path,
+          method: req.method,
+        });
+      },
+    });
+  }
+
+  /**
+   * Password change rate limiting
+   * 3 requests per hour - very strict for security operations
+   */
+  static passwordChange() {
+    return rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 3, // limit each IP to 3 requests per hour
+      message: {
+        error: 'Too many password change attempts',
+        message: 'Too many password change attempts from this IP, please try again later.',
+        retryAfter: 60 * 60 * 1000,
+        timestamp: new Date().toISOString(),
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      onLimitReached: (req, res, options) => {
+        rateLimitLogger.warn('Rate limit reached for password changes', {
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          path: req.path,
+          method: req.method,
+        });
+      },
+    });
+  }
 }
 
 module.exports = RateLimitMiddleware;

@@ -7,6 +7,7 @@ const locationRoutes = require('../locationRoutes');
 const menuRoutes = require('../menuRoutes');
 const orderRoutes = require('../orderRoutes');
 const restaurantRoutes = require('../restaurantRoutes');
+const userRoutes = require('../userRoutes');
 
 const router = express.Router();
 
@@ -42,6 +43,9 @@ router.use(
   },
   restaurantRoutes
 );
+
+// User routes with user-specific rate limiting
+router.use('/users', userRoutes);
 
 // v1 API documentation endpoint
 router.get('/docs', (req, res) => {

@@ -184,6 +184,74 @@ class XSSMiddleware {
       next(error);
     }
   }
+
+  /**
+   * Sanitize user data with specific rules for user input
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next function
+   */
+  static sanitizeUserData(req, res, next) {
+    try {
+      const userLogger = logger.child({
+        middleware: 'XSSMiddleware',
+        component: 'userSanitization',
+        path: req.path,
+        method: req.method,
+      });
+
+      // Sanitize body data with user-specific rules
+      if (req.body && typeof req.body === 'object') {
+        // Special handling for user input fields
+        const userData = { ...req.body };
+
+        // Apply more restrictive sanitization to user bio/description fields if present
+        if (userData.bio) {
+          userData.bio = XSSSanitizer.sanitizeHTML(userData.bio, {
+            allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br'],
+            allowedAttributes: {},
+          });
+        }
+
+        if (userData.full_name) {
+          userData.full_name = XSSSanitizer.sanitize(userData.full_name);
+        }
+
+        // Extra protection for username
+        if (userData.username) {
+          // Ensure username only contains alphanumeric characters
+          userData.username = userData.username.replace(/[^a-zA-Z0-9]/g, '');
+        }
+
+        // Apply general sanitization to all fields
+        req.body = XSSMiddleware.sanitizeObject(userData);
+
+        userLogger.debug('User data sanitized for XSS prevention', {
+          sanitizedFields: Object.keys(req.body),
+        });
+      }
+
+      // Also sanitize query parameters for user routes
+      if (req.query && typeof req.query === 'object') {
+        req.query = XSSMiddleware.sanitizeObject(req.query);
+      }
+
+      // And params if present
+      if (req.params && typeof req.params === 'object') {
+        req.params = XSSMiddleware.sanitizeObject(req.params);
+      }
+
+      next();
+    } catch (error) {
+      logger.error('User XSS sanitization middleware error', {
+        path: req.path,
+        method: req.method,
+        error: error.message,
+        stack: error.stack,
+      });
+      next(error);
+    }
+  }
 }
 
 module.exports = XSSMiddleware;
