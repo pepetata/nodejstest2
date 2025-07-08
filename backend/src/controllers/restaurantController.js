@@ -1,14 +1,16 @@
-const restaurantModel = require('../models/RestaurantModel');
+const RestaurantService = require('../services/restaurantService');
 const RestaurantValidation = require('../validations/restaurantValidation');
 const ResponseFormatter = require('../utils/responseFormatter');
+const asyncHandler = require('../utils/asyncHandler');
 
 /**
  * Restaurant Controller
  * Handles all restaurant-related HTTP requests with comprehensive
  * validation, error handling, logging, and response formatting
+ * Uses RestaurantService for business logic and dependency injection
  */
 class RestaurantController {
-  constructor(injectedLogger = null) {
+  constructor(injectedLogger = null, restaurantServiceInstance = null) {
     // Use injected logger (for testing) or import the real logger
     if (injectedLogger) {
       this.logger = injectedLogger;
@@ -48,6 +50,9 @@ class RestaurantController {
         debug: () => {},
       };
     }
+
+    // Use injected service (for testing) or create new instance
+    this.restaurantService = restaurantServiceInstance || new RestaurantService();
   }
 
   /**
