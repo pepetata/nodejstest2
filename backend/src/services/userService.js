@@ -1,4 +1,5 @@
-const userModel = require('../models/userModel');
+const UserModel = require('../models/userModel');
+const userModel = new UserModel();
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
 const { sendMail } = require('../utils/mailer');

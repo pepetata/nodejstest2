@@ -38,3 +38,9 @@ $success: #4caf50; // Keep green for success states
 // Background variations
 $bg-light: color.scale($bg-color, $lightness: 5%);
 $bg-dark: color.scale($bg-color, $lightness: -10%);
+
+// Standard button style
+$button-bg: $logoO;
+$button-color: $logoB;
+$button-hover-bg: color.scale($button-bg, $lightness: -10%);
+$button-hover-color: $logoB;

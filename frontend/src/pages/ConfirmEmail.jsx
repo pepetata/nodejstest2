@@ -77,18 +77,14 @@ export default function ConfirmEmail() {
         <h2 className="text-2xl font-bold mb-4">Confirmação de E-mail</h2>
         <p className="mb-6 text-gray-700">{message}</p>
         {status === 'expired' && allowResend && (
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            onClick={handleResend}
-            disabled={resending}
-          >
+          <button className="standard-btn" onClick={handleResend} disabled={resending}>
             {resending ? 'Enviando...' : 'Reenviar e-mail de confirmação'}
           </button>
         )}
         {resent && <p className="mt-4 text-green-600">E-mail reenviado com sucesso!</p>}
         {(status === 'success' || status === 'alreadyConfirmed') && (
           <button
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="mt-4 standard-btn"
             onClick={() => navigate('/login', { replace: true })}
           >
             Ir para o Login

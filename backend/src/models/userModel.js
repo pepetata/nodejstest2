@@ -497,24 +497,37 @@ class UserModel extends BaseModel {
       const query = `
         UPDATE ${this.tableName}
         SET email_confirmed = true,
-            -- email_confirmation_token = NULL,
             email_confirmation_expires = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE email_confirmation_token = $1
           AND email_confirmation_expires > CURRENT_TIMESTAMP
+          AND email_confirmed = false
         RETURNING *
       `;
 
       const result = await this.executeQuery(query, [token]);
 
-      if (result.rows.length === 0) {
-        throw new Error('Token de confirmação inválido ou expirado.');
+      if (result.rows.length > 0) {
+        const user = this.sanitizeOutput(result.rows[0], this.sensitiveFields);
+        this.logger.info('Email confirmed successfully', { user_id: user.id });
+        return user;
       }
 
-      const user = this.sanitizeOutput(result.rows[0], this.sensitiveFields);
-      this.logger.info('Email confirmed successfully', { user_id: user.id });
+      // If not updated, check if already confirmed
+      const alreadyConfirmed = await this.find({
+        email_confirmation_token: token,
+        email_confirmed: true,
+      });
+      if (alreadyConfirmed && alreadyConfirmed.length > 0) {
+        const user = this.sanitizeOutput(alreadyConfirmed[0], this.sensitiveFields);
+        const err = new Error('E-mail já confirmado.');
+        err.code = 'ALREADY_CONFIRMED';
+        err.alreadyConfirmed = true;
+        err.user = user;
+        throw err;
+      }
 
-      return user;
+      throw new Error('Token de confirmação inválido ou expirado.');
     } catch (error) {
       this.logger.error('Failed to confirm email', { error: error.message });
       throw error;
@@ -566,64 +579,18 @@ class UserModel extends BaseModel {
       RETURNING *
     `;
     const result = await this.executeQuery(query, [token, expires, userId]);
-    if (result.rows.length === 0) {
-      throw new Error('Usuário não encontrado para atualizar token de confirmação.');
-    }
-    return this.sanitizeOutput(result.rows[0], this.sensitiveFields);
+    return result.rows[0] ? this.sanitizeOutput(result.rows[0], this.sensitiveFields) : null;
   }
 
   /**
-   * Check if restaurant exists
+   * Check if a restaurant exists by ID
    */
   async checkRestaurantExists(restaurantId) {
-    const query = 'SELECT 1 FROM restaurants WHERE id = $1';
+    // Assumes you have a RestaurantModel or a direct query to the restaurants table
+    const query = 'SELECT 1 FROM restaurants WHERE id = $1 LIMIT 1';
     const result = await this.executeQuery(query, [restaurantId]);
     return result.rows.length > 0;
   }
-
-  /**
-   * Get users by restaurant
-   */
-  async getUsersByRestaurant(restaurantId, options = {}) {
-    this.logger.info('Getting users by restaurant', { restaurant_id: restaurantId });
-
-    try {
-      if (!this.isValidUuid(restaurantId)) {
-        throw new Error('Formato de ID de restaurante inválido. Deve ser um UUID válido.');
-      }
-
-      const { sanitizedUuid } = this.validateUuid(restaurantId);
-      const conditions = { restaurant_id: sanitizedUuid };
-
-      if (options.status) {
-        conditions.status = options.status;
-      }
-
-      if (options.role) {
-        conditions.role = options.role;
-      }
-
-      const queryOptions = {
-        orderBy: 'created_at DESC',
-      };
-
-      const users = await this.find(conditions, queryOptions);
-      const sanitizedUsers = users.map((user) => this.sanitizeOutput(user, this.sensitiveFields));
-
-      this.logger.info('Successfully retrieved restaurant users', {
-        restaurant_id: sanitizedUuid,
-        user_count: sanitizedUsers.length,
-      });
-
-      return sanitizedUsers;
-    } catch (error) {
-      this.logger.error('Failed to get users by restaurant', {
-        restaurant_id: restaurantId,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
 }
 
-module.exports = new UserModel();
+module.exports = UserModel;
