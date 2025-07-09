@@ -99,8 +99,9 @@ class RateLimitMiddleware {
       windowMs: 60 * 60 * 1000, // 1 hour
       max: 3, // limit each IP to 3 requests per hour
       message: {
-        error: 'Too many restaurant creation attempts',
-        message: 'Too many restaurant creation attempts from this IP, please try again later.',
+        error: 'Muitas tentativas de criação de restaurante',
+        message:
+          'Muitas tentativas de criação de restaurante deste IP. Por favor, tente novamente mais tarde.',
         retryAfter: 60 * 60 * 1000,
         timestamp: new Date().toISOString(),
       },
@@ -115,7 +116,7 @@ class RateLimitMiddleware {
         });
         const msg =
           (options && options.message && options.message.message) ||
-          'Too many restaurant creation attempts, please try again later.';
+          'Muitas tentativas de criação de restaurante deste IP. Por favor, tente novamente mais tarde.';
         const retryAfter =
           (options && options.message && options.message.retryAfter) || 60 * 60 * 1000;
         res.status(429).json({

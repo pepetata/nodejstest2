@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import TermsModal from '../components/common/TermsModal';
@@ -86,6 +86,7 @@ function RegisterPage() {
   const [touchedFields, setTouchedFields] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const cepAsyncError = useRef('');
 
   // Set document title and scroll to top when component mounts
@@ -1320,7 +1321,7 @@ function RegisterPage() {
     setError('');
 
     if (!validateStep(5)) return;
-    // setIsSubmitting(true); TODO: enable this when ready for submission
+    setIsSubmitting(true);
 
     try {
       // 1. Save restaurant
@@ -1365,7 +1366,9 @@ function RegisterPage() {
       // Clear saved form data on successful registration
       localStorage.removeItem('registerFormData');
       localStorage.removeItem('registerCurrentStep');
-      // navigate('/dashboard'); TODO: redirect to dashboard or next step
+      // Show success modal
+      setShowSuccessModal(true);
+      // Optionally, you can reset the form or redirect after closing the modal
     } catch (err) {
       console.log(`error returned`, err);
       let errorMessage = 'Falha no registro. Por favor, tente novamente.';
@@ -1410,6 +1413,7 @@ function RegisterPage() {
     }
   };
 
+  // Progress bar rendering
   const renderProgressBar = () => (
     <div className="progress-container mb-4">
       <div className="progress-bar" style={{ '--progress': currentStep }}>
@@ -1438,6 +1442,7 @@ function RegisterPage() {
     </div>
   );
 
+  // Step rendering functions
   const renderStep1 = () => (
     <div>
       <h3 className="step-title">Informações da Conta</h3>
@@ -2349,6 +2354,31 @@ function RegisterPage() {
     </div>
   );
 
+  // Success Modal
+  const renderSuccessModal = () =>
+    showSuccessModal && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h2>Cadastro realizado com sucesso!</h2>
+          <p>Seu restaurante e usuário administrador foram criados.</p>
+          <p>
+            Enviamos um e-mail de confirmação para o endereço informado. Por favor, confirme seu
+            e-mail para ativar sua conta.
+          </p>
+          <p>Após a confirmação, faça login para começar a usar o À La Carte.</p>
+          <button
+            className="modal-close-btn"
+            onClick={() => {
+              setShowSuccessModal(false);
+              navigate('/');
+            }}
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+    );
+
   return (
     <div className="auth-container">
       <div className="auth-card restaurant-registration">
@@ -2410,8 +2440,49 @@ function RegisterPage() {
           setShowTermsModal(false);
         }}
       />
+
+      {/* Success Modal */}
+      {renderSuccessModal()}
     </div>
   );
 }
 
 export default RegisterPage;
+
+// Add minimal modal styles (can be moved to CSS file)
+const modalStyles = `
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal-content {
+  background: #fff;
+  padding: 32px 24px;
+  border-radius: 8px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 2px 16px #0002;
+}
+.modal-close-btn {
+  margin-top: 24px;
+  padding: 10px 24px;
+  background: #1e90ff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+`;
+
+if (typeof document !== 'undefined' && !document.getElementById('modal-styles')) {
+  const style = document.createElement('style');
+  style.id = 'modal-styles';
+  style.innerHTML = modalStyles;
+  document.head.appendChild(style);
+}
