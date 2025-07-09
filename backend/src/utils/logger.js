@@ -23,7 +23,12 @@ class Logger {
       RESET: '\x1b[0m', // Reset
     };
 
-    this.logLevel = this.levels[options.level] || this.levels.INFO;
+    // Accept log level in any case (e.g., 'debug', 'DEBUG', 'Debug')
+    let levelKey = options.level;
+    if (typeof levelKey === 'string') {
+      levelKey = levelKey.toUpperCase();
+    }
+    this.logLevel = this.levels[levelKey] !== undefined ? this.levels[levelKey] : this.levels.INFO;
     this.enableFileLogging = options.enableFileLogging || false;
     this.logDirectory = options.logDirectory || path.join(process.cwd(), 'logs');
     this.maxFileSize = options.maxFileSize || 10 * 1024 * 1024; // 10MB
@@ -224,17 +229,32 @@ class Logger {
   /**
    * Create a child logger with additional context
    * @param {Object} context - Additional context for all logs
-   * @returns {Object} Child logger instance
+   * @returns {Logger} Child logger instance
    */
   child(context = {}) {
+    // Create a new Logger instance with merged context
     const parentLogger = this;
-
-    return {
-      error: (message, meta = {}) => parentLogger.error(message, Object.assign({}, context, meta)),
-      warn: (message, meta = {}) => parentLogger.warn(message, Object.assign({}, context, meta)),
-      info: (message, meta = {}) => parentLogger.info(message, Object.assign({}, context, meta)),
-      debug: (message, meta = {}) => parentLogger.debug(message, Object.assign({}, context, meta)),
-    };
+    class ChildLogger extends Logger {}
+    // Always pass the log level as a string (e.g., 'DEBUG', 'INFO')
+    let levelString =
+      Object.keys(this.levels).find((key) => this.levels[key] === parentLogger.logLevel) || 'INFO';
+    const childLogger = new ChildLogger({
+      level: levelString,
+      enableFileLogging: parentLogger.enableFileLogging,
+      logDirectory: parentLogger.logDirectory,
+      maxFileSize: parentLogger.maxFileSize,
+      maxFiles: parentLogger.maxFiles,
+    });
+    // Store context for all logs
+    childLogger._parentContext = Object.assign({}, parentLogger._parentContext || {}, context);
+    // Patch log methods to merge context
+    ['error', 'warn', 'info', 'debug'].forEach((level) => {
+      const orig = childLogger[level].bind(childLogger);
+      childLogger[level] = (message, meta = {}) => {
+        orig(message, Object.assign({}, childLogger._parentContext, meta));
+      };
+    });
+    return childLogger;
   }
 }
 

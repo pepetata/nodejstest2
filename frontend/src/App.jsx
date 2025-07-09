@@ -9,6 +9,7 @@ import MenuPage from './pages/MenuPage.jsx';
 import Register from './pages/Register.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Login from './pages/Login.jsx';
+import ConfirmEmail from './pages/ConfirmEmail.jsx';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -34,6 +35,7 @@ function App() {
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route path="register-restaurant" element={<Register />} />
+        <Route path="confirm-email" element={<ConfirmEmail />} />
       </Route>
 
       {/* Main restaurant routes with common Layout */}

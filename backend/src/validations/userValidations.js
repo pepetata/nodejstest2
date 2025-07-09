@@ -165,6 +165,8 @@ const userValidationSchemas = {
       'any.only': 'Password confirmation must match the new password',
       'any.required': 'Password confirmation is required',
     }),
+
+    email_confirmation_token: Joi.string(),
   }),
 
   // Query parameters schema
@@ -326,6 +328,15 @@ const userValidationSchemas = {
       'string.max': 'Search term cannot exceed 100 characters',
     }),
   }),
+
+  // Resend confirmation email schema
+  resendConfirmation: Joi.object({
+    email_confirmation_token: Joi.string(),
+  })
+    .or('email_confirmation_token')
+    .messages({
+      'object.missing': 'O token de confirmação é obrigatório.',
+    }),
 };
 
 module.exports = userValidationSchemas;

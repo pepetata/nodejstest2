@@ -171,4 +171,16 @@ router.get(
   userController.getUsersByRestaurant
 );
 
+/**
+ * @route POST /api/v1/users/resend-confirmation
+ * @desc Resend confirmation email
+ * @access Public
+ * @middleware ValidationMiddleware
+ */
+router.post(
+  '/resend-confirmation',
+  ValidationMiddleware.validate(userValidationSchemas.resendConfirmation, 'body'),
+  userController.resendConfirmationEmail
+);
+
 module.exports = router;

@@ -69,25 +69,23 @@ class UserService {
 
       // Send email confirmation if email exists
       if (newUser.email && newUser.email_confirmation_token) {
-        const appUrl = process.env.APP_URL || 'http://localhost:5000';
-        const confirmUrl = `${appUrl}/users/confirm-email?token=${newUser.email_confirmation_token}`;
-        // Render the professional email template
+        const appUrl = process.env.APP_URL || 'http://localhost:3000';
+        const confirmUrl = `${appUrl}/confirm-email?token=${newUser.email_confirmation_token}`;
         const templatePath = path.join(__dirname, '../templates/confirmationEmail.ejs');
         const html = await ejs.renderFile(templatePath, {
-          url: appUrl,
-          name: newUser.full_name || 'Usuário',
+          name: newUser.full_name || newUser.username || newUser.email,
           confirmUrl,
           year: new Date().getFullYear(),
+          logoUrl: `${appUrl}/images/logo.png`,
         });
-        const mailOptions = {
-          to: newUser.email,
-          cc: 'flavio_luiz_ferreira@hotmail.com',
-          subject: 'Bem-vindo ao À La Carte! Confirme seu e-mail',
-          text: `Olá,\n\nBem-vindo ao À La Carte! Por favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
-          html,
-        };
         try {
-          await sendMail(mailOptions);
+          await sendMail({
+            to: newUser.email,
+            cc: 'flavio_luiz_ferreira@hotmail.com',
+            subject: 'Bem-vindo ao À La Carte! Confirme seu e-mail',
+            html,
+            text: `Olá,\n\nBem-vindo ao À La Carte! Por favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
+          });
           this.logger.info('Confirmation email sent', { to: newUser.email });
         } catch (mailErr) {
           this.logger.error('Failed to send confirmation email', { error: mailErr.message });
@@ -545,6 +543,62 @@ class UserService {
         restaurantId,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Resend confirmation email
+   * @param {Object} params - { email, username }
+   * @returns {Promise<void>}
+   */
+  async resendConfirmationEmail({ email_confirmation_token }) {
+    const serviceLogger = this.logger.child({ operation: 'resendConfirmationEmail' });
+    serviceLogger.info('Resending confirmation email', { email_confirmation_token });
+    // Find user by email or username
+    let user = null;
+    if (email_confirmation_token) {
+      user = await this.userModel.findByEmailConfirmationToken(email_confirmation_token);
+    }
+
+    if (!user) {
+      // Translate error for end user
+      const error = new Error('Usuário não encontrado. Verifique o token de confirmação.');
+      error.statusCode = 404;
+      serviceLogger.warn('User not found for confirmation email', {
+        email_confirmation_token,
+      });
+      throw error;
+    }
+
+    if (user.email_confirmed) {
+      throw new Error('O e-mail já foi confirmado.');
+    }
+    // Generate new token and expiration
+    const token = this.userModel.generateEmailConfirmationToken();
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.userModel.updateEmailConfirmationToken(user.id, token, expires);
+    // Send confirmation email
+    const appUrl = process.env.APP_URL || 'http://localhost:5173';
+    const confirmUrl = `${appUrl}/confirm-email?token=${token}`;
+    const templatePath = path.join(__dirname, '../templates/confirmationEmail.ejs');
+    const html = await ejs.renderFile(templatePath, {
+      name: user.full_name || user.username || user.email,
+      confirmUrl,
+      year: new Date().getFullYear(),
+      logoUrl: `${appUrl}/images/logo.png`,
+    });
+    try {
+      await sendMail({
+        to: user.email,
+        cc: 'flavio_luiz_ferreira@hotmail.com',
+        subject: 'Bem-vindo ao À La Carte! Confirme seu e-mail',
+        html,
+        text: `Olá,\n\nBem-vindo ao À La Carte! Por favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
+      });
+      serviceLogger.info('Confirmation email resent', { to: user.email });
+    } catch (mailErr) {
+      serviceLogger.error('Failed to resend confirmation email', { error: mailErr.message });
+      throw new Error('Erro ao enviar o e-mail de confirmação.');
     }
   }
 

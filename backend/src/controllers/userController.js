@@ -21,7 +21,12 @@ const asyncHandler = require('../utils/asyncHandler');
 class UserController {
   constructor(userServiceInstance = null) {
     this.userService = userServiceInstance || new UserService();
-    this.logger = logger.child({ controller: 'UserController' });
+    // Use a new Logger instance for this.logger to ensure .child returns a full Logger
+    this.logger = new logger.constructor({
+      level: process.env.LOG_LEVEL || 'INFO',
+      enableFileLogging: process.env.ENABLE_FILE_LOGGING === 'true',
+      logDirectory: process.env.LOG_DIRECTORY || require('path').join(process.cwd(), 'logs'),
+    });
   }
 
   /**
@@ -566,6 +571,21 @@ class UserController {
     try {
       const user = await this.userService.confirmEmail(token);
 
+      if (user.email_confirmed) {
+        // If already confirmed, show a specific message
+        return res.status(200).json(
+          ResponseFormatter.success(
+            {
+              user_id: user.id,
+              email_confirmed: true,
+              updated_at: user.updated_at,
+              alreadyConfirmed: true,
+            },
+            'Seu e-mail já está confirmado! Faça login com suas credenciais.'
+          )
+        );
+      }
+
       controllerLogger.info('Email confirmed successfully', {
         userId: user.id,
       });
@@ -574,18 +594,42 @@ class UserController {
         ResponseFormatter.success(
           {
             user_id: user.id,
-            email_confirmed: user.email_confirmed,
+            email_confirmed: true,
             updated_at: user.updated_at,
+            alreadyConfirmed: false,
           },
-          'Email confirmed successfully'
+          'E-mail confirmado com sucesso! Seja bem-vindo ao À La Carte. Agora você pode fazer login com suas credenciais.'
         )
       );
     } catch (error) {
-      if (error.statusCode === 400) {
-        return res.status(400).json(ResponseFormatter.error(error.message, 400, null, requestId));
+      // Custom error for expired/invalid token
+      if (
+        error.statusCode === 400 &&
+        error.message &&
+        (error.message.toLowerCase().includes('expirado') ||
+          error.message.toLowerCase().includes('inválido'))
+      ) {
+        return res
+          .status(400)
+          .json(
+            ResponseFormatter.error(
+              'O link de confirmação expirou ou é inválido. Você pode solicitar um novo e-mail de confirmação.',
+              400,
+              { allowResend: true },
+              requestId
+            )
+          );
       }
-
-      throw error;
+      return res
+        .status(400)
+        .json(
+          ResponseFormatter.error(
+            error.message || 'Erro ao confirmar o e-mail.',
+            400,
+            null,
+            requestId
+          )
+        );
     }
   });
 
@@ -643,6 +687,51 @@ class UserController {
       }
 
       throw error;
+    }
+  });
+
+  /**
+   * Resend confirmation email
+   * POST /api/v1/users/resend-confirmation
+   *
+   * @route POST /api/v1/users/resend-confirmation
+   * @access Public
+   * @body {Object} resendData - Email or username
+   * @returns {Object} 200 - Success message
+   * @returns {Object} 400 - Invalid request
+   */
+  resendConfirmationEmail = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const { email_confirmation_token } = req.body;
+    const controllerLogger = this.logger.child({
+      operation: 'resendConfirmationEmail',
+      requestId,
+      method: req.method,
+      path: req.path,
+    });
+    controllerLogger.info('Resending confirmation email');
+    try {
+      await this.userService.resendConfirmationEmail({ email_confirmation_token });
+      return res
+        .status(200)
+        .json(
+          ResponseFormatter.success(
+            null,
+            'E-mail de confirmação reenviado com sucesso. Por favor, verifique sua caixa de entrada.'
+          )
+        );
+    } catch (error) {
+      controllerLogger.error('Failed to resend confirmation email', { error: error.message });
+      return res
+        .status(400)
+        .json(
+          ResponseFormatter.error(
+            error.message || 'Não foi possível reenviar o e-mail de confirmação.',
+            400,
+            null,
+            requestId
+          )
+        );
     }
   });
 

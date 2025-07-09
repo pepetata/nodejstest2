@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js --env development",
+    "dev": "cross-env LOG_LEVEL=DEBUG nodemon server.js --env development",
     "start:test": "nodemon server.js --env test",
     "test": "jest --runInBand --config jest.config.json",
     "test:watch": "jest --runInBand --config jest.config.json --watch",
@@ -39,6 +39,7 @@
     "pg": "^8.11.3"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-node": "^11.1.0",

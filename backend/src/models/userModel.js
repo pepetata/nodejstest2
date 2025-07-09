@@ -105,7 +105,7 @@ class UserModel extends BaseModel {
         uuid: uuid ? uuid.substring(0, 8) + '...' : null,
         error: error.details[0].message,
       });
-      throw new Error(`Invalid UUID format: ${error.details[0].message}`);
+      throw new Error(`Formato de UUID inválido: ${error.details[0].message}`);
     }
 
     return {
@@ -184,14 +184,14 @@ class UserModel extends BaseModel {
       if (validatedData.email) {
         const existingEmail = await this.findByEmail(validatedData.email);
         if (existingEmail) {
-          throw new Error('Email already exists');
+          throw new Error('Email já cadastrado');
         }
       }
 
       if (validatedData.username) {
         const existingUsername = await this.findByUsername(validatedData.username);
         if (existingUsername) {
-          throw new Error('Username already exists');
+          throw new Error('Nome de usuário já cadastrado');
         }
       }
 
@@ -199,7 +199,7 @@ class UserModel extends BaseModel {
       if (validatedData.restaurant_id) {
         const restaurantExists = await this.checkRestaurantExists(validatedData.restaurant_id);
         if (!restaurantExists) {
-          throw new Error('Restaurant not found');
+          throw new Error('Restaurante não encontrado');
         }
       }
 
@@ -243,7 +243,7 @@ class UserModel extends BaseModel {
 
     try {
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid user ID format. Must be a valid UUID.');
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID válido.');
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -302,6 +302,26 @@ class UserModel extends BaseModel {
     } catch (error) {
       this.logger.error('Failed to find user by username', {
         username,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  async findByEmailConfirmationToken(token) {
+    this.logger.debug('Finding user by email confirmation token', { token });
+
+    try {
+      const result = await this.find({ email_confirmation_token: token });
+      const user = result.length > 0 ? result[0] : null;
+
+      if (user) {
+        return this.sanitizeOutput(user, this.sensitiveFields);
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to find user by email confirmation token', {
+        token,
         error: error.message,
       });
       throw error;
@@ -368,7 +388,7 @@ class UserModel extends BaseModel {
 
     try {
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid user ID format. Must be a valid UUID.');
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID válido.');
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -377,27 +397,27 @@ class UserModel extends BaseModel {
       const validatedData = await this.validate(updateData, this.updateSchema);
 
       if (Object.keys(validatedData).length === 0) {
-        throw new Error('No valid fields to update');
+        throw new Error('Nenhum campo válido para atualizar');
       }
 
       // Check current user exists
       const currentUser = await super.findById(sanitizedUuid);
       if (!currentUser) {
-        throw new Error('User not found');
+        throw new Error('Usuário não encontrado.');
       }
 
       // Check for unique email/username if being updated
       if (validatedData.email && validatedData.email !== currentUser.email) {
         const existingEmail = await this.findByEmail(validatedData.email);
         if (existingEmail) {
-          throw new Error('Email already exists');
+          throw new Error('Email já cadastrado');
         }
       }
 
       if (validatedData.username && validatedData.username !== currentUser.username) {
         const existingUsername = await this.findByUsername(validatedData.username);
         if (existingUsername) {
-          throw new Error('Username already exists');
+          throw new Error('Nome de usuário já cadastrado');
         }
       }
 
@@ -405,7 +425,7 @@ class UserModel extends BaseModel {
       if (validatedData.restaurant_id) {
         const restaurantExists = await this.checkRestaurantExists(validatedData.restaurant_id);
         if (!restaurantExists) {
-          throw new Error('Restaurant not found');
+          throw new Error('Restaurante não encontrado');
         }
       }
 
@@ -446,7 +466,7 @@ class UserModel extends BaseModel {
 
     try {
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid user ID format. Must be a valid UUID.');
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID válido.');
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -477,7 +497,7 @@ class UserModel extends BaseModel {
       const query = `
         UPDATE ${this.tableName}
         SET email_confirmed = true,
-            email_confirmation_token = NULL,
+            -- email_confirmation_token = NULL,
             email_confirmation_expires = NULL,
             updated_at = CURRENT_TIMESTAMP
         WHERE email_confirmation_token = $1
@@ -488,7 +508,7 @@ class UserModel extends BaseModel {
       const result = await this.executeQuery(query, [token]);
 
       if (result.rows.length === 0) {
-        throw new Error('Invalid or expired confirmation token');
+        throw new Error('Token de confirmação inválido ou expirado.');
       }
 
       const user = this.sanitizeOutput(result.rows[0], this.sensitiveFields);
@@ -509,7 +529,7 @@ class UserModel extends BaseModel {
 
     try {
       if (!this.isValidUuid(id)) {
-        throw new Error('Invalid user ID format. Must be a valid UUID.');
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID válido.');
       }
 
       const { sanitizedUuid } = this.validateUuid(id);
@@ -533,6 +553,26 @@ class UserModel extends BaseModel {
   }
 
   /**
+   * Update email confirmation token and expiration
+   */
+  async updateEmailConfirmationToken(userId, token, expires) {
+    this.logger.info('Updating email confirmation token', { user_id: userId });
+    const query = `
+      UPDATE ${this.tableName}
+      SET email_confirmation_token = $1,
+          email_confirmation_expires = $2,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING *
+    `;
+    const result = await this.executeQuery(query, [token, expires, userId]);
+    if (result.rows.length === 0) {
+      throw new Error('Usuário não encontrado para atualizar token de confirmação.');
+    }
+    return this.sanitizeOutput(result.rows[0], this.sensitiveFields);
+  }
+
+  /**
    * Check if restaurant exists
    */
   async checkRestaurantExists(restaurantId) {
@@ -549,7 +589,7 @@ class UserModel extends BaseModel {
 
     try {
       if (!this.isValidUuid(restaurantId)) {
-        throw new Error('Invalid restaurant ID format. Must be a valid UUID.');
+        throw new Error('Formato de ID de restaurante inválido. Deve ser um UUID válido.');
       }
 
       const { sanitizedUuid } = this.validateUuid(restaurantId);
