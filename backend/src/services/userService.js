@@ -3,6 +3,8 @@ const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
 const { sendMail } = require('../utils/mailer');
 const crypto = require('crypto');
+const ejs = require('ejs');
+const path = require('path');
 
 /**
  * User Service
@@ -69,12 +71,20 @@ class UserService {
       if (newUser.email && newUser.email_confirmation_token) {
         const appUrl = process.env.APP_URL || 'http://localhost:5000';
         const confirmUrl = `${appUrl}/users/confirm-email?token=${newUser.email_confirmation_token}`;
+        // Render the professional email template
+        const templatePath = path.join(__dirname, '../templates/confirmationEmail.ejs');
+        const html = await ejs.renderFile(templatePath, {
+          url: appUrl,
+          name: newUser.full_name || 'Usuário',
+          confirmUrl,
+          year: new Date().getFullYear(),
+        });
         const mailOptions = {
           to: newUser.email,
           cc: 'flavio_luiz_ferreira@hotmail.com',
-          subject: 'Confirmação de e-mail - Cadastro de Restaurante',
-          text: `Olá,\n\nPor favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
-          html: `<p>Olá,</p><p>Por favor, confirme seu e-mail acessando o link abaixo:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Se você não solicitou este cadastro, ignore este e-mail.</p>`,
+          subject: 'Bem-vindo ao À La Carte! Confirme seu e-mail',
+          text: `Olá,\n\nBem-vindo ao À La Carte! Por favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
+          html,
         };
         try {
           await sendMail(mailOptions);
