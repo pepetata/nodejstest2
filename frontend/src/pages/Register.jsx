@@ -1320,7 +1320,7 @@ function RegisterPage() {
     setError('');
 
     if (!validateStep(5)) return;
-    setIsSubmitting(true);
+    // setIsSubmitting(true); TODO: enable this when ready for submission
 
     try {
       // 1. Save restaurant
@@ -1365,7 +1365,7 @@ function RegisterPage() {
       // Clear saved form data on successful registration
       localStorage.removeItem('registerFormData');
       localStorage.removeItem('registerCurrentStep');
-      navigate('/dashboard');
+      // navigate('/dashboard'); TODO: redirect to dashboard or next step
     } catch (err) {
       console.log(`error returned`, err);
       let errorMessage = 'Falha no registro. Por favor, tente novamente.';

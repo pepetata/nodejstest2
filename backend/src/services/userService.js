@@ -1,6 +1,8 @@
 const userModel = require('../models/userModel');
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
+const { sendMail } = require('../utils/mailer');
+const crypto = require('crypto');
 
 /**
  * User Service
@@ -46,6 +48,12 @@ class UserService {
         await this.validateRestaurantAccess(userData.restaurant_id, currentUser);
       }
 
+      // Generate email confirmation token and expiration if email is present
+      // if (userData.email) {
+      //   userData.email_confirmation_token = crypto.randomBytes(32).toString('hex');
+      //   userData.email_confirmation_expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiry
+      // }
+
       const newUser = await this.userModel.create(userData);
 
       this.logger.info('User created successfully', {
@@ -54,6 +62,27 @@ class UserService {
         role: newUser.role,
         status: newUser.status,
       });
+
+      this.logger.info('user ==================', { to: newUser });
+
+      // Send email confirmation if email exists
+      if (newUser.email && newUser.email_confirmation_token) {
+        const appUrl = process.env.APP_URL || 'http://localhost:5000';
+        const confirmUrl = `${appUrl}/users/confirm-email?token=${newUser.email_confirmation_token}`;
+        const mailOptions = {
+          to: newUser.email,
+          cc: 'flavio_luiz_ferreira@hotmail.com',
+          subject: 'Confirmação de e-mail - Cadastro de Restaurante',
+          text: `Olá,\n\nPor favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
+          html: `<p>Olá,</p><p>Por favor, confirme seu e-mail acessando o link abaixo:</p><p><a href="${confirmUrl}">${confirmUrl}</a></p><p>Se você não solicitou este cadastro, ignore este e-mail.</p>`,
+        };
+        try {
+          await sendMail(mailOptions);
+          this.logger.info('Confirmation email sent', { to: newUser.email });
+        } catch (mailErr) {
+          this.logger.error('Failed to send confirmation email', { error: mailErr.message });
+        }
+      }
 
       return newUser;
     } catch (error) {

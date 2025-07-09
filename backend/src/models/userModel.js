@@ -12,7 +12,8 @@ class UserModel extends BaseModel {
   constructor() {
     super();
     this.tableName = 'users';
-    this.sensitiveFields = ['password', 'email_confirmation_token', 'password_reset_token'];
+    // this.sensitiveFields = ['password', 'email_confirmation_token', 'password_reset_token'];
+    this.sensitiveFields = ['password'];
     this.logger = logger.child({ model: 'UserModel' });
   }
 

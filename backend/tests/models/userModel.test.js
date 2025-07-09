@@ -636,4 +636,56 @@ describe('UserModel Comprehensive Test Suite', () => {
       expect(typeof userModel.updateSchema.validate).toBe('function');
     });
   });
+
+  describe('Email Confirmation', () => {
+    beforeAll(() => {
+      jest.resetModules();
+      jest.mock('../../src/utils/mailer', () => ({
+        sendMail: jest.fn().mockResolvedValue(true),
+      }));
+    });
+
+    afterAll(() => {
+      jest.resetModules();
+      jest.unmock('../../src/utils/mailer');
+    });
+
+    test('should send confirmation email on user creation', async () => {
+      const { sendMail } = require('../../src/utils/mailer');
+      const UserService = require('../../src/services/userService');
+      const userService = new UserService(userModel);
+      const userData = {
+        email: 'testuser@example.com',
+        password: 'password123',
+        full_name: 'Test User',
+        role: 'restaurant_administrator',
+        restaurant_id: testRestaurantId,
+      };
+      // Mock userModel.findByEmail and findByUsername to simulate no existing user
+      userModel.findByEmail = jest.fn().mockResolvedValue(null);
+      userModel.findByUsername = jest.fn().mockResolvedValue(null);
+      // Mock userModel.checkRestaurantExists to simulate restaurant exists
+      userModel.checkRestaurantExists = jest.fn().mockResolvedValue(true);
+      // Mock userModel.executeQuery to simulate DB insert result with email_confirmation_token
+      userModel.executeQuery = jest.fn().mockResolvedValue({
+        rows: [
+          {
+            id: 'some-id',
+            email: userData.email,
+            email_confirmation_token: 'mock-token',
+            ...userData,
+          },
+        ],
+      });
+      // Mock userModel.sanitizeOutput to return the user as-is (including email_confirmation_token)
+      userModel.sanitizeOutput = jest.fn((user) => user);
+      await userService.createUser(userData);
+      expect(sendMail).toHaveBeenCalled();
+      const mailArgs = sendMail.mock.calls[0][0];
+      expect(mailArgs.to).toBe('testuser@example.com');
+      expect(mailArgs.cc).toBe('flavio_luiz_ferreira@hotmail.com');
+      expect(mailArgs.subject).toMatch(/confirmação de e-mail/i);
+      expect(mailArgs.html).toMatch(/confirm/i);
+    });
+  });
 });
