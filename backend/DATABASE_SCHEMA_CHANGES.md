@@ -130,7 +130,7 @@ Previously, user-related fields were incorrectly placed in the `restaurants` tab
 
 - `restaurant_name` - Business name
 - `restaurant_url_name` - URL-friendly identifier
-- `business_type` - single, chain, franchise
+- `business_type` - single, multi
 - `cuisine_type` - Type of cuisine
 - `subscription_plan` - Service tier
 - `subscription_status` - Billing status

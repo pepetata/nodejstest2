@@ -9,6 +9,97 @@ class RestaurantValidation {
    * Validation schema for creating a restaurant
    */
   static get createSchema() {
+    // Location address schema
+    const addressSchema = Joi.object({
+      zipCode: Joi.string()
+        .pattern(/^\d{5}-?\d{3}$/)
+        .required()
+        .messages({
+          'string.pattern.base': 'CEP deve ter o formato 12345-123',
+          'string.empty': 'CEP é obrigatório',
+        }),
+      street: Joi.string().trim().min(2).max(255).required().messages({
+        'string.empty': 'Logradouro é obrigatório',
+        'string.min': 'Logradouro deve ter pelo menos 2 caracteres',
+        'string.max': 'Logradouro não pode exceder 255 caracteres',
+      }),
+      streetNumber: Joi.string().trim().min(1).max(20).required().messages({
+        'string.empty': 'Número é obrigatório',
+        'string.min': 'Número deve ter pelo menos 1 caractere',
+        'string.max': 'Número não pode exceder 20 caracteres',
+      }),
+      complement: Joi.string().trim().max(100).allow('', null).messages({
+        'string.max': 'Complemento não pode exceder 100 caracteres',
+      }),
+      city: Joi.string().trim().min(2).max(100).required().messages({
+        'string.empty': 'Cidade é obrigatória',
+        'string.min': 'Cidade deve ter pelo menos 2 caracteres',
+        'string.max': 'Cidade não pode exceder 100 caracteres',
+      }),
+      state: Joi.string().trim().min(2).max(50).required().messages({
+        'string.empty': 'Estado é obrigatório',
+        'string.min': 'Estado deve ter pelo menos 2 caracteres',
+        'string.max': 'Estado não pode exceder 50 caracteres',
+      }),
+    });
+
+    // Operating hours schema (basic validation)
+    const operatingHoursSchema = Joi.object().pattern(
+      Joi.string(),
+      Joi.object({
+        open: Joi.string()
+          .pattern(/^\d{2}:\d{2}$/)
+          .required()
+          .messages({
+            'string.pattern.base': 'Horário de abertura deve estar no formato HH:MM',
+            'string.empty': 'Horário de abertura é obrigatório',
+          }),
+        close: Joi.string()
+          .pattern(/^\d{2}:\d{2}$/)
+          .required()
+          .messages({
+            'string.pattern.base': 'Horário de fechamento deve estar no formato HH:MM',
+            'string.empty': 'Horário de fechamento é obrigatório',
+          }),
+        closed: Joi.boolean().required(),
+      })
+    );
+
+    // Location schema
+    const locationSchema = Joi.object({
+      id: Joi.any().optional(), // Accept any id (frontend uses timestamp)
+      name: Joi.string().trim().min(2).max(100).required().messages({
+        'string.empty': 'Nome da localização é obrigatório',
+        'string.min': 'Nome da localização deve ter pelo menos 2 caracteres',
+        'string.max': 'Nome da localização não pode exceder 100 caracteres',
+      }),
+      urlName: Joi.string()
+        .trim()
+        .min(3)
+        .max(50)
+        .pattern(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/)
+        .required()
+        .messages({
+          'string.empty': 'Nome para URL da localização é obrigatório',
+          'string.min': 'Nome para URL deve ter pelo menos 3 caracteres',
+          'string.max': 'Nome para URL não pode exceder 50 caracteres',
+          'string.pattern.base':
+            'Nome para URL deve conter apenas letras minúsculas, números e hífens, sem hífens consecutivos',
+        }),
+      phone: Joi.string().max(20).required().messages({
+        'string.max': 'Telefone da localização não pode exceder 20 caracteres',
+        'string.empty': 'Telefone da localização é obrigatório',
+      }),
+      whatsapp: Joi.string().max(20).allow('', null).messages({
+        'string.max': 'WhatsApp da localização não pode exceder 20 caracteres',
+      }),
+      address: addressSchema.required(),
+      operatingHours: operatingHoursSchema.required(),
+      selectedFeatures: Joi.array().items(Joi.string()).min(1).required().messages({
+        'array.min': 'Selecione pelo menos um recurso para a localização',
+      }),
+    });
+
     return Joi.object({
       restaurant_name: Joi.string().trim().min(2).max(255).required().messages({
         'string.empty': 'Restaurant name is required',
@@ -33,29 +124,21 @@ class RestaurantValidation {
             'URL name can only contain lowercase letters, numbers, and hyphens',
         }),
 
-      business_type: Joi.string().valid('single', 'chain', 'franchise').default('single').messages({
-        'any.only': 'Business type must be single, chain, or franchise',
+      business_type: Joi.string().valid('single', 'multi').default('single').messages({
+        'any.only': 'Business type must be single or multi',
       }),
 
       cuisine_type: Joi.string().trim().max(100).allow(null).messages({
         'string.max': 'Cuisine type cannot exceed 100 characters',
       }),
 
-      phone: Joi.string()
-        .pattern(/^\d{10,20}$/)
-        .allow(null)
-        .messages({
-          'string.pattern.base':
-            'Phone number must contain only digits and be 10-20 characters long',
-        }),
+      phone: Joi.string().max(20).allow(null).messages({
+        'string.max': 'Phone number cannot exceed 20 characters',
+      }),
 
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,20}$/)
-        .allow(null)
-        .messages({
-          'string.pattern.base':
-            'WhatsApp number must contain only digits and be 10-20 characters long',
-        }),
+      whatsapp: Joi.string().max(20).allow(null).messages({
+        'string.max': 'WhatsApp number cannot exceed 20 characters',
+      }),
 
       website: Joi.string().uri().trim().max(255).allow(null, '').optional().messages({
         'string.uri': 'Please provide a valid website URL',
@@ -64,6 +147,11 @@ class RestaurantValidation {
 
       description: Joi.string().trim().max(2000).allow(null).messages({
         'string.max': 'Description cannot exceed 2000 characters',
+      }),
+
+      locations: Joi.array().items(locationSchema).min(1).required().messages({
+        'array.base': 'Deve haver pelo menos uma localização',
+        'array.min': 'Deve haver pelo menos uma localização',
       }),
 
       status: Joi.string()
@@ -128,8 +216,8 @@ class RestaurantValidation {
         'any.only': 'Status must be pending, active, inactive, or suspended',
       }),
 
-      business_type: Joi.string().valid('single', 'chain', 'franchise').messages({
-        'any.only': 'Business type must be single, chain, or franchise',
+      business_type: Joi.string().valid('single', 'multi').messages({
+        'any.only': 'Business type must be single or multi',
       }),
 
       cuisine_type: Joi.string().trim().max(100).messages({

@@ -56,6 +56,7 @@ function RegisterPage() {
           holidays: { open: '10:00', close: '20:00', closed: false },
         },
         selectedFeatures: ['digital_menu'], // Features per location
+        is_primary: true, // Always true for single location by default
       },
     ],
 
@@ -304,6 +305,18 @@ function RegisterPage() {
     setFieldErrors(errors);
   };
 
+  // Helper to check for duplicate urlNames (case-insensitive, trimmed)
+  const hasDuplicateLocationUrlNames = (locations) => {
+    const seen = new Set();
+    for (const loc of locations) {
+      if (!loc.urlName) continue;
+      const normalized = loc.urlName.trim().toLowerCase();
+      if (seen.has(normalized)) return true;
+      seen.add(normalized);
+    }
+    return false;
+  };
+
   // Location management functions
   const addNewLocation = () => {
     // Validate current location and highlight any errors
@@ -314,6 +327,19 @@ function RegisterPage() {
       setError('Por favor, corrija os erros da localização atual antes de adicionar uma nova.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
+    }
+
+    // Prevent duplicate location URL names in multi-location mode
+    if (formData.businessType === 'multi') {
+      const urlNames = formData.locations
+        .map((loc) => loc.urlName?.trim().toLowerCase())
+        .filter(Boolean);
+      const urlNameSet = new Set(urlNames);
+      if (urlNames.length !== urlNameSet.size) {
+        setError('Nome da URL da localização duplicado. Cada localização deve ter uma URL única.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
 
     const newLocation = {
@@ -378,24 +404,37 @@ function RegisterPage() {
     }));
   };
 
+  // Update location urlName with duplicate check
   const updateLocationUrlName = (locationId, newUrlName) => {
     const formattedUrlName = formatRestaurantUrlName(newUrlName);
-    setFormData((prev) => ({
-      ...prev,
-      locations: prev.locations.map((loc) =>
+    setFormData((prev) => {
+      const updatedLocations = prev.locations.map((loc) =>
         loc.id === locationId ? { ...loc, urlName: formattedUrlName } : loc
-      ),
-    }));
+      );
+      // Check for duplicates after update
+      let errorMsg = '';
+      if (prev.businessType === 'multi' && hasDuplicateLocationUrlNames(updatedLocations)) {
+        errorMsg = 'Nome da URL da localização duplicado. Cada localização deve ter uma URL única.';
+      }
+      setFieldErrors((fe) => ({ ...fe, 'location.urlName': errorMsg }));
+      return { ...prev, locations: updatedLocations };
+    });
   };
 
   const cleanupLocationUrlName = (locationId, urlName) => {
     const cleanedUrlName = urlName.replace(/^-+|-+$/g, '');
-    setFormData((prev) => ({
-      ...prev,
-      locations: prev.locations.map((loc) =>
+    setFormData((prev) => {
+      const updatedLocations = prev.locations.map((loc) =>
         loc.id === locationId ? { ...loc, urlName: cleanedUrlName } : loc
-      ),
-    }));
+      );
+      // Check for duplicates after cleanup
+      let errorMsg = '';
+      if (prev.businessType === 'multi' && hasDuplicateLocationUrlNames(updatedLocations)) {
+        errorMsg = 'Nome da URL da localização duplicado. Cada localização deve ter uma URL única.';
+      }
+      setFieldErrors((fe) => ({ ...fe, 'location.urlName': errorMsg }));
+      return { ...prev, locations: updatedLocations };
+    });
   };
 
   // Centralized validation rules
@@ -1320,11 +1359,17 @@ function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    // Check for duplicate location urlNames before submit (multi-location)
+    if (formData.businessType === 'multi' && hasDuplicateLocationUrlNames(formData.locations)) {
+      setError('Nome da URL da localização duplicado. Cada localização deve ter uma URL única.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (!validateStep(5)) return;
     setIsSubmitting(true);
 
     try {
-      // 1. Save restaurant
       const userPayload = {
         full_name: formData.ownerName,
         email: formData.email,
@@ -1347,13 +1392,13 @@ function RegisterPage() {
             ? formData.website.replace(/&#x2F;/g, '/')
             : formData.website,
         description: formData.description,
+        locations: formData.locations,
         status: 'pending',
         subscription_plan: getRecommendedPlan(),
         marketing_consent: formData.marketingConsent,
         terms_accepted: formData.termsAccepted,
         userPayload: userPayload,
       };
-      // 2. Save user (restaurant administrator)
 
       console.log(`restaurantPayload=`, restaurantPayload);
       const restaurantRes = await restaurantService.create(restaurantPayload);
@@ -1375,13 +1420,11 @@ function RegisterPage() {
       // Check for validation errors from backend (correct path)
       if (err.response?.data?.error?.details?.validationErrors) {
         errorMessage = err.response.data.error.details.validationErrors
-          .map((e) => `${e.field}: ${e.message}`)
-          .join('\n');
+          .map((e) => e.message)
+          .join(', ');
       } else if (err.response?.data?.error?.validationErrors) {
         // fallback for legacy or other error shape
-        errorMessage = err.response.data.error.validationErrors
-          .map((e) => `${e.field}: ${e.message}`)
-          .join('\n');
+        errorMessage = err.response.data.error.validationErrors.map((e) => e.message).join(', ');
       } else if (err.response?.data?.error?.message) {
         // fallback for legacy or other error shape
         errorMessage = err.response.data.error.message;
@@ -1416,7 +1459,7 @@ function RegisterPage() {
   // Progress bar rendering
   const renderProgressBar = () => (
     <div className="progress-container mb-4">
-      <div className="progress-bar" style={{ '--progress': currentStep }}>
+      <div className="progress-bar progress-bar-dynamic">
         {[1, 2, 3, 4, 5].map((step) => (
           <div key={step} className={`progress-step ${currentStep >= step ? 'active' : ''}`}>
             <div className="step-number">{step}</div>
@@ -1586,7 +1629,7 @@ function RegisterPage() {
 
       <div className={`form-group ${getFieldErrorClass('restaurantUrlName')}`}>
         <label htmlFor="restaurantUrlName" className="form-label">
-          Nome para URL do Menu *
+          Nome para URL do Restaurante *
         </label>
         <input
           type="text"
@@ -2019,60 +2062,35 @@ function RegisterPage() {
   };
 
   const renderStep4 = () => {
+    // Fix: define currentLocation for use in this step
     const currentLocation = formData.locations[currentLocationIndex] || formData.locations[0];
-
     return (
       <div>
         <h3 className="step-title">Recursos e Seleção de Plano</h3>
         <p className="step-description">
-          {formData.businessType === 'multi'
-            ? `Escolha os recursos para: ${currentLocation.name}`
-            : 'Escolha os recursos que você precisa'}
+          Selecione os recursos desejados e o plano de assinatura para sua localização
         </p>
 
-        {/* Location Tabs for Multi-location */}
-        {formData.businessType === 'multi' && (
-          <div className="location-tabs">
-            <div className="tabs-header">
-              {formData.locations.map((location, index) => (
-                <button
-                  key={location.id}
-                  type="button"
-                  className={`tab-button ${index === currentLocationIndex ? 'active' : ''}`}
-                  onClick={() => setCurrentLocationIndex(index)}
-                >
-                  {location.name}
-                  <span className="feature-count">
-                    ({location.selectedFeatures.length} recursos)
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
+        {/* Features grid */}
         <div className="features-grid">
           {features.map((feature) => (
-            <div
-              key={feature.id}
-              className={`feature-card ${
-                currentLocation.selectedFeatures.includes(feature.id) ? 'selected' : ''
-              } ${feature.required ? 'required' : ''}`}
-            >
+            <div key={feature.id} className="feature-card">
               <div className="feature-header">
-                <input
-                  type="checkbox"
-                  id={feature.id}
-                  checked={currentLocation.selectedFeatures.includes(feature.id)}
-                  onChange={() => handleFeatureToggle(feature.id)}
-                  disabled={feature.required}
-                />
-                <label htmlFor={feature.id} className="feature-name">
-                  {feature.name}
-                  {feature.required && <span className="required-badge"> (Obrigatório)</span>}
-                </label>
+                <div className="feature-checkbox">
+                  <input
+                    type="checkbox"
+                    id={feature.id}
+                    checked={currentLocation.selectedFeatures.includes(feature.id)}
+                    onChange={() => handleFeatureToggle(feature.id)}
+                    disabled={feature.required}
+                  />
+                  <label htmlFor={feature.id} className="feature-name">
+                    {feature.name}
+                    {feature.required && <span className="required-badge"> (Obrigatório)</span>}
+                  </label>
+                </div>
+                <p className="feature-description">{feature.description}</p>
               </div>
-              <p className="feature-description">{feature.description}</p>
             </div>
           ))}
         </div>
@@ -2448,41 +2466,3 @@ function RegisterPage() {
 }
 
 export default RegisterPage;
-
-// Add minimal modal styles (can be moved to CSS file)
-const modalStyles = `
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.modal-content {
-  background: #fff;
-  padding: 32px 24px;
-  border-radius: 8px;
-  max-width: 400px;
-  text-align: center;
-  box-shadow: 0 2px 16px #0002;
-}
-.modal-close-btn {
-  margin-top: 24px;
-  padding: 10px 24px;
-  background: #1e90ff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-}
-`;
-
-if (typeof document !== 'undefined' && !document.getElementById('modal-styles')) {
-  const style = document.createElement('style');
-  style.id = 'modal-styles';
-  style.innerHTML = modalStyles;
-  document.head.appendChild(style);
-}

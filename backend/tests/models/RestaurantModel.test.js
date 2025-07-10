@@ -214,7 +214,7 @@ describe('RestaurantModel', () => {
       });
 
       it('should validate business_type values', () => {
-        const validTypes = ['single', 'chain', 'franchise'];
+        const validTypes = ['single', 'multi'];
 
         validTypes.forEach((type) => {
           const data = {

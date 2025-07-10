@@ -75,14 +75,10 @@ class RestaurantModel extends BaseModel {
         .min(2)
         .max(100)
         .required(),
-      business_type: Joi.string().valid('single', 'chain', 'franchise').default('single'),
+      business_type: Joi.string().valid('single', 'multi').default('single'),
       cuisine_type: Joi.string().trim().max(100).allow(null),
-      phone: Joi.string()
-        .pattern(/^\d{10,20}$/)
-        .allow(null),
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,20}$/)
-        .allow(null),
+      phone: Joi.string().max(20).allow('', null),
+      whatsapp: Joi.string().max(20).allow('', null),
       website: Joi.string().uri().trim().max(255).allow(null, '').optional(),
       description: Joi.string().trim().max(2000).allow(null),
       status: Joi.string().valid('pending', 'active', 'inactive', 'suspended').default('pending'),
@@ -109,14 +105,10 @@ class RestaurantModel extends BaseModel {
         .pattern(/^[a-z0-9-]+$/)
         .min(2)
         .max(100),
-      business_type: Joi.string().valid('single', 'chain', 'franchise'),
+      business_type: Joi.string().valid('single', 'multi'),
       cuisine_type: Joi.string().trim().max(100).allow(null),
-      phone: Joi.string()
-        .pattern(/^\d{10,20}$/)
-        .allow(null),
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,20}$/)
-        .allow(null),
+      phone: Joi.string().max(20).allow('', null),
+      whatsapp: Joi.string().max(20).allow('', null),
       website: Joi.string().uri().max(255).allow(null),
       description: Joi.string().trim().max(2000).allow(null),
       status: Joi.string().valid('pending', 'active', 'inactive', 'suspended'),

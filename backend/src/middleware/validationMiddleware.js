@@ -36,6 +36,38 @@ class ValidationMiddleware {
           dataToValidate = req.body;
       }
 
+      // --- PATCH: Coerce object-with-numeric-keys to arrays for locations and selectedFeatures ---
+      function objectToArray(obj) {
+        if (Array.isArray(obj)) return obj;
+        if (obj && typeof obj === 'object' && Object.keys(obj).every((k) => !isNaN(k))) {
+          // Convert numeric-keyed object to array
+          return Object.keys(obj)
+            .sort((a, b) => Number(a) - Number(b))
+            .map((k) => obj[k]);
+        }
+        return obj;
+      }
+      if (
+        dataToValidate &&
+        Array.isArray(dataToValidate.locations) === false &&
+        typeof dataToValidate.locations === 'object'
+      ) {
+        dataToValidate.locations = objectToArray(dataToValidate.locations);
+      }
+      if (Array.isArray(dataToValidate.locations)) {
+        dataToValidate.locations = dataToValidate.locations.map((loc) => {
+          if (
+            loc &&
+            Array.isArray(loc.selectedFeatures) === false &&
+            typeof loc.selectedFeatures === 'object'
+          ) {
+            return { ...loc, selectedFeatures: objectToArray(loc.selectedFeatures) };
+          }
+          return loc;
+        });
+      }
+      // --- END PATCH ---
+
       validationLogger.debug('Validating request data', {
         target,
         hasData: !!dataToValidate,
@@ -54,9 +86,15 @@ class ValidationMiddleware {
           value: detail.context?.value,
         }));
 
-        // Compose a user-friendly error message
+        // Prefer the most specific nested error inside locations if available
         let userMessage = 'Dados inválidos. Por favor, verifique os campos e tente novamente.';
-        if (validationErrors.length === 1) {
+        // Find all errors that are for nested fields inside locations (e.g., locations.0.address.street)
+        const locationsNestedError = error.details.find(
+          (d) => d.path.length > 2 && d.path[0] === 'locations' && typeof d.path[1] === 'number' // ensure it's an array index
+        );
+        if (locationsNestedError) {
+          userMessage = locationsNestedError.message;
+        } else if (validationErrors.length === 1) {
           // Try to make it more specific for common fields
           const ve = validationErrors[0];
           if (ve.field === 'website' && ve.message.includes('valid website URL')) {
@@ -68,6 +106,17 @@ class ValidationMiddleware {
             userMessage = 'O nome para URL deve ter apenas letras minúsculas, números e hífens.';
           } else {
             userMessage = ve.message;
+          }
+        } else if (validationErrors.length > 1) {
+          // If multiple errors, show only the user-friendly messages (no field names), comma separated
+          userMessage = validationErrors.map((e) => e.message).join(', ');
+        } else {
+          // If the only error is for locations, show that
+          const locationsError = error.details.find(
+            (d) => d.path.length === 1 && d.path[0] === 'locations'
+          );
+          if (locationsError) {
+            userMessage = locationsError.message;
           }
         }
 

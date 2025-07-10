@@ -98,12 +98,8 @@ class RestaurantLocationModel extends BaseModel {
         .min(2)
         .max(100)
         .required(),
-      phone: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
+      phone: Joi.string().max(20).allow('', null),
+      whatsapp: Joi.string().max(20).allow('', null),
       address_zip_code: Joi.string().max(10).allow(null),
       address_street: Joi.string().trim().max(255).allow(null),
       address_street_number: Joi.string().max(10).allow(null),
@@ -128,12 +124,8 @@ class RestaurantLocationModel extends BaseModel {
         .pattern(/^[a-z0-9-]+$/)
         .min(2)
         .max(100),
-      phone: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
-      whatsapp: Joi.string()
-        .pattern(/^\d{10,15}$/)
-        .allow(null),
+      phone: Joi.string().max(20).allow('', null),
+      whatsapp: Joi.string().max(20).allow('', null),
       address_zip_code: Joi.string().max(10).allow(null),
       address_street: Joi.string().trim().max(255).allow(null),
       address_street_number: Joi.string().max(10).allow(null),

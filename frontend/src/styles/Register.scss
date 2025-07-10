@@ -170,6 +170,11 @@
   }
 }
 
+// Progress bar dynamic variable
+.progress-bar-dynamic {
+  --progress: 1;
+}
+
 /* Step Content Styles */
 .step-title {
   font-size: 1.75rem;
@@ -627,6 +632,39 @@
   border-top: 1px solid #e5e7eb;
   font-size: 0.9rem;
   color: vars.$text-secondary;
+}
+
+/* Modal styles (moved from Register.jsx) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6); // Less transparent overlay
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.modal-content {
+  background: #fff !important;
+  opacity: 1 !important;
+  padding: 32px 24px;
+  border-radius: 8px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 2px 16px #0002;
+}
+.modal-close-btn {
+  margin-top: 24px;
+  padding: 10px 24px;
+  background: #1e90ff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
 }
 
 /* Registration-specific responsive design */

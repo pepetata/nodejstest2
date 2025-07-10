@@ -1,4 +1,5 @@
 const restaurantModel = require('../models/RestaurantModel');
+const RestaurantLocationModel = require('../models/RestaurantLocationModel');
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
 const UserService = require('./userService');
@@ -100,11 +101,89 @@ class RestaurantService {
         restaurantData.created_by = currentUser.id;
       }
 
-      // Check for unique URL name
+      // Check for unique URL name (case-insensitive)
       await this.validateUrlNameUniqueness(restaurantData.restaurant_url_name);
+      // Validate business_type value
+      const allowedBusinessTypes = ['single', 'multi'];
+      if (!allowedBusinessTypes.includes(restaurantData.business_type)) {
+        throw new Error('Tipo de negócio inválido. Valores permitidos: single, multi.');
+      }
 
+      // Save restaurant
       const newRestaurant = await this.restaurantModel.create(restaurantData);
       userData.restaurant_id = newRestaurant.id;
+
+      // --- SAVE LOCATIONS ---
+      if (Array.isArray(data.locations) && data.locations.length > 0) {
+        try {
+          const isSingleLocation = restaurantData.business_type === 'single';
+          // Backend validation: prevent duplicate url_name for multi-location (case-insensitive)
+          if (!isSingleLocation) {
+            const urlNames = data.locations
+              .map((loc) => loc.urlName?.trim().toLowerCase())
+              .filter(Boolean);
+            const urlNameSet = new Set();
+            for (const name of urlNames) {
+              if (urlNameSet.has(name)) {
+                throw new Error(
+                  'Nome da URL da localização duplicado. Cada localização deve ter uma URL única.'
+                );
+              }
+              urlNameSet.add(name);
+            }
+          }
+          for (let i = 0; i < data.locations.length; i++) {
+            const loc = data.locations[i];
+            // Map frontend keys to backend keys
+            const mappedLoc = {
+              ...loc,
+              url_name: loc.urlName,
+              operating_hours: loc.operatingHours,
+              selected_features: loc.selectedFeatures,
+              restaurant_id: newRestaurant.id,
+            };
+            // Flatten address fields if present
+            if (loc.address) {
+              mappedLoc.address_zip_code = loc.address.zipCode;
+              mappedLoc.address_street = loc.address.street;
+              mappedLoc.address_street_number = loc.address.streetNumber;
+              mappedLoc.address_complement = loc.address.complement;
+              mappedLoc.address_city = loc.address.city;
+              mappedLoc.address_state = loc.address.state;
+              delete mappedLoc.address;
+            }
+            // Set is_primary true for single-location
+            if (isSingleLocation) {
+              mappedLoc.is_primary = true;
+            }
+            delete mappedLoc.urlName;
+            delete mappedLoc.operatingHours;
+            delete mappedLoc.selectedFeatures;
+
+            await RestaurantLocationModel.create(mappedLoc);
+          }
+        } catch (locationError) {
+          // Cleanup: delete restaurant and user if created
+          await this.restaurantModel.deleteRestaurant(newRestaurant.id);
+          if (userData && userData.email) {
+            try {
+              await userService.deleteUserByEmail(userData.email);
+            } catch (userDeleteError) {
+              // Log but do not block error propagation
+              serviceLogger.error('Failed to delete user after location error', {
+                error: userDeleteError.message,
+                email: userData.email,
+              });
+            }
+          }
+          // Throw user-friendly error
+          throw new Error(
+            'Erro ao salvar localização do restaurante. O restaurante e o usuário foram removidos. Detalhes: ' +
+              (locationError.message || 'Erro desconhecido.')
+          );
+        }
+      }
+      // --- END SAVE LOCATIONS ---
 
       serviceLogger.info('Restaurant created successfully', {
         restaurantId: newRestaurant.id,
@@ -159,7 +238,7 @@ class RestaurantService {
       // Translate error for end user
       let mensagemErro = error.message;
       if (mensagemErro === 'URL name is already taken') {
-        mensagemErro = 'O nome da URL já está em uso.';
+        mensagemErro = 'O nome da URL do restaurante já está em uso.';
       } else if (mensagemErro === 'Restaurant not found') {
         mensagemErro = 'Restaurante não encontrado.';
       } else if (mensagemErro === 'Cannot delete restaurant with active locations') {
@@ -640,8 +719,8 @@ class RestaurantService {
    * @throws {Error} If URL name already exists
    */
   async validateUrlNameUniqueness(urlName) {
-    const existingRestaurant = await this.restaurantModel.findByUrlName(urlName);
-
+    if (!urlName) return;
+    const existingRestaurant = await this.restaurantModel.findByUrlName(urlName.toLowerCase());
     if (existingRestaurant) {
       const error = new Error('URL name is already taken');
       error.statusCode = 409; // Conflict

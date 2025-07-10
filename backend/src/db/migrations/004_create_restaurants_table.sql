@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
     -- Business Information
     restaurant_name VARCHAR(255) NOT NULL,
     restaurant_url_name VARCHAR(100) UNIQUE NOT NULL,
-    business_type VARCHAR(50) DEFAULT 'single' CHECK (business_type IN ('single', 'chain', 'franchise')),
+    business_type VARCHAR(50) DEFAULT 'single' CHECK (business_type IN ('single', 'multi')),
     cuisine_type VARCHAR(100),
 
     -- Contact Information
