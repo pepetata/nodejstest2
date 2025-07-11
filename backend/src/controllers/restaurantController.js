@@ -57,7 +57,7 @@ class RestaurantController {
 
   /**
    * Create a new restaurant
-   * POST /api/restaurants
+   * POST /api/v1/restaurants
    */
   createRestaurant = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
@@ -119,7 +119,7 @@ class RestaurantController {
 
   /**
    * Get all restaurants with filtering and pagination
-   * GET /api/restaurants
+   * GET /api/v1/restaurants
    */
   getRestaurants = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
@@ -173,7 +173,7 @@ class RestaurantController {
 
   /**
    * Get a restaurant by ID
-   * GET /api/restaurants/:id
+   * GET /api/v1/restaurants/:id
    */
   getRestaurantById = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
@@ -225,7 +225,7 @@ class RestaurantController {
 
   /**
    * Get a restaurant by URL name
-   * GET /api/restaurants/by-url/:urlName
+   * GET /api/v1/restaurants/by-url/:urlName
    */
   getRestaurantByUrlName = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
@@ -281,7 +281,7 @@ class RestaurantController {
 
   /**
    * Update a restaurant
-   * PUT /api/restaurants/:id
+   * PUT /api/v1/restaurants/:id
    */
   updateRestaurant = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
@@ -347,7 +347,7 @@ class RestaurantController {
 
   /**
    * Delete a restaurant
-   * DELETE /api/restaurants/:id
+   * DELETE /api/v1/restaurants/:id
    */
   deleteRestaurant = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
@@ -399,7 +399,7 @@ class RestaurantController {
 
   /**
    * Get restaurant statistics
-   * GET /api/restaurants/:id/stats
+   * GET /api/v1/restaurants/:id/stats
    */
   getRestaurantStats = asyncHandler(async (req, res, next) => {
     const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;

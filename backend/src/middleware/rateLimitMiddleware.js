@@ -46,7 +46,7 @@ class RateLimitMiddleware {
         // Skip rate limiting for health checks and test endpoints in development
         return (
           req.path === '/health' ||
-          (process.env.NODE_ENV !== 'production' && req.path.startsWith('/api/test/'))
+          (process.env.NODE_ENV !== 'production' && req.path.startsWith('/api/v1/test/'))
         );
       },
     });
@@ -61,8 +61,9 @@ class RateLimitMiddleware {
       windowMs: 15 * 60 * 1000, // 15 minutes
       max: 5, // limit each IP to 5 requests per windowMs
       message: {
-        error: 'Too many authentication attempts',
-        message: 'Too many authentication attempts from this IP, please try again later.',
+        error: 'Muitas tentativas de autenticação',
+        message:
+          'Muitas tentativas de autenticação deste IP. Por favor, tente novamente em alguns minutos.',
         retryAfter: 15 * 60 * 1000,
         timestamp: new Date().toISOString(),
       },
@@ -75,15 +76,25 @@ class RateLimitMiddleware {
           path: req.path,
           method: req.method,
         });
+        // Defensive: options.message may be undefined
+        const msg =
+          (options && options.message && options.message.message) ||
+          'Muitas tentativas de autenticação deste IP. Por favor, tente novamente em alguns minutos.';
+        const retryAfter =
+          (options && options.message && options.message.retryAfter) || 15 * 60 * 1000;
         res.status(429).json({
           success: false,
           error: {
-            message:
-              options.message.message ||
-              'Too many authentication attempts, please try again later.',
+            message: msg,
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter,
             timestamp: new Date().toISOString(),
+            details: {
+              middleware: 'rateLimit',
+              ip: req.ip,
+              path: req.path,
+              method: req.method,
+            },
           },
         });
       },

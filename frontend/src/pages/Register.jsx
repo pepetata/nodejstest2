@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import TermsModal from '../components/common/TermsModal';
 import restaurantService from '../services/restaurantService';
-import userService from '../services/userService';
 import '../styles/Auth.scss';
 import '../styles/register.scss';
 

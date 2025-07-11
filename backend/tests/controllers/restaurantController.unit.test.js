@@ -105,7 +105,7 @@ describe('RestaurantController Unit Tests', () => {
       },
       ip: '127.0.0.1',
       method: 'POST',
-      path: '/api/restaurants',
+      path: '/api/v1/restaurants',
     };
 
     // Enhanced mock response object with spy functions
@@ -122,7 +122,7 @@ describe('RestaurantController Unit Tests', () => {
   describe('createRestaurant', () => {
     beforeEach(() => {
       mockRequest.method = 'POST';
-      mockRequest.path = '/api/restaurants';
+      mockRequest.path = '/api/v1/restaurants';
     });
 
     describe('Successful Creation', () => {
@@ -331,7 +331,7 @@ describe('RestaurantController Unit Tests', () => {
   describe('getRestaurants', () => {
     beforeEach(() => {
       mockRequest.method = 'GET';
-      mockRequest.path = '/api/restaurants';
+      mockRequest.path = '/api/v1/restaurants';
     });
 
     describe('Successful Retrieval', () => {
@@ -460,7 +460,7 @@ describe('RestaurantController Unit Tests', () => {
 
     beforeEach(() => {
       mockRequest.method = 'GET';
-      mockRequest.path = `/api/restaurants/${validRestaurantId}`;
+      mockRequest.path = `/api/v1/restaurants/${validRestaurantId}`;
     });
 
     describe('Successful Retrieval', () => {
@@ -532,7 +532,7 @@ describe('RestaurantController Unit Tests', () => {
 
     beforeEach(() => {
       mockRequest.method = 'GET';
-      mockRequest.path = `/api/restaurants/by-url/${testUrlName}`;
+      mockRequest.path = `/api/v1/restaurants/by-url/${testUrlName}`;
     });
 
     describe('Successful Retrieval', () => {
@@ -576,7 +576,7 @@ describe('RestaurantController Unit Tests', () => {
 
     beforeEach(() => {
       mockRequest.method = 'PUT';
-      mockRequest.path = `/api/restaurants/${validRestaurantId}`;
+      mockRequest.path = `/api/v1/restaurants/${validRestaurantId}`;
     });
 
     describe('Successful Updates', () => {
@@ -692,7 +692,7 @@ describe('RestaurantController Unit Tests', () => {
 
     beforeEach(() => {
       mockRequest.method = 'DELETE';
-      mockRequest.path = `/api/restaurants/${validRestaurantId}`;
+      mockRequest.path = `/api/v1/restaurants/${validRestaurantId}`;
     });
 
     describe('Successful Deletion', () => {
@@ -759,7 +759,7 @@ describe('RestaurantController Unit Tests', () => {
 
     beforeEach(() => {
       mockRequest.method = 'GET';
-      mockRequest.path = `/api/restaurants/${validRestaurantId}/stats`;
+      mockRequest.path = `/api/v1/restaurants/${validRestaurantId}/stats`;
     });
 
     describe('Successful Retrieval', () => {
@@ -815,7 +815,7 @@ describe('RestaurantController Unit Tests', () => {
 
     beforeEach(() => {
       mockRequest.method = 'GET';
-      mockRequest.path = `/api/restaurants/check-url/${testUrlName}`;
+      mockRequest.path = `/api/v1/restaurants/check-url/${testUrlName}`;
     });
 
     describe('Successful Checks', () => {

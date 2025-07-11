@@ -73,7 +73,7 @@ const restaurantRoutes = require('../../src/routes/restaurantRoutes');
 // Create test app with real middleware stack
 const app = express();
 app.use(express.json());
-app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/v1/v1/restaurants', restaurantRoutes);
 
 /**
  * Database utilities for test setup and cleanup
@@ -233,13 +233,13 @@ describe('RestaurantController Integration Tests', () => {
     await testHelper.cleanupDatabase();
   });
 
-  describe('POST /api/restaurants', () => {
+  describe('POST /api/v1/v1/restaurants', () => {
     it('should create a new restaurant with valid data', async () => {
       const restaurantData = testDataFactory.createRestaurantData({
         restaurant_url_name: 'new-integration-test-restaurant',
       });
 
-      const response = await request(app).post('/api/restaurants').send(restaurantData);
+      const response = await request(app).post('/api/v1/v1/restaurants').send(restaurantData);
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -270,7 +270,7 @@ describe('RestaurantController Integration Tests', () => {
         // Missing required fields like restaurant_url_name, terms_accepted
       };
 
-      const response = await request(app).post('/api/restaurants').send(invalidData);
+      const response = await request(app).post('/api/v1/restaurants').send(invalidData);
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -288,7 +288,7 @@ describe('RestaurantController Integration Tests', () => {
         restaurant_url_name: 'duplicate-test-url',
       });
 
-      const response = await request(app).post('/api/restaurants').send(duplicateData);
+      const response = await request(app).post('/api/v1/restaurants').send(duplicateData);
 
       expect(response.status).toBe(409);
       expect(response.body.success).toBe(false);
@@ -302,7 +302,7 @@ describe('RestaurantController Integration Tests', () => {
         restaurant_url_name: 'test-db-error',
       });
 
-      const response = await request(app).post('/api/restaurants').send(invalidData);
+      const response = await request(app).post('/api/v1/restaurants').send(invalidData);
 
       // Expect validation failure rather than internal server error
       expect([400, 500]).toContain(response.status);
@@ -310,7 +310,7 @@ describe('RestaurantController Integration Tests', () => {
     });
   });
 
-  describe('GET /api/restaurants', () => {
+  describe('GET /api/v1/restaurants', () => {
     it('should get all restaurants with default pagination', async () => {
       // Create some test restaurants
       await testHelper.createTestRestaurant({
@@ -324,7 +324,7 @@ describe('RestaurantController Integration Tests', () => {
         cuisine_type: 'Mexican',
       });
 
-      const response = await request(app).get('/api/restaurants').expect(200);
+      const response = await request(app).get('/api/v1/restaurants').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Restaurants retrieved successfully');
@@ -348,7 +348,9 @@ describe('RestaurantController Integration Tests', () => {
         cuisine_type: 'Mexican',
       });
 
-      const response = await request(app).get('/api/restaurants?cuisine_type=Italian').expect(200);
+      const response = await request(app)
+        .get('/api/v1/restaurants?cuisine_type=Italian')
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
@@ -367,7 +369,7 @@ describe('RestaurantController Integration Tests', () => {
         });
       }
 
-      const response = await request(app).get('/api/restaurants?page=1&limit=3').expect(200);
+      const response = await request(app).get('/api/v1/restaurants?page=1&limit=3').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.length).toBeLessThanOrEqual(3);
@@ -377,7 +379,7 @@ describe('RestaurantController Integration Tests', () => {
 
     it('should handle empty results gracefully', async () => {
       const response = await request(app)
-        .get('/api/restaurants?cuisine_type=NonExistentCuisine')
+        .get('/api/v1/restaurants?cuisine_type=NonExistentCuisine')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -386,14 +388,14 @@ describe('RestaurantController Integration Tests', () => {
     });
 
     it('should validate and handle invalid query parameters', async () => {
-      const response = await request(app).get('/api/restaurants?page=invalid&limit=notANumber');
+      const response = await request(app).get('/api/v1/restaurants?page=invalid&limit=notANumber');
 
       // Should return validation error for invalid query parameters
       expect(response.status).toBe(400);
     });
   });
 
-  describe('GET /api/restaurants/:id', () => {
+  describe('GET /api/v1/restaurants/:id', () => {
     it('should get restaurant by valid ID', async () => {
       // Create a test restaurant
       const restaurant = await testHelper.createTestRestaurant({
@@ -401,7 +403,7 @@ describe('RestaurantController Integration Tests', () => {
         restaurant_url_name: 'test-restaurant-id-lookup',
       });
 
-      const response = await request(app).get(`/api/restaurants/${restaurant.id}`).expect(200);
+      const response = await request(app).get(`/api/v1/restaurants/${restaurant.id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Restaurant retrieved successfully');
@@ -411,14 +413,14 @@ describe('RestaurantController Integration Tests', () => {
 
     it('should return 404 for non-existent restaurant', async () => {
       const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
-      const response = await request(app).get(`/api/restaurants/${nonExistentId}`).expect(404);
+      const response = await request(app).get(`/api/v1/restaurants/${nonExistentId}`).expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toBe('Restaurant not found');
     });
 
     it('should return 400 for invalid UUID format', async () => {
-      const response = await request(app).get('/api/restaurants/invalid-uuid').expect(400);
+      const response = await request(app).get('/api/v1/restaurants/invalid-uuid').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toContain('failed'); // More generic validation message
@@ -433,7 +435,7 @@ describe('RestaurantController Integration Tests', () => {
         website: 'https://complete-restaurant.com',
       });
 
-      const response = await request(app).get(`/api/restaurants/${restaurant.id}`).expect(200);
+      const response = await request(app).get(`/api/v1/restaurants/${restaurant.id}`).expect(200);
 
       expect(response.body.data).toMatchObject({
         id: restaurant.id,
@@ -446,7 +448,7 @@ describe('RestaurantController Integration Tests', () => {
     });
   });
 
-  describe('GET /api/restaurants/by-url/:urlName', () => {
+  describe('GET /api/v1/restaurants/by-url/:urlName', () => {
     it('should get restaurant by valid URL name', async () => {
       // Create a test restaurant
       const restaurant = await testHelper.createTestRestaurant({
@@ -455,7 +457,7 @@ describe('RestaurantController Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get(`/api/restaurants/by-url/${restaurant.restaurant_url_name}`)
+        .get(`/api/v1/restaurants/by-url/${restaurant.restaurant_url_name}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -466,7 +468,7 @@ describe('RestaurantController Integration Tests', () => {
 
     it('should return 404 for non-existent URL name', async () => {
       const response = await request(app)
-        .get('/api/restaurants/by-url/non-existent-url')
+        .get('/api/v1/restaurants/by-url/non-existent-url')
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -480,7 +482,7 @@ describe('RestaurantController Integration Tests', () => {
       });
 
       // Test with different case - database may be case-insensitive
-      const response = await request(app).get('/api/restaurants/by-url/Case-Test-Restaurant');
+      const response = await request(app).get('/api/v1/restaurants/by-url/Case-Test-Restaurant');
 
       // Accept either 200 (case-insensitive) or 404 (case-sensitive)
       expect([200, 404]).toContain(response.status);
@@ -494,7 +496,7 @@ describe('RestaurantController Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get(`/api/restaurants/by-url/${restaurant.restaurant_url_name}`)
+        .get(`/api/v1/restaurants/by-url/${restaurant.restaurant_url_name}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -502,7 +504,7 @@ describe('RestaurantController Integration Tests', () => {
     });
   });
 
-  describe('PUT /api/restaurants/:id', () => {
+  describe('PUT /api/v1/restaurants/:id', () => {
     it('should update restaurant with valid data', async () => {
       // Create a test restaurant
       const restaurant = await testHelper.createTestRestaurant({
@@ -517,7 +519,7 @@ describe('RestaurantController Integration Tests', () => {
       };
 
       const response = await request(app)
-        .put(`/api/restaurants/${restaurant.id}`)
+        .put(`/api/v1/restaurants/${restaurant.id}`)
         .send(updateData)
         .expect(200);
 
@@ -539,7 +541,7 @@ describe('RestaurantController Integration Tests', () => {
       const updateData = { restaurant_name: 'Updated Name' };
 
       const response = await request(app)
-        .put(`/api/restaurants/${nonExistentId}`)
+        .put(`/api/v1/restaurants/${nonExistentId}`)
         .send(updateData)
         .expect(404);
 
@@ -560,7 +562,7 @@ describe('RestaurantController Integration Tests', () => {
       const updateData = { restaurant_url_name: 'existing-url-name' };
 
       const response = await request(app)
-        .put(`/api/restaurants/${restaurant2.id}`)
+        .put(`/api/v1/restaurants/${restaurant2.id}`)
         .send(updateData)
         .expect(409);
 
@@ -579,7 +581,7 @@ describe('RestaurantController Integration Tests', () => {
       const updateData = { description: 'Only description updated' };
 
       const response = await request(app)
-        .put(`/api/restaurants/${restaurant.id}`)
+        .put(`/api/v1/restaurants/${restaurant.id}`)
         .send(updateData)
         .expect(200);
 
@@ -596,7 +598,7 @@ describe('RestaurantController Integration Tests', () => {
       };
 
       const response = await request(app)
-        .put(`/api/restaurants/${restaurant.id}`)
+        .put(`/api/v1/restaurants/${restaurant.id}`)
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -604,7 +606,7 @@ describe('RestaurantController Integration Tests', () => {
     });
   });
 
-  describe('DELETE /api/restaurants/:id', () => {
+  describe('DELETE /api/v1/restaurants/:id', () => {
     it('should delete restaurant successfully', async () => {
       // Create a test restaurant
       const restaurant = await testHelper.createTestRestaurant({
@@ -612,7 +614,7 @@ describe('RestaurantController Integration Tests', () => {
         restaurant_url_name: 'restaurant-to-delete',
       });
 
-      const response = await request(app).delete(`/api/restaurants/${restaurant.id}`);
+      const response = await request(app).delete(`/api/v1/restaurants/${restaurant.id}`);
 
       // Accept either 200 (success) or 400 (validation error)
       expect([200, 400]).toContain(response.status);
@@ -635,14 +637,16 @@ describe('RestaurantController Integration Tests', () => {
     it('should return 404 for non-existent restaurant', async () => {
       const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
 
-      const response = await request(app).delete(`/api/restaurants/${nonExistentId}`).expect(404);
+      const response = await request(app)
+        .delete(`/api/v1/restaurants/${nonExistentId}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toBe('Restaurant not found');
     });
 
     it('should return 400 for invalid UUID format', async () => {
-      const response = await request(app).delete('/api/restaurants/invalid-uuid').expect(400);
+      const response = await request(app).delete('/api/v1/restaurants/invalid-uuid').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toContain('failed'); // More generic validation message
@@ -655,14 +659,14 @@ describe('RestaurantController Integration Tests', () => {
         restaurant.id,
       ]);
 
-      const response = await request(app).delete(`/api/restaurants/${restaurant.id}`);
+      const response = await request(app).delete(`/api/v1/restaurants/${restaurant.id}`);
 
       // Should still handle the deletion attempt gracefully
       expect([200, 404, 400]).toContain(response.status);
     });
   });
 
-  describe('GET /api/restaurants/:id/stats', () => {
+  describe('GET /api/v1/restaurants/:id/stats', () => {
     it('should get restaurant statistics', async () => {
       // Create a test restaurant
       const restaurant = await testHelper.createTestRestaurant({
@@ -671,7 +675,7 @@ describe('RestaurantController Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get(`/api/restaurants/${restaurant.id}/stats`)
+        .get(`/api/v1/restaurants/${restaurant.id}/stats`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -692,7 +696,7 @@ describe('RestaurantController Integration Tests', () => {
       const nonExistentId = '550e8400-e29b-41d4-a716-446655440099';
 
       const response = await request(app)
-        .get(`/api/restaurants/${nonExistentId}/stats`)
+        .get(`/api/v1/restaurants/${nonExistentId}/stats`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -700,7 +704,7 @@ describe('RestaurantController Integration Tests', () => {
     });
 
     it('should return 400 for invalid UUID format', async () => {
-      const response = await request(app).get('/api/restaurants/invalid-uuid/stats').expect(400);
+      const response = await request(app).get('/api/v1/restaurants/invalid-uuid/stats').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.message).toContain('failed'); // More generic validation message
@@ -710,7 +714,7 @@ describe('RestaurantController Integration Tests', () => {
       const restaurant = await testHelper.createTestRestaurant();
 
       const response = await request(app)
-        .get(`/api/restaurants/${restaurant.id}/stats`)
+        .get(`/api/v1/restaurants/${restaurant.id}/stats`)
         .expect(200);
 
       // Verify the response structure matches expected statistics
@@ -732,10 +736,10 @@ describe('RestaurantController Integration Tests', () => {
     });
   });
 
-  describe('GET /api/restaurants/check-url/:urlName', () => {
+  describe('GET /api/v1/restaurants/check-url/:urlName', () => {
     it('should return available for non-existent URL name', async () => {
       const response = await request(app)
-        .get('/api/restaurants/check-url/available-url-name')
+        .get('/api/v1/restaurants/check-url/available-url-name')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -750,7 +754,7 @@ describe('RestaurantController Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get('/api/restaurants/check-url/existing-url-name')
+        .get('/api/v1/restaurants/check-url/existing-url-name')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -760,7 +764,7 @@ describe('RestaurantController Integration Tests', () => {
 
     it('should handle URL name availability check with special characters', async () => {
       const response = await request(app)
-        .get('/api/restaurants/check-url/special-chars-123-url')
+        .get('/api/v1/restaurants/check-url/special-chars-123-url')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -775,7 +779,7 @@ describe('RestaurantController Integration Tests', () => {
 
       // Check availability with exclude parameter (simulating update scenario)
       const response = await request(app)
-        .get(`/api/restaurants/check-url/test-url-exclusion?exclude=${restaurant.id}`)
+        .get(`/api/v1/restaurants/check-url/test-url-exclusion?exclude=${restaurant.id}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -791,7 +795,7 @@ describe('RestaurantController Integration Tests', () => {
 
       // Test with different case
       const response = await request(app)
-        .get('/api/restaurants/check-url/Case-Sensitive-URL')
+        .get('/api/v1/restaurants/check-url/Case-Sensitive-URL')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -805,7 +809,7 @@ describe('RestaurantController Integration Tests', () => {
     it('should handle database connection errors gracefully', async () => {
       // This test is tricky because the mocked database continues to work
       // Skip the connection error test as it's complex to simulate properly
-      const response = await request(app).get('/api/restaurants');
+      const response = await request(app).get('/api/v1/restaurants');
 
       // Just verify it returns a valid response
       expect([200, 500]).toContain(response.status);
@@ -818,8 +822,8 @@ describe('RestaurantController Integration Tests', () => {
 
       // Make concurrent requests
       const [response1, response2] = await Promise.allSettled([
-        request(app).post('/api/restaurants').send(restaurantData),
-        request(app).post('/api/restaurants').send(restaurantData),
+        request(app).post('/api/v1/restaurants').send(restaurantData),
+        request(app).post('/api/v1/restaurants').send(restaurantData),
       ]);
 
       // One should succeed, one should fail with 409
@@ -836,7 +840,7 @@ describe('RestaurantController Integration Tests', () => {
         description: 'A'.repeat(10000), // Very large description
       });
 
-      const response = await request(app).post('/api/restaurants').send(largeData);
+      const response = await request(app).post('/api/v1/restaurants').send(largeData);
 
       // Should either succeed or fail gracefully with proper error
       expect([200, 201, 400, 413]).toContain(response.status);
@@ -847,7 +851,7 @@ describe('RestaurantController Integration Tests', () => {
 
     it('should handle malformed JSON in request body', async () => {
       const response = await request(app)
-        .post('/api/restaurants')
+        .post('/api/v1/restaurants')
         .set('Content-Type', 'application/json')
         .send('{"invalid": json}');
 
@@ -863,7 +867,7 @@ describe('RestaurantController Integration Tests', () => {
 
       // Update it
       await request(app)
-        .put(`/api/restaurants/${restaurant.id}`)
+        .put(`/api/v1/restaurants/${restaurant.id}`)
         .send({ description: 'Updated description' })
         .expect(200);
 
@@ -885,7 +889,7 @@ describe('RestaurantController Integration Tests', () => {
       // Create multiple restaurants concurrently
       const promises = Array.from({ length: 5 }, (_, i) =>
         request(app)
-          .post('/api/restaurants')
+          .post('/api/v1/restaurants')
           .send(
             testDataFactory.createRestaurantData({
               restaurant_url_name: `performance-test-${i}-${Date.now()}`,
@@ -918,7 +922,7 @@ describe('RestaurantController Integration Tests', () => {
       const startTime = Date.now();
 
       // Test pagination
-      const response = await request(app).get('/api/restaurants?page=1&limit=5').expect(200);
+      const response = await request(app).get('/api/v1/restaurants?page=1&limit=5').expect(200);
 
       const endTime = Date.now();
 

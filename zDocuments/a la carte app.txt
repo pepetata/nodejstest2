@@ -1048,7 +1048,7 @@ o	PostgreSQL Database: The core menu data (item names, descriptions, prices, cat
 o	Cloud Storage for Media: High-resolution images and videos are stored in scalable and cost-effective cloud storage solutions like Google Cloud Storage or AWS S3. The database only stores the URLs or paths to these media files.
 3.	API Layer:
 o	Backend APIs (Node.js with Express.js): The backend provides RESTful APIs that the frontend (customer-facing PWA and Admin Portal) uses to:
-	Fetch menu data (e.g., /api/menus/location/:locationId).
+	Fetch menu data (e.g., /api/v1/menus/location/:locationId).
 	Create, update, and delete menu items, categories, and modifiers.
 	Upload and manage media files.
 	Retrieve analytics on menu item performance.

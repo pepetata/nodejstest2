@@ -31,14 +31,14 @@ router.use(ValidationMiddleware.sanitize());
  * Public Routes (no authentication required)
  */
 
-// GET /api/restaurants - Get all restaurants with filtering and pagination
+// GET /api/v1/restaurants - Get all restaurants with filtering and pagination
 router.get(
   '/',
   ValidationMiddleware.validateQuery(RestaurantValidation.querySchema),
   restaurantController.getRestaurants.bind(restaurantController)
 );
 
-// GET /api/restaurants/by-url/:urlName - Get restaurant by URL name
+// GET /api/v1/restaurants/by-url/:urlName - Get restaurant by URL name
 router.get(
   '/by-url/:urlName',
   ValidationMiddleware.validateParams(
@@ -49,7 +49,7 @@ router.get(
   restaurantController.getRestaurantByUrlName.bind(restaurantController)
 );
 
-// GET /api/restaurants/check-url/:urlName - Check URL name availability
+// GET /api/v1/restaurants/check-url/:urlName - Check URL name availability
 router.get(
   '/check-url/:urlName',
   ValidationMiddleware.validateParams(
@@ -60,7 +60,7 @@ router.get(
   restaurantController.checkUrlAvailability.bind(restaurantController)
 );
 
-// GET /api/restaurants/:id - Get restaurant by ID
+// GET /api/v1/restaurants/:id - Get restaurant by ID
 router.get(
   '/:id',
   ValidationMiddleware.validateParams(
@@ -71,7 +71,7 @@ router.get(
   restaurantController.getRestaurantById.bind(restaurantController)
 );
 
-// GET /api/restaurants/:id/stats - Get restaurant statistics
+// GET /api/v1/restaurants/:id/stats - Get restaurant statistics
 router.get(
   '/:id/stats',
   ValidationMiddleware.validateParams(
@@ -94,7 +94,7 @@ function decodeWebsiteField(req, res, next) {
   next();
 }
 
-// POST /api/restaurants - Create a new restaurant
+// POST /api/v1/restaurants - Create a new restaurant
 // Requires authentication and admin role
 router.post(
   '/',
@@ -103,7 +103,7 @@ router.post(
   restaurantController.createRestaurant.bind(restaurantController)
 );
 
-// PUT /api/restaurants/:id - Update a restaurant
+// PUT /api/v1/restaurants/:id - Update a restaurant
 // Requires authentication and appropriate permissions
 router.put(
   '/:id',
@@ -119,7 +119,7 @@ router.put(
   restaurantController.updateRestaurant.bind(restaurantController)
 );
 
-// DELETE /api/restaurants/:id - Delete a restaurant
+// DELETE /api/v1/restaurants/:id - Delete a restaurant
 // Requires authentication and appropriate permissions
 router.delete(
   '/:id',

@@ -1,0 +1,29 @@
+@import './variables.scss';
+
+.remember-me-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-left: 6px;
+}
+
+.remember-me-tooltip {
+  background: $header-color;
+  color: #333;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  position: absolute;
+  z-index: 10;
+  top: 28px;
+  left: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  white-space: pre-line;
+  min-width: 220px;
+  max-width: 320px;
+  display: none;
+}
+
+.remember-me-tooltip-wrapper:focus .remember-me-tooltip,
+.remember-me-tooltip-wrapper:hover .remember-me-tooltip {
+  display: block;
+}

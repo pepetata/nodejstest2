@@ -3,33 +3,39 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import PropTypes from 'prop-types';
 import '../styles/Auth.scss';
+import RememberMeTooltip from '../components/common/RememberMeTooltip';
 
 const LoginPage = ({ subdomain }) => {
   const [formData, setFormData] = React.useState({
     email: '',
     password: '',
   });
-  const [error, setError] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const { login } = useAuth();
+  const [rememberMe, setRememberMe] = React.useState(false);
+  const { login, error: authError } = useAuth();
+  const [error, setError] = React.useState('');
+
+  React.useEffect(() => {
+    if (authError) setError(authError);
+  }, [authError]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setError(''); // Clear error as user types
+  };
+
+  const handleRememberMe = (e) => {
+    setRememberMe(e.target.checked);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
-
-    try {
-      await login(formData.email, formData.password);
-      // Navigation will be handled by the AuthContext
-    } catch (err) {
-      setError(err.message || 'Failed to login. Please check your credentials.');
-    } finally {
-      setIsLoading(false);
+    const success = await login(formData.email, formData.password);
+    setIsLoading(false);
+    if (!success) {
+      // error will be set by useEffect above
     }
   };
 
@@ -71,6 +77,29 @@ const LoginPage = ({ subdomain }) => {
               className="form-input"
               placeholder="Enter your password"
             />
+          </div>
+
+          <div
+            className="form-group"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                id="rememberMe"
+                name="rememberMe"
+                checked={rememberMe}
+                onChange={handleRememberMe}
+                style={{ marginRight: 6 }}
+              />
+              <label htmlFor="rememberMe" style={{ marginBottom: 0 }}>
+                Lembrar de mim
+              </label>
+              <RememberMeTooltip />
+            </div>
+            <Link to="/forgot-password" className="auth-link" style={{ fontSize: '0.95em' }}>
+              Esqueceu a senha?
+            </Link>
           </div>
 
           <div className="form-group">

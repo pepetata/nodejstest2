@@ -33,7 +33,7 @@ test.describe('Cadastro de Restaurante - E2E', () => {
     // Compose payload as expected by backend
     const payload = { ...restaurant, userPayload: user };
 
-    const response = await request.post('/api/restaurants', {
+    const response = await request.post('/api/v1/restaurants', {
       data: payload,
     });
 
@@ -49,9 +49,9 @@ test.describe('Cadastro de Restaurante - E2E', () => {
     const { restaurant, user } = generateTestData();
     const payload = { ...restaurant, userPayload: user };
     // First registration
-    await request.post('/api/restaurants', { data: payload });
+    await request.post('/api/v1/restaurants', { data: payload });
     // Second registration with same URL
-    const response = await request.post('/api/restaurants', { data: payload });
+    const response = await request.post('/api/v1/restaurants', { data: payload });
     expect([409, 500]).toContain(response.status());
     const body = await response.json();
     const errorMsg = body.error?.message || body.message || '';

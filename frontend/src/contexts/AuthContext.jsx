@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import authService from '../services/authService';
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
@@ -14,25 +16,38 @@ function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Initialize auth state
+    // Optionally, fetch user info if token exists
     setLoading(false);
   }, []);
 
-  const login = async (email, _password) => {
+  const login = async (email, password) => {
     setError(null);
     try {
-      // Mock login for now - replace with actual API call
-      const mockUser = { id: 1, email, name: 'Test User' };
-      const mockToken = 'mock-token-' + Date.now();
-
-      setToken(mockToken);
-      setUser(mockUser);
-      localStorage.setItem('token', mockToken);
+      const data = await authService.login(email, password);
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem('token', data.token);
+      // Route based on user type
+      if (data.user.type === 'admin' || data.user.type === 'restaurant-admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/fake-user', { replace: true });
+      }
       return true;
     } catch (err) {
-      setError(err.message || 'Login failed');
+      // Show error in Portuguese
+      let msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Login falhou';
+      if (msg === 'Invalid credentials' || err.response?.status === 500) {
+        msg = 'Credenciais inválidas. Verifique seu e-mail e senha.';
+      }
+      setError(msg);
       return false;
     }
   };
@@ -40,18 +55,7 @@ function AuthProvider({ children }) {
   const register = async (userData) => {
     setError(null);
     try {
-      // Mock registration for now - replace with actual API call
-      const mockUser = {
-        id: Date.now(),
-        email: userData.email,
-        name: userData.ownerName || userData.name,
-        type: userData.type || 'user',
-      };
-      const mockToken = 'mock-token-' + Date.now();
-
-      setToken(mockToken);
-      setUser(mockUser);
-      localStorage.setItem('token', mockToken);
+      // You can implement registration with backend here
       return true;
     } catch (err) {
       setError(err.message || 'Registration failed');

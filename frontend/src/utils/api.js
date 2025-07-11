@@ -28,9 +28,13 @@ api.interceptors.response.use(
   (error) => {
     // Handle authentication errors
     if (error.response && error.response.status === 401) {
-      // Clear token if expired or invalid
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Only redirect if user was authenticated
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      // If no token, just reject so login page can show error
     }
     return Promise.reject(error);
   }

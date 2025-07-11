@@ -3,11 +3,6 @@ const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { logger } = require('../utils/logger');
-
-/**
- * User Model
- * Handles user management with role-based access control for restaurant operations
- */
 class UserModel extends BaseModel {
   constructor() {
     super();
@@ -15,6 +10,24 @@ class UserModel extends BaseModel {
     // this.sensitiveFields = ['password', 'email_confirmation_token', 'password_reset_token'];
     this.sensitiveFields = ['password'];
     this.logger = logger.child({ model: 'UserModel' });
+  }
+
+  /**
+   * Find user by email for login (returns full user object, including password)
+   * Use ONLY for authentication logic, never expose result to client
+   */
+  async findUserForLogin(email) {
+    this.logger.debug('Finding user for login by email', { email });
+    try {
+      const result = await this.find({ email: email.toLowerCase() });
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      this.logger.error('Failed to find user for login by email', {
+        email,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**

@@ -9,7 +9,7 @@ describe('XSS Middleware Integration', () => {
         description: 'Safe content <img src=x onerror=alert(1)>',
       };
 
-      const response = await request(app).post('/api/test/xss').send(maliciousData).expect(200);
+      const response = await request(app).post('/api/v1/test/xss').send(maliciousData).expect(200);
 
       // Check that the data was sanitized
       expect(response.body.receivedData.name).toBe(
@@ -22,7 +22,7 @@ describe('XSS Middleware Integration', () => {
 
     it('should sanitize query parameters', async () => {
       const response = await request(app)
-        .get('/api/test/xss?search=<script>alert("xss")</script>&filter=safe')
+        .get('/api/v1/test/xss?search=<script>alert("xss")</script>&filter=safe')
         .expect(200);
 
       expect(response.body.queryParams.search).toBe(
@@ -41,7 +41,7 @@ describe('XSS Middleware Integration', () => {
         },
       };
 
-      const response = await request(app).post('/api/test/xss').send(maliciousData).expect(200);
+      const response = await request(app).post('/api/v1/test/xss').send(maliciousData).expect(200);
 
       expect(response.body.receivedData.location.address.street).toBe(
         'Main St &lt;script&gt;alert(1)&lt;&#x2F;script&gt;'
@@ -61,7 +61,7 @@ describe('XSS Middleware Integration', () => {
 
       // This will fail validation, but XSS middleware should still run
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .send(maliciousRegistrationData);
 
       // Should get validation error, not XSS execution
