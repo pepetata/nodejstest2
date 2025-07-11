@@ -51,8 +51,8 @@ class RestaurantController {
       };
     }
 
-    // Use injected service (for testing) or create new instance
-    this.restaurantService = restaurantServiceInstance || new RestaurantService();
+    // Use injected service (for testing) or use the singleton instance
+    this.restaurantService = restaurantServiceInstance || RestaurantService;
   }
 
   /**

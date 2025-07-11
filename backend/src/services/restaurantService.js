@@ -109,6 +109,18 @@ class RestaurantService {
         throw new Error('Tipo de negócio inválido. Valores permitidos: single, multi.');
       }
 
+      // --- CHECK USER EXISTS BEFORE CREATING RESTAURANT ---
+      const existingUser = await userService.getUserByEmail(userData.email);
+      if (existingUser) {
+        serviceLogger.warn('User already exists with this email, aborting restaurant creation', {
+          email: userData.email,
+        });
+        throw new Error(
+          'Já existe um usuário cadastrado com este e-mail. O restaurante não foi criado.'
+        );
+      }
+      // --- END CHECK USER EXISTS ---
+
       // Save restaurant
       const newRestaurant = await this.restaurantModel.create(restaurantData);
       userData.restaurant_id = newRestaurant.id;
@@ -906,4 +918,4 @@ class RestaurantService {
   }
 }
 
-module.exports = RestaurantService;
+module.exports = new RestaurantService();

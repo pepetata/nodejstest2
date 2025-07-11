@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bem-vindo ao À La Carte App!</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f8f8f8;
+        color: #222;
+      }
+      .container {
+        background: #fff;
+        max-width: 600px;
+        margin: 40px auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px #0001;
+        padding: 32px;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      .logo {
+        width: 120px;
+        margin-bottom: 16px;
+      }
+      .button {
+        display: inline-block;
+        background: #1e90ff;
+        color: #fff;
+        padding: 14px 32px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 18px;
+        margin: 24px 0;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+      .footer {
+        color: #888;
+        font-size: 13px;
+        margin-top: 32px;
+        text-align: center;
+      }
+      .links {
+        margin: 24px 0;
+        text-align: center;
+      }
+      .links a {
+        display: block;
+        margin: 8px 0;
+        color: #1e90ff;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 16px;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="<%= logoUrl %>" alt="À La Carte Logo" class="logo" />
+        <h2>Parabéns, <%= userName %>!</h2>
+      </div>
+      <p>Seu restaurante foi confirmado com sucesso no <strong>À La Carte App</strong>.</p>
+      <p>Agora você pode acessar o sistema pelos links abaixo:</p>
+      <div class="links">
+        <a href="<%= loginUrl %>"><%= loginUrl %></a>
+        <a href="<%= loginUrl2 %>"><%= loginUrl2 %></a>
+        <a href="<%= loginUrl3 %>"><%= loginUrl3 %></a>
+      </div>
+      <p style="text-align: center; margin: 24px 0">
+        <a href="<%= loginUrl %>" class="button">Acessar meu restaurante</a>
+      </p>
+      <p style="text-align: center; color: #1e90ff; font-weight: bold">
+        Adicione este link aos seus favoritos para facilitar o acesso futuro.
+      </p>
+      <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee" />
+      <p>Seja bem-vindo e sucesso com seu restaurante!<br />Equipe À La Carte App</p>
+      <div class="footer">
+        &copy; <%= new Date().getFullYear() %> À La Carte App. Todos os direitos reservados.
+      </div>
+    </div>
+  </body>
+</html>

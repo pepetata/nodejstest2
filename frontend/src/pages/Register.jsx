@@ -39,11 +39,11 @@ function RegisterPage() {
         whatsapp: '1199999999', // Location-specific WhatsApp
         address: {
           zipCode: '05089-030',
-          street: '',
+          street: 'rua tal',
           streetNumber: '123',
           complement: 'cj 111',
-          city: '',
-          state: '',
+          city: 'sampa',
+          state: 'sp',
         },
         operatingHours: {
           monday: { open: '09:00', close: '22:00', closed: false },
@@ -79,8 +79,9 @@ function RegisterPage() {
       state: '',
       sameAsRestaurant: true,
     },
-    marketingConsent: false,
-    termsAccepted: false,
+    marketingConsent: true,
+    termsAccepted: true,
+    privacyPolicyAccepted: true,
   });
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});

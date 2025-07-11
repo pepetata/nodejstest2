@@ -16,20 +16,6 @@ const errorHandler = (err, req, res, _next) => {
     name: err.name,
   });
 
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const errors = Object.values(err.errors).map((e) => e.message);
-    return res
-      .status(400)
-      .json(ResponseFormatter.error('Validation Error', 400, { validationErrors: errors }));
-  }
-
-  // Duplicate key error (MongoDB)
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    return res.status(400).json(ResponseFormatter.error(`${field} already exists`, 400));
-  }
-
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
     return res.status(401).json(ResponseFormatter.error('Invalid token', 401));

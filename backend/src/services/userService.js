@@ -3,6 +3,7 @@ const userModel = new UserModel();
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
 const { sendMail } = require('../utils/mailer');
+const { sendConfirmationEmail, sendPostConfirmationEmail } = require('./emailService');
 const crypto = require('crypto');
 const ejs = require('ejs');
 const path = require('path');
@@ -24,7 +25,7 @@ class UserService {
    * @param {Object} currentUser - Current authenticated user
    * @returns {Promise<Object>} Created user
    */
-  async createUser(userData, currentUser = null) {
+  async createUser(userData, currentUser = null, { onUserExists } = {}) {
     const operationId = `create_user_${Date.now()}`;
     const logMeta = {
       operation: 'createUser',
@@ -51,11 +52,19 @@ class UserService {
         await this.validateRestaurantAccess(userData.restaurant_id, currentUser);
       }
 
-      // Generate email confirmation token and expiration if email is present
-      // if (userData.email) {
-      //   userData.email_confirmation_token = crypto.randomBytes(32).toString('hex');
-      //   userData.email_confirmation_expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiry
-      // }
+      // Check if user already exists by email
+      if (userData.email) {
+        const existingUser = await this.userModel.findByEmail(userData.email);
+        if (existingUser) {
+          this.logger.warn('User already exists with this email', { email: userData.email });
+          if (onUserExists && typeof onUserExists === 'function') {
+            await onUserExists(existingUser);
+          }
+          throw new Error('Já existe um usuário cadastrado com este e-mail.');
+        }
+        userData.email_confirmation_token = crypto.randomBytes(32).toString('hex');
+        userData.email_confirmation_expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiry
+      }
 
       const newUser = await this.userModel.create(userData);
 
@@ -72,20 +81,14 @@ class UserService {
       if (newUser.email && newUser.email_confirmation_token) {
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
         const confirmUrl = `${appUrl}/confirm-email?token=${newUser.email_confirmation_token}`;
-        const templatePath = path.join(__dirname, '../templates/confirmationEmail.ejs');
-        const html = await ejs.renderFile(templatePath, {
-          name: newUser.full_name || newUser.username || newUser.email,
-          confirmUrl,
-          year: new Date().getFullYear(),
-          logoUrl: `${appUrl}/images/logo.png`,
-        });
+        const logoUrl = `${appUrl}/images/logo.png`;
         try {
-          await sendMail({
+          await sendConfirmationEmail({
             to: newUser.email,
-            cc: 'flavio_luiz_ferreira@hotmail.com',
-            subject: 'Bem-vindo ao À La Carte! Confirme seu e-mail',
-            html,
-            text: `Olá,\n\nBem-vindo ao À La Carte! Por favor, confirme seu e-mail acessando o link: ${confirmUrl}\n\nSe você não solicitou este cadastro, ignore este e-mail.`,
+            name: newUser.full_name || newUser.username || newUser.email,
+            confirmUrl,
+            year: new Date().getFullYear(),
+            logoUrl,
           });
           this.logger.info('Confirmation email sent', { to: newUser.email });
         } catch (mailErr) {
@@ -492,6 +495,19 @@ class UserService {
       serviceLogger.info('Email confirmed successfully', {
         userId: user.id,
       });
+
+      // Send post-confirmation email
+      if (user.email) {
+        // Lazy require to break circular dependency
+        const restaurantService = require('./restaurantService');
+        const restaurant = await restaurantService.getRestaurantById(user.restaurant_id);
+        await sendPostConfirmationEmail({
+          to: user.email,
+          userName: user.full_name || user.username || user.email,
+          restaurantUrlName: restaurant?.restaurant_url_name,
+        });
+        serviceLogger.info('Post-confirmation email sent', { to: user.email });
+      }
 
       return user;
     } catch (error) {
