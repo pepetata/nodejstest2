@@ -56,49 +56,58 @@ class RateLimitMiddleware {
    * Authentication endpoints rate limiting
    * 5 requests per 15 minutes - stricter for auth endpoints
    */
-  static auth() {
-    return rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 5, // limit each IP to 5 requests per windowMs
-      message: {
-        error: 'Muitas tentativas de autenticação',
-        message:
-          'Muitas tentativas de autenticação deste IP. Por favor, tente novamente em alguns minutos.',
-        retryAfter: 15 * 60 * 1000,
-        timestamp: new Date().toISOString(),
-      },
-      standardHeaders: true,
-      legacyHeaders: false,
-      handler: (req, res, options) => {
-        rateLimitLogger.warn('Rate limit reached for auth endpoints', {
-          ip: req.ip,
-          userAgent: req.get('User-Agent'),
-          path: req.path,
-          method: req.method,
-        });
-        // Defensive: options.message may be undefined
-        const msg =
-          (options && options.message && options.message.message) ||
-          'Muitas tentativas de autenticação deste IP. Por favor, tente novamente em alguns minutos.';
-        const retryAfter =
-          (options && options.message && options.message.retryAfter) || 15 * 60 * 1000;
-        res.status(429).json({
-          success: false,
-          error: {
-            message: msg,
-            code: 429,
-            retryAfter,
-            timestamp: new Date().toISOString(),
-            details: {
-              middleware: 'rateLimit',
-              ip: req.ip,
-              path: req.path,
-              method: req.method,
+  static getAuthRateLimiterInstance() {
+    // Singleton pattern to ensure the same instance is used
+    if (!this._authRateLimiter) {
+      this._authRateLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutos
+        max: 5, // limita cada IP a 5 requisições por 15 minutos
+        message: {
+          error: 'Muitas tentativas de login',
+          message:
+            'Você fez muitas tentativas de login. Por favor, aguarde alguns minutos antes de tentar novamente.',
+          retryAfter: 15 * 60 * 1000,
+          timestamp: new Date().toISOString(),
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+        handler: (req, res, options) => {
+          rateLimitLogger.warn('Rate limit reached for auth endpoints', {
+            ip: req.ip,
+            userAgent: req.get('User-Agent'),
+            path: req.path,
+            method: req.method,
+          });
+          // Mensagem amigável em português para o usuário final
+          const msg =
+            (options && options.message && options.message.message) ||
+            'Você fez muitas tentativas de login. Por favor, aguarde alguns minutos antes de tentar novamente.';
+          const retryAfter =
+            (options && options.message && options.message.retryAfter) || 15 * 60 * 1000;
+          res.status(429).json({
+            sucesso: false,
+            erro: {
+              mensagem: msg,
+              codigo: 429,
+              retryAfter,
+              timestamp: new Date().toISOString(),
+              detalhes: {
+                middleware: 'rateLimit',
+                ip: req.ip,
+                path: req.path,
+                method: req.method,
+              },
             },
-          },
-        });
-      },
-    });
+          });
+        },
+      });
+    }
+    return this._authRateLimiter;
+  }
+
+  // For compatibility with existing code
+  static auth() {
+    return this.getAuthRateLimiterInstance();
   }
 
   /**

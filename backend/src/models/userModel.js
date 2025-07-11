@@ -17,12 +17,25 @@ class UserModel extends BaseModel {
    * Use ONLY for authentication logic, never expose result to client
    */
   async findUserForLogin(email) {
-    this.logger.debug('Finding user for login by email', { email });
+    this.logger.debug('Finding user for login by email (with restaurant join)', { email });
     try {
-      const result = await this.find({ email: email.toLowerCase() });
-      return result.length > 0 ? result[0] : null;
+      // Join users with restaurants to get restaurant_url_name as restaurant_subdomain
+      const query = `
+        SELECT u.*, r.restaurant_url_name AS restaurant_subdomain
+        FROM users u
+        LEFT JOIN restaurants r ON u.restaurant_id = r.id
+        WHERE LOWER(u.email) = $1
+        LIMIT 1
+      `;
+      const values = [email.toLowerCase()];
+      const result = await this.executeQuery(query, values);
+      if (result.rows.length > 0) {
+        // For login, return raw user (including password)
+        return result.rows[0];
+      }
+      return null;
     } catch (error) {
-      this.logger.error('Failed to find user for login by email', {
+      this.logger.error('Failed to find user for login by email (with join)', {
         email,
         error: error.message,
       });
@@ -253,15 +266,21 @@ class UserModel extends BaseModel {
    */
   async findById(id, columns = ['*']) {
     this.logger.debug('Finding user by ID', { user_id: id });
-
     try {
-      if (!this.isValidUuid(id)) {
-        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID válido.');
+      let user;
+      // Accept UUID, integer, or string IDs
+      if (this.isValidUuid(id)) {
+        const { sanitizedUuid } = this.validateUuid(id);
+        user = await super.findById(sanitizedUuid, columns);
+      } else if (/^\d+$/.test(id)) {
+        // Numeric ID (integer as string)
+        user = await super.findById(Number(id), columns);
+      } else if (typeof id === 'string') {
+        // Fallback: try as plain string (for legacy or string PKs)
+        user = await super.findById(id, columns);
+      } else {
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID, número ou string.');
       }
-
-      const { sanitizedUuid } = this.validateUuid(id);
-      const user = await super.findById(sanitizedUuid, columns);
-
       if (user) {
         return this.sanitizeOutput(user, this.sensitiveFields);
       }

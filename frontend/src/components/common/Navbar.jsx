@@ -1,32 +1,25 @@
 import React from 'react';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
-import { useAuth } from '../../hooks/useAuth';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../../store/authSlice';
 import '../../styles/Menu.scss';
 
 const AppNavbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const user = useSelector((state) => state.auth.user);
+  const isAuthenticated = !!user;
+  const dispatch = useDispatch();
   const { restaurantSlug } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Check if we're on an admin, waiter, or KDS page
-  const isSpecialPortal =
-    location.pathname.includes('/admin') ||
-    location.pathname.includes('/waiter') ||
-    location.pathname.includes('/kds');
-
-  // Don't show regular navbar on special portals
-  if (isSpecialPortal) {
-    return null;
-  }
+  // Navbar is always visible
 
   const handleLogout = async () => {
     try {
-      await logout();
+      dispatch(logout());
     } catch (error) {
       console.error('Logout failed:', error);
-      // Continue with navigation even if logout fails
     }
     navigate(restaurantSlug ? `/${restaurantSlug}/login` : '/login');
   };
@@ -68,15 +61,18 @@ const AppNavbar = () => {
                 </Nav.Link>
               ) : (
                 <>
-                  <Button
-                    variant="outline-primary"
-                    as={Link}
-                    to="/login"
-                    size="sm"
-                    className="menu-btn"
-                  >
-                    Entrar
-                  </Button>
+                  {/* Hide Entrar button on /login page */}
+                  {location.pathname !== '/login' && (
+                    <Button
+                      variant="outline-primary"
+                      as={Link}
+                      to="/login"
+                      size="sm"
+                      className="menu-btn"
+                    >
+                      Entrar
+                    </Button>
+                  )}
                   {/* Hide Registrar button on register page */}
                   {!location.pathname.includes('/register') && (
                     <Button

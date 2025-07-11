@@ -1,0 +1,128 @@
+@use './variables.scss' as *;
+// Flex for form-group containing remember me and forgot password
+.form-group-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.remember-me-flex {
+  display: flex;
+  align-items: center;
+}
+
+.remember-me-checkbox {
+  margin-right: 6px;
+}
+
+.remember-me-label {
+  margin-bottom: 0;
+}
+
+.forgot-link {
+  font-size: 0.95em;
+}
+
+// Style for Entrar button to match Navbar
+.login-entrar-btn {
+  width: 100%;
+  min-width: 100px;
+  margin: 0;
+}
+// Login page specific styles
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 400px;
+  width: 100%;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.75rem 0;
+  background: $button-bg;
+  color: $button-color;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.auth-button:hover:not(:disabled) {
+  background: $button-hover-bg;
+  color: $button-hover-color;
+}
+
+.auth-button:disabled {
+  background: $primary-light;
+  color: $button-color;
+  cursor: not-allowed;
+}
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1rem;
+  background: #f9fafb;
+  transition: border 0.2s;
+}
+
+.form-input:focus {
+  border-color: #6366f1;
+  outline: none;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.75rem 0;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-button:disabled {
+  background: #a5b4fc;
+  cursor: not-allowed;
+}
+
+.auth-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.98em;
+}
+
+.auth-link {
+  color: #6366f1;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.error-alert {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 1em;
+}

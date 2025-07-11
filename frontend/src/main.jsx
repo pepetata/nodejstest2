@@ -2,7 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { AuthProvider } from './contexts/AuthContext';
+import { Provider } from 'react-redux';
+import store from './store';
+import RehydrateAuth from './store/rehydrateAuth';
 import { CartProvider } from './contexts/CartContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
@@ -30,11 +32,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           v7_relativeSplatPath: true,
         }}
       >
-        <AuthProvider>
+        <Provider store={store}>
+          <RehydrateAuth />
           <CartProvider>
             <App getSubdomain={getSubdomain} />
           </CartProvider>
-        </AuthProvider>
+        </Provider>
       </BrowserRouter>
     </ErrorBoundary>
   </React.StrictMode>

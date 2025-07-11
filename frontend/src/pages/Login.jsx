@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { login } from '../store/authSlice';
 import PropTypes from 'prop-types';
-import '../styles/Auth.scss';
+import '../styles/login.scss';
 import RememberMeTooltip from '../components/common/RememberMeTooltip';
 
 const LoginPage = ({ subdomain }) => {
@@ -12,7 +13,10 @@ const LoginPage = ({ subdomain }) => {
   });
   const [isLoading, setIsLoading] = React.useState(false);
   const [rememberMe, setRememberMe] = React.useState(false);
-  const { login, error: authError } = useAuth();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const authError = useSelector((state) => state.auth.error);
+  const authStatus = useSelector((state) => state.auth.status);
   const [error, setError] = React.useState('');
 
   React.useEffect(() => {
@@ -32,11 +36,24 @@ const LoginPage = ({ subdomain }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const success = await login(formData.email, formData.password);
+    const resultAction = await dispatch(
+      login({ email: formData.email, password: formData.password, rememberMe })
+    );
     setIsLoading(false);
-    if (!success) {
-      // error will be set by useEffect above
+    // If login was successful, redirect to admin page with subdomain
+    if (login.fulfilled.match(resultAction)) {
+      // Use subdomain from props or user object
+      const user = resultAction.payload.user;
+      const restaurantSubdomain =
+        user && user.restaurant_subdomain ? user.restaurant_subdomain : subdomain || '';
+      const appHost = import.meta.env.VITE_APP_HOST || window.location.host.replace(/^.*?\./, '');
+      if (restaurantSubdomain) {
+        window.location.href = `//${restaurantSubdomain}.${appHost}/admin`;
+      } else {
+        navigate('/admin');
+      }
     }
+    // error will be set by useEffect above
   };
 
   return (
@@ -79,32 +96,33 @@ const LoginPage = ({ subdomain }) => {
             />
           </div>
 
-          <div
-            className="form-group"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="form-group form-group-flex">
+            <div className="remember-me-flex">
               <input
                 type="checkbox"
                 id="rememberMe"
                 name="rememberMe"
                 checked={rememberMe}
                 onChange={handleRememberMe}
-                style={{ marginRight: 6 }}
+                className="remember-me-checkbox"
               />
-              <label htmlFor="rememberMe" style={{ marginBottom: 0 }}>
+              <label htmlFor="rememberMe" className="remember-me-label">
                 Lembrar de mim
               </label>
               <RememberMeTooltip />
             </div>
-            <Link to="/forgot-password" className="auth-link" style={{ fontSize: '0.95em' }}>
+            <Link to="/forgot-password" className="auth-link forgot-link">
               Esqueceu a senha?
             </Link>
           </div>
 
           <div className="form-group">
-            <button type="submit" disabled={isLoading} className="auth-button">
-              {isLoading ? 'Logging in...' : 'Login'}
+            <button
+              type="submit"
+              disabled={isLoading || authStatus === 'loading'}
+              className="menu-btn btn btn-primary btn-sm login-entrar-btn"
+            >
+              {isLoading || authStatus === 'loading' ? 'Logging in...' : 'Entrar'}
             </button>
           </div>
 

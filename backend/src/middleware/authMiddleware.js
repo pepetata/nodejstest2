@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const userModel = require('../models/userModel');
+const UserModel = require('../models/userModel');
+const userModel = new UserModel();
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -10,7 +11,9 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('[authMiddleware] Decoded userId from JWT:', decoded.userId);
     const user = await userModel.findById(decoded.userId);
+    console.log('[authMiddleware] userModel.findById result:', user);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid token. User not found.' });
@@ -19,6 +22,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('[authMiddleware] Error during authentication:', error);
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Invalid token.' });
     }

@@ -17,6 +17,10 @@ router.post(
 router.post('/login', validateLogin, authController.login);
 
 // Protected routes
+
+// Get current authenticated user
+router.get('/me', authMiddleware, authController.me);
+
 router.post('/logout', authMiddleware, authController.logout);
 
 module.exports = router;

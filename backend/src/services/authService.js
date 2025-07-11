@@ -89,8 +89,10 @@ class AuthService {
       // Generate token
       const token = generateToken(user.id);
       serviceLogger.info('User logged in successfully', { userId: user.id });
+      // Sanitize user before returning (remove password)
+      const { password: _pw, ...userSafe } = user;
       return {
-        user: { id: user.id, email: user.email, name: user.name },
+        user: userSafe,
         token,
       };
     } catch (error) {

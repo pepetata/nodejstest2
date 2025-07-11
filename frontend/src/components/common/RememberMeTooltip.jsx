@@ -17,14 +17,16 @@ class RememberMeTooltip extends React.Component {
         onFocus={this.showTooltip}
         onBlur={this.hideTooltip}
       >
+        {/* Modern info icon SVG */}
         <svg
+          xmlns="http://www.w3.org/2000/svg"
           width="16"
           height="16"
           fill="currentColor"
           viewBox="0 0 16 16"
           style={{ cursor: 'pointer' }}
         >
-          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 13A6 6 0 1 1 8 2a6 6 0 0 1 0 12zm.93-9.412-1 4.5a.5.5 0 0 0 .49.612h.02a.5.5 0 0 0 .49-.388l.5-2.5a.5.5 0 0 0-.98-.224l-.5 2.5a1.5 1.5 0 1 1 2.98 0 .5.5 0 0 0 .98 0 2.5 2.5 0 1 0-4.98 0 .5.5 0 0 0 .98 0 1.5 1.5 0 1 1 2.98 0 .5.5 0 0 0 .98 0 2.5 2.5 0 1 0-4.98 0 .5.5 0 0 0 .98 0 1.5 1.5 0 1 1 2.98 0 .5.5 0 0 0 .98 0 2.5 2.5 0 1 0-4.98 0 .5.5 0 0 0 .98 0z" />
+          <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 12.5A5.5 5.5 0 1 1 8 2.5a5.5 5.5 0 0 1 0 11zm.93-7.412a.5.5 0 0 0-.858-.514l-1 1.5a.5.5 0 0 0 .858.514l1-1.5zm-.93 2.912a.5.5 0 0 0-.5.5v2a.5.5 0 0 0 1 0v-2a.5.5 0 0 0-.5-.5z" />
         </svg>
         <span
           className="remember-me-tooltip"

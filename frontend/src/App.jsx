@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { useAuth } from './hooks/useAuth';
+import { useSelector } from 'react-redux';
 import Layout from './components/common/Layout';
 
 // Pages
@@ -12,7 +12,7 @@ import Login from './pages/Login.jsx';
 import ConfirmEmail from './pages/ConfirmEmail.jsx';
 
 function App({ getSubdomain }) {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useSelector((state) => !!state.auth.user);
   const subdomain = getSubdomain ? getSubdomain() : null;
   console.log(`Subdomain detected: ${subdomain}`);
 
