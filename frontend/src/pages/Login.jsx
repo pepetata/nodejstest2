@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import PropTypes from 'prop-types';
 import '../styles/Auth.scss';
 
-const LoginPage = () => {
+const LoginPage = ({ subdomain }) => {
   const [formData, setFormData] = React.useState({
     email: '',
     password: '',
@@ -90,6 +91,10 @@ const LoginPage = () => {
       </div>
     </div>
   );
+};
+
+LoginPage.propTypes = {
+  subdomain: PropTypes.string,
 };
 
 export default LoginPage;

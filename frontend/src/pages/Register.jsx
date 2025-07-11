@@ -1632,6 +1632,10 @@ function RegisterPage() {
         <label htmlFor="restaurantUrlName" className="form-label">
           Nome para URL do Restaurante *
         </label>
+        {/* Red note: URL name cannot be changed after creation */}
+        <div style={{ color: 'red', fontWeight: 'bold', marginBottom: '6px' }}>
+          Atenção: este nome não poderá ser alterado após a criação do restaurante.
+        </div>
         <input
           type="text"
           id="restaurantUrlName"

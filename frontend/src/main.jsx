@@ -11,6 +11,16 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 // Import our global styles with color scheme
 import './styles/global.scss';
 
+function getSubdomain() {
+  if (typeof window === 'undefined') return null;
+  const host = window.location.hostname;
+  // e.g. restaurant1.localhost or restaurant1.alacarteapp.com
+  const match = host.match(/^([^.]+)\.localhost$/i);
+  console.log(`Subdomain: ${match ? match[1] : 'none'}`);
+  if (match) return match[1];
+  return null;
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
@@ -22,7 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       >
         <AuthProvider>
           <CartProvider>
-            <App />
+            <App getSubdomain={getSubdomain} />
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -8,6 +8,7 @@ const requestLogger = require('./src/middleware/requestLogger');
 const XSSMiddleware = require('./src/middleware/xssMiddleware');
 const ApiVersioningMiddleware = require('./src/middleware/apiVersioningMiddleware');
 const RateLimitMiddleware = require('./src/middleware/rateLimitMiddleware');
+const path = require('path');
 
 // Import versioned routes
 const v1Routes = require('./src/routes/v1');
@@ -52,6 +53,24 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/restaurants', restaurantRoutes);
+
+// Serve dynamic favicon based on subdomain
+app.get('/favicon.ico', (req, res) => {
+  const host = req.hostname;
+  const match = host.match(/^([^.]+)\.localhost$/i);
+  const restaurant = match ? match[1] : null;
+  if (restaurant) {
+    const customFavicon = path.join(__dirname, 'public', 'favicons', restaurant, 'favicon.ico');
+    res.sendFile(customFavicon, (err) => {
+      if (err) {
+        // fallback to default favicon
+        res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+      }
+    });
+  } else {
+    res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+  }
+});
 
 // Main API documentation endpoint
 app.get('/api', (req, res) => {

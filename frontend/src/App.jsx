@@ -11,8 +11,10 @@ import NotFound from './pages/NotFound.jsx';
 import Login from './pages/Login.jsx';
 import ConfirmEmail from './pages/ConfirmEmail.jsx';
 
-function App() {
+function App({ getSubdomain }) {
   const { isAuthenticated } = useAuth();
+  const subdomain = getSubdomain ? getSubdomain() : null;
+  console.log(`Subdomain detected: ${subdomain}`);
 
   // Protected route wrapper
   const ProtectedRoute = ({ children }) => {
@@ -32,7 +34,7 @@ function App() {
       <Route path="/" element={<Layout />}>
         {/* Restaurant selection landing page */}
         <Route index element={<Home source="/" />} />
-        <Route path="login" element={<Login />} />
+        <Route path="login" element={<Login subdomain={subdomain} />} />
         <Route path="register" element={<Register />} />
         <Route path="register-restaurant" element={<Register />} />
         <Route path="confirm-email" element={<ConfirmEmail />} />
@@ -105,5 +107,9 @@ function App() {
     </Routes>
   );
 }
+
+App.propTypes = {
+  getSubdomain: PropTypes.func,
+};
 
 export default App;
