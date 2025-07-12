@@ -6,6 +6,28 @@ const userValidationSchemas = require('../validations/userValidations');
 const asyncHandler = require('../utils/asyncHandler');
 
 /**
+ * Reset password (with token)
+ * POST /api/v1/users/reset-password
+ * @route POST /api/v1/users/reset-password
+ * @access Public
+ * @body { token, password }
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  const requestId = req.requestId || `req_${Date.now()}`;
+  const controllerLogger = logger.child({ operation: 'resetPassword', requestId });
+  controllerLogger.info('Reset password request', { token });
+  try {
+    const userService = new UserService();
+    await userService.resetPassword(token, password);
+    return res.status(200).json({ message: 'Senha redefinida com sucesso.' });
+  } catch (error) {
+    controllerLogger.error('Reset password failed', { error: error.message });
+    return res.status(400).json({ error: { message: error.message } });
+  }
+});
+
+/**
  * User Controller
  * Handles HTTP requests for user management with comprehensive features:
  * - Input validation with centralized schemas
@@ -19,6 +41,29 @@ const asyncHandler = require('../utils/asyncHandler');
  * - Consistent response formatting
  */
 class UserController {
+  /**
+   * Forgot password (request reset link)
+   * POST /api/v1/users/forgot-password
+   * @route POST /api/v1/users/forgot-password
+   * @access Public
+   * @body { email }
+   */
+  forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const controllerLogger = this.logger.child({ operation: 'forgotPassword', requestId });
+    controllerLogger.info('Forgot password request', { email });
+    try {
+      await this.userService.forgotPassword(email);
+      return res.status(200).json({
+        message:
+          'Se um usuário com este e-mail existir, você receberá um link para redefinir sua senha.',
+      });
+    } catch (error) {
+      controllerLogger.error('Forgot password failed', { error: error.message });
+      return res.status(400).json({ error: { message: error.message } });
+    }
+  });
   constructor(userServiceInstance = null) {
     this.userService = userServiceInstance || new UserService();
     // Use a new Logger instance for this.logger to ensure .child returns a full Logger
@@ -759,4 +804,7 @@ class UserController {
   }
 }
 
-module.exports = UserController;
+module.exports = {
+  UserController,
+  resetPassword,
+};

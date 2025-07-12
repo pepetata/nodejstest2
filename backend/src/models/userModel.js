@@ -13,6 +13,27 @@ class UserModel extends BaseModel {
   }
 
   /**
+   * Find user by password reset token
+   */
+  async findByPasswordResetToken(token) {
+    this.logger.debug('Finding user by password reset token', { token });
+    try {
+      const result = await this.find({ password_reset_token: token });
+      const user = result.length > 0 ? result[0] : null;
+      if (user) {
+        return this.sanitizeOutput(user, this.sensitiveFields);
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to find user by password reset token', {
+        token,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Find user by email for login (returns full user object, including password)
    * Use ONLY for authentication logic, never expose result to client
    */
@@ -116,6 +137,8 @@ class UserModel extends BaseModel {
       email_confirmed: Joi.boolean(),
       first_login_password_change: Joi.boolean(),
       last_login_at: Joi.date(),
+      password_reset_token: Joi.string().allow(null),
+      password_reset_expires: Joi.date().allow(null),
     }).min(1);
   }
 
@@ -464,7 +487,7 @@ class UserModel extends BaseModel {
       const { clause, params } = this.buildSetClause(validatedData);
       const query = `
         UPDATE ${this.tableName}
-        SET ${clause}, updated_at = CURRENT_TIMESTAMP
+        SET ${clause}
         WHERE id = $${params.length + 1}
         RETURNING *
       `;

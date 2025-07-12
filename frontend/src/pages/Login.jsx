@@ -111,7 +111,11 @@ const LoginPage = ({ subdomain }) => {
               </label>
               <RememberMeTooltip />
             </div>
-            <Link to="/forgot-password" className="auth-link forgot-link">
+            <Link
+              to="/forgot-password"
+              className="auth-link forgot-link"
+              state={{ email: formData.email }}
+            >
               Esqueceu a senha?
             </Link>
           </div>
@@ -125,16 +129,15 @@ const LoginPage = ({ subdomain }) => {
               {isLoading || authStatus === 'loading' ? 'Logging in...' : 'Entrar'}
             </button>
           </div>
-
-          <div className="auth-footer">
-            <p>
-              Don&apos;t have an account?{' '}
-              <Link to="/register" className="auth-link">
-                Register here
-              </Link>
-            </p>
-          </div>
         </form>
+        <div className="auth-footer">
+          <p>
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="auth-link">
+              Register here
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

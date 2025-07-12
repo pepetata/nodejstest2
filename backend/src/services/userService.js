@@ -8,12 +8,92 @@ const crypto = require('crypto');
 const ejs = require('ejs');
 const path = require('path');
 
-/**
- * User Service
- * Handles business logic for user management operations
- * Provides dependency injection interface for controllers
- */
+// ...existing code...
 class UserService {
+  /**
+   * Forgot password (send reset link)
+   * @param {string} email
+   */
+  async forgotPassword(email) {
+    this.logger.info('Forgot password requested', { email });
+    if (!email) throw new Error('E-mail é obrigatório.');
+    const user = await this.userModel.findByEmail(email);
+    // Always respond as if successful for security
+    if (!user) return;
+    // Generate reset token and expiry
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await this.userModel.update(user.id, {
+      password_reset_token: token,
+      password_reset_expires: expires,
+    });
+    // Send email using professional template
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const resetUrl = `${appUrl}/reset-password?token=${token}`;
+    const logoUrl = `${appUrl}/images/logo.png`;
+    const year = new Date().getFullYear();
+    const templatePath = path.join(__dirname, '../templates/passwordResetEmail.ejs');
+    try {
+      const html = await ejs.renderFile(templatePath, {
+        name: user.full_name || user.username || user.email,
+        resetUrl,
+        year,
+        logoUrl,
+      });
+      await sendMail({
+        to: user.email,
+        subject: 'Redefinição de senha',
+        html,
+        text: `Olá, recebemos uma solicitação para redefinir sua senha no À La Carte. Se não foi você, ignore este e-mail. Para redefinir, acesse: ${resetUrl}`,
+      });
+      this.logger.info('Password reset email sent', { to: user.email });
+    } catch (mailErr) {
+      this.logger.error('Failed to send password reset email', { error: mailErr.message });
+    }
+  }
+
+  /**
+   * Reset password using token
+   * @param {string} token
+   * @param {string} newPassword
+   */
+  async resetPassword(token, newPassword) {
+    this.logger.info('Reset password requested', { token });
+    if (!token || !newPassword) throw new Error('Token e nova senha são obrigatórios.');
+    // Find user by password reset token
+    const user = await this.userModel.findByPasswordResetToken(token);
+    if (!user) throw new Error('Token de redefinição inválido ou expirado.');
+    if (!user.password_reset_expires || new Date(user.password_reset_expires) < new Date()) {
+      throw new Error('Token de redefinição expirado. Solicite um novo link.');
+    }
+    // Update password, clear token/expiry
+    await this.userModel.update(user.id, {
+      password: await this.userModel.hashPassword(newPassword),
+      password_reset_token: null,
+      password_reset_expires: null,
+    });
+    // Send success email (optional)
+    try {
+      const appUrl = process.env.APP_URL || 'http://localhost:3000';
+      const logoUrl = `${appUrl}/images/logo.png`;
+      const year = new Date().getFullYear();
+      const templatePath = path.join(__dirname, '../templates/passwordResetSuccessEmail.ejs');
+      const html = await ejs.renderFile(templatePath, {
+        name: user.full_name || user.username || user.email,
+        year,
+        logoUrl,
+      });
+      await sendMail({
+        to: user.email,
+        subject: 'Senha redefinida com sucesso',
+        html,
+        text: `Olá, sua senha foi redefinida com sucesso no À La Carte. Se não foi você, entre em contato imediatamente.`,
+      });
+      this.logger.info('Password reset success email sent', { to: user.email });
+    } catch (mailErr) {
+      this.logger.error('Failed to send password reset success email', { error: mailErr.message });
+    }
+  }
   constructor(userModelInstance = userModel) {
     this.userModel = userModelInstance;
     this.logger = logger.child({ service: 'UserService' });

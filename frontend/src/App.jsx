@@ -10,6 +10,8 @@ import Register from './pages/Register.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Login from './pages/Login.jsx';
 import ConfirmEmail from './pages/ConfirmEmail.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 
 function App({ getSubdomain }) {
   const isAuthenticated = useSelector((state) => !!state.auth.user);
@@ -38,6 +40,9 @@ function App({ getSubdomain }) {
         <Route path="register" element={<Register />} />
         <Route path="register-restaurant" element={<Register />} />
         <Route path="confirm-email" element={<ConfirmEmail />} />
+        {/* Forgot/Reset password routes must be top-level, not nested */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* Main restaurant routes with common Layout */}

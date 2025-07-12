@@ -1,5 +1,5 @@
 const express = require('express');
-const UserController = require('../controllers/userController');
+const { UserController, resetPassword } = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 const ValidationMiddleware = require('../middleware/validationMiddleware');
 const XSSMiddleware = require('../middleware/xssMiddleware');
@@ -8,6 +8,20 @@ const userValidationSchemas = require('../validations/userValidations');
 
 const router = express.Router();
 const userController = new UserController();
+
+/**
+ * @route POST /api/v1/users/reset-password
+ * @desc Reset user password using token
+ * @access Public
+ */
+router.post('/reset-password', resetPassword);
+
+/**
+ * @route POST /api/v1/users/forgot-password
+ * @desc Request password reset link
+ * @access Public
+ */
+router.post('/forgot-password', userController.forgotPassword);
 
 /**
  * User Management Routes

@@ -28,8 +28,23 @@ const AppNavbar = () => {
     <Navbar expand="md" fixed="top" className="py-2 navbar-bg-logo">
       <Container>
         {/* Home button on the left (tablet/desktop only) */}
+
         <Nav className="me-auto d-none d-md-flex">
-          <Nav.Link as={Link} to="/" className="home-btn">
+          <Nav.Link
+            as="button"
+            className="home-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+            onClick={() => {
+              // Always go to main app host (no subdomain)
+              window.location.href = import.meta.env.VITE_API_URL || 'http://localhost:3000/';
+            }}
+          >
             Home
           </Nav.Link>
         </Nav>
@@ -48,8 +63,23 @@ const AppNavbar = () => {
             {/* All buttons on the right side when collapsed */}
             <div className="ms-auto d-flex flex-column flex-md-row align-items-center gap-2">
               {/* Home button (mobile only) - include in the right side stack */}
+
               <div className="d-md-none">
-                <Nav.Link as={Link} to="/" className="home-btn">
+                <Nav.Link
+                  as="button"
+                  className="home-btn"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    color: 'inherit',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    window.location.href =
+                      import.meta.env.VITE_APP_HOST || 'http://localhost:3000/';
+                  }}
+                >
                   Home
                 </Nav.Link>
               </div>
