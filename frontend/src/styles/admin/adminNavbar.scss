@@ -1,0 +1,211 @@
+// Import SCSS modules and variables
+@use 'sass:color';
+@use '../variables.scss' as vars;
+
+.admin-navbar {
+  background: linear-gradient(
+    135deg,
+    vars.$primary 0%,
+    color.scale(vars.$primary, $lightness: -15%) 100%
+  );
+  border-bottom: 3px solid vars.$logoO;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+
+  .admin-navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    height: 80px;
+
+    @media (max-width: 768px) {
+      padding: 0 1rem;
+      height: 70px;
+    }
+  }
+
+  .admin-navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+
+    @media (max-width: 768px) {
+      gap: 1.5rem;
+    }
+  }
+
+  .admin-restaurant-logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    img {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+      @media (max-width: 768px) {
+        width: 40px;
+        height: 40px;
+      }
+    }
+
+    .admin-restaurant-name {
+      font-family: vars.$heading-font;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+      @media (max-width: 768px) {
+        font-size: 1rem;
+      }
+
+      @media (max-width: 480px) {
+        display: none;
+      }
+    }
+  }
+
+  .admin-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    @media (max-width: 1024px) {
+      gap: 0.25rem;
+    }
+
+    @media (max-width: 768px) {
+      display: none; // Hide on mobile - could implement hamburger menu later
+    }
+  }
+
+  .admin-nav-link {
+    display: inline-block;
+    padding: 0.75rem 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-family: vars.$body-font;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: white;
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    &.active {
+      color: white;
+      background-color: rgba(255, 255, 255, 0.15);
+      font-weight: 600;
+    }
+
+    @media (max-width: 1024px) {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  .admin-navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+
+    @media (max-width: 768px) {
+      gap: 1rem;
+    }
+  }
+
+  .admin-user-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .admin-user-welcome {
+      color: rgba(255, 255, 255, 0.9);
+      font-family: vars.$body-font;
+      font-size: 0.9rem;
+      font-weight: 500;
+
+      @media (max-width: 480px) {
+        display: none;
+      }
+    }
+
+    .admin-logout-btn {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      font-family: vars.$body-font;
+      font-weight: 500;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      @media (max-width: 480px) {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .admin-app-logo {
+    img {
+      width: 45px;
+      height: 45px;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+
+      &:hover {
+        transform: scale(1.05);
+      }
+
+      @media (max-width: 768px) {
+        width: 35px;
+        height: 35px;
+      }
+    }
+  }
+}
+
+// Mobile navigation toggle (for future implementation)
+.admin-mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+}

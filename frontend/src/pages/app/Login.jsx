@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../store/authSlice';
 import PropTypes from 'prop-types';
@@ -7,7 +7,8 @@ import '../../styles/login.scss';
 import RememberMeTooltip from '../../components/common/RememberMeTooltip';
 import userService from '../../services/userService';
 
-const LoginPage = ({ subdomain }) => {
+const LoginPage = ({ subdomain: _subdomain }) => {
+  const { restaurantSlug } = useParams();
   const [formData, setFormData] = React.useState({
     email: '',
     password: '',
@@ -101,17 +102,26 @@ const LoginPage = ({ subdomain }) => {
         login({ email: formData.email, password: formData.password, rememberMe })
       );
 
-      // If login was successful, redirect to admin page with subdomain
+      // If login was successful, redirect to admin page
       if (login.fulfilled.match(resultAction)) {
-        // Use subdomain from props or user object
-        const user = resultAction.payload.user;
-        const restaurantSubdomain =
-          user && user.restaurant_subdomain ? user.restaurant_subdomain : subdomain || '';
-        const appHost = import.meta.env.VITE_APP_HOST || window.location.host.replace(/^.*?\./, '');
-        if (restaurantSubdomain) {
-          window.location.href = `//${restaurantSubdomain}.${appHost}/admin`;
+        // Get the user's restaurant subdomain from the login response
+        const userRestaurantSubdomain = resultAction.payload?.user?.restaurant_subdomain;
+
+        console.log('Login successful, payload:', resultAction.payload); // Debug
+        console.log('User restaurant subdomain:', userRestaurantSubdomain); // Debug
+
+        if (userRestaurantSubdomain) {
+          // User has a restaurant associated, redirect to their restaurant subdomain admin
+          const token = resultAction.payload.token;
+          const redirectUrl = `http://${userRestaurantSubdomain}.localhost:3000/admin?token=${encodeURIComponent(token)}&auth=true`;
+          console.log('Redirecting to:', redirectUrl); // Debug
+          window.location.href = redirectUrl;
+        } else if (restaurantSlug) {
+          // Fallback: if we have a restaurant slug (user is on restaurant page), redirect to restaurant admin
+          navigate(`/${restaurantSlug}/admin`);
         } else {
-          navigate('/admin');
+          // No restaurant association, redirect to home
+          navigate('/');
         }
       } else if (login.rejected.match(resultAction)) {
         // Check if it's a pending confirmation error

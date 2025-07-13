@@ -61,7 +61,7 @@ class RateLimitMiddleware {
     if (!this._authRateLimiter) {
       this._authRateLimiter = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 5, // limita cada IP a 5 requisições por 15 minutos
+        max: 20, // limita cada IP a 5 requisições por 15 minutos
         message: {
           error: 'Muitas tentativas de login',
           message:

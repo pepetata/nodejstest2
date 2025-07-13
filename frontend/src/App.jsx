@@ -13,6 +13,15 @@ import ConfirmEmail from './pages/app/ConfirmEmail.jsx';
 import ForgotPassword from './pages/app/ForgotPassword.jsx';
 import ResetPassword from './pages/app/ResetPassword.jsx';
 
+// Admin Components
+import AdminLayout from './components/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
+import AdminMenuPage from './pages/admin/AdminMenuPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminRestaurantProfilePage from './pages/admin/AdminRestaurantProfilePage';
+import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
+
 function App({ getSubdomain }) {
   const isAuthenticated = useSelector((state) => !!state.auth.user);
   const subdomain = getSubdomain ? getSubdomain() : null;
@@ -32,83 +41,182 @@ function App({ getSubdomain }) {
 
   return (
     <Routes>
-      {/* Routes that use the Layout (with navbar) */}
-      <Route path="/" element={<Layout />}>
-        {/* Restaurant selection landing page */}
-        <Route index element={<Home source="/" />} />
-        <Route path="login" element={<Login subdomain={subdomain} />} />
-        <Route path="register" element={<Register />} />
-        <Route path="register-restaurant" element={<Register />} />
-        <Route path="confirm-email" element={<ConfirmEmail />} />
-        {/* Forgot/Reset password routes must be top-level, not nested */}
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-      </Route>
+      {subdomain ? (
+        // Routes for when we're on a restaurant subdomain (e.g., restaurant.localhost:3000)
+        <>
+          {console.log('Rendering subdomain routes for:', subdomain)}
 
-      {/* Main restaurant routes with common Layout */}
-      <Route path="/:restaurantSlug" element={<Layout />}>
-        {/* Public routes */}
-        <Route index element={<Navigate to="menu" replace />} />
-        <Route path="menu" element={<MenuPage />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
+          {/* Admin routes for restaurant subdomain */}
+          <Route
+            path="/admin"
+            element={
+              <>
+                {console.log('Admin route matched!')}
+                <AdminProtectedRoute>
+                  <AdminLayout />
+                </AdminProtectedRoute>
+              </>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="menu" element={<AdminMenuPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
+            <Route path="user-profile" element={<AdminUserProfilePage />} />
+          </Route>
 
-        {/* Protected routes */}
-        <Route
-          path="order"
-          element={
-            <ProtectedRoute>
-              {/* <OrderPage /> */}
-              <Home source="/order" />
-            </ProtectedRoute>
-          }
-        />
+          {/* Waiter portal for subdomain */}
+          <Route
+            path="/waiter"
+            element={
+              <ProtectedRoute>
+                <Home source="/waiter" />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* 404 for restaurant pages */}
-        <Route path="*" element={<NotFound />} />
-      </Route>
+          {/* KDS for subdomain */}
+          <Route
+            path="/kds/:area"
+            element={
+              <ProtectedRoute>
+                <Home source="/kds/:area" />
+              </ProtectedRoute>
+            }
+          />
 
-      {/* Admin portal */}
-      <Route
-        path="/:restaurantSlug/admin"
-        element={
-          <ProtectedRoute>
-            {/* <AdminLayout /> */}
-            <Home source="/:restaurantSlug/admin" />
-          </ProtectedRoute>
-        }
-      >
-        {/* Admin routes will go here */}
-        {/* <Route index element={<AdminDashboard />} /> */}
-      </Route>
+          {/* Menu page */}
+          <Route
+            path="/menu"
+            element={
+              <Layout>
+                <MenuPage />
+              </Layout>
+            }
+          />
 
-      {/* Waiter portal */}
-      <Route
-        path="/:restaurantSlug/waiter"
-        element={
-          <ProtectedRoute>
-            {/* <WaiterLayout /> */}
-            <Home source="/:restaurantSlug/waiter" />
-          </ProtectedRoute>
-        }
-      >
-        {/* Waiter routes will go here */}
-        {/* <Route index element={<WaiterDashboard />} /> */}
-      </Route>
+          {/* Login page */}
+          <Route
+            path="/login"
+            element={
+              <Layout>
+                <Login subdomain={subdomain} />
+              </Layout>
+            }
+          />
 
-      {/* Kitchen Display System (KDS) */}
-      <Route
-        path="/:restaurantSlug/kds/:area"
-        element={
-          <ProtectedRoute>
-            {/* <KDSLayout /> */}
-            <Home source="/:restaurantSlug/kds/:area" />
-          </ProtectedRoute>
-        }
-      />
+          {/* Register page */}
+          <Route
+            path="/register"
+            element={
+              <Layout>
+                <Register />
+              </Layout>
+            }
+          />
 
-      {/* Global 404 */}
-      <Route path="*" element={<NotFound />} />
+          {/* Order page */}
+          <Route
+            path="/order"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Home source="/order" />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Root redirect */}
+          <Route path="/" element={<Navigate to="/menu" replace />} />
+
+          {/* 404 for restaurant subdomain */}
+          <Route path="*" element={<NotFound />} />
+        </>
+      ) : (
+        // Routes for main app (localhost:3000 without subdomain)
+        <>
+          {/* Routes that use the Layout (with navbar) */}
+          <Route path="/" element={<Layout />}>
+            {/* Restaurant selection landing page */}
+            <Route index element={<Home source="/" />} />
+            <Route path="login" element={<Login subdomain={subdomain} />} />
+            <Route path="register" element={<Register />} />
+            <Route path="register-restaurant" element={<Register />} />
+            <Route path="confirm-email" element={<ConfirmEmail />} />
+            {/* Forgot/Reset password routes must be top-level, not nested */}
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Route>
+
+          {/* Main restaurant routes with common Layout */}
+          <Route path="/:restaurantSlug" element={<Layout />}>
+            {/* Public routes */}
+            <Route index element={<Navigate to="menu" replace />} />
+            <Route path="menu" element={<MenuPage />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+
+            {/* Protected routes */}
+            <Route
+              path="order"
+              element={
+                <ProtectedRoute>
+                  {/* <OrderPage /> */}
+                  <Home source="/order" />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 404 for restaurant pages */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
+
+          {/* Admin portal */}
+          <Route
+            path="/:restaurantSlug/admin"
+            element={
+              <AdminProtectedRoute>
+                <AdminLayout />
+              </AdminProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="menu" element={<AdminMenuPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
+            <Route path="user-profile" element={<AdminUserProfilePage />} />
+          </Route>
+
+          {/* Waiter portal */}
+          <Route
+            path="/:restaurantSlug/waiter"
+            element={
+              <ProtectedRoute>
+                {/* <WaiterLayout /> */}
+                <Home source="/:restaurantSlug/waiter" />
+              </ProtectedRoute>
+            }
+          >
+            {/* Waiter routes will go here */}
+            {/* <Route index element={<WaiterDashboard />} /> */}
+          </Route>
+
+          {/* Kitchen Display System (KDS) */}
+          <Route
+            path="/:restaurantSlug/kds/:area"
+            element={
+              <ProtectedRoute>
+                {/* <KDSLayout /> */}
+                <Home source="/:restaurantSlug/kds/:area" />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Global 404 */}
+          <Route path="*" element={<NotFound />} />
+        </>
+      )}
     </Routes>
   );
 }
