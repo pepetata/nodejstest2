@@ -9,16 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
 
-    -- Role management
-    role VARCHAR(50) NOT NULL CHECK (role IN (
-        'superadmin', -- a la carte management
-        'restaurant_administrator',
-        'location_administrator',
-        'waiter',
-        'food_runner',
-        'kds_operator',
-        'pos_operator'
-    )),
+    -- Note: Role management is now handled via roles and user_roles tables
+    -- See migrations 011_create_roles_and_user_roles_tables.sql
 
     -- Restaurant association (for restaurant_administrator role)
     restaurant_id UUID, -- References restaurants(id), will be added after restaurants table creation
@@ -45,7 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create indexes for users table
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE username IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+-- Note: Role indexes are now in the user_roles table
 CREATE INDEX IF NOT EXISTS idx_users_restaurant_id ON users(restaurant_id) WHERE restaurant_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_users_email_token ON users(email_confirmation_token) WHERE email_confirmation_token IS NOT NULL;

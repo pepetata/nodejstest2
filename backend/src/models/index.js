@@ -9,6 +9,10 @@ const BillingAddressModel = require('./BillingAddressModel');
 const PaymentInfoModel = require('./PaymentInfoModel');
 const BaseModel = require('./BaseModel');
 
+// Role models
+const RoleModel = require('./RoleModel');
+const UserRoleModel = require('./UserRoleModel');
+
 // Legacy models (keeping for backward compatibility)
 const userModel = require('./userModel');
 const menuItemModel = require('./menuItemModel');
@@ -21,6 +25,10 @@ module.exports = {
   BillingAddressModel,
   PaymentInfoModel,
   BaseModel,
+
+  // Role models
+  RoleModel,
+  UserRoleModel,
 
   // Legacy models
   userModel,

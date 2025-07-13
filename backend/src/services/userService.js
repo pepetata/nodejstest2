@@ -1,4 +1,6 @@
 const UserModel = require('../models/userModel');
+const RoleModel = require('../models/RoleModel');
+const UserRoleModel = require('../models/UserRoleModel');
 const userModel = new UserModel();
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
@@ -96,6 +98,8 @@ class UserService {
   }
   constructor(userModelInstance = userModel) {
     this.userModel = userModelInstance;
+    this.roleModel = new RoleModel();
+    this.userRoleModel = new UserRoleModel();
     this.logger = logger.child({ service: 'UserService' });
   }
 
@@ -803,12 +807,313 @@ class UserService {
   }
 
   /**
-   * Check if user is admin (any admin role)
+   * Check if user is admin (any admin role) - Updated for multiple roles
    * @param {Object} user - User object
    * @returns {Boolean} Is admin
    */
   isAdmin(user) {
-    return ['restaurant_administrator', 'location_administrator'].includes(user.role);
+    // Backward compatibility - check old role field
+    if (user.role) {
+      return ['restaurant_administrator', 'location_administrator'].includes(user.role);
+    }
+    // New role system - check is_admin flag
+    return user.is_admin === true;
+  }
+
+  // ============================================
+  // NEW ROLE SYSTEM METHODS
+  // ============================================
+
+  /**
+   * Create a user with multiple roles
+   * @param {Object} userData - User data
+   * @param {Array} roles - Array of role assignments { roleName, restaurantId?, locationId?, isPrimary? }
+   * @param {String} createdBy - ID of user creating this user
+   * @returns {Object} Created user with roles
+   */
+  async createUserWithRoles(userData, roles = [], createdBy = null) {
+    this.logger.info('Creating user with roles', {
+      email: userData.email,
+      username: userData.username,
+      rolesCount: roles.length,
+    });
+
+    try {
+      // Create the user first (using existing createUser method)
+      const user = await this.createUser(userData, { id: createdBy });
+
+      // Assign roles if provided
+      if (roles.length > 0) {
+        await this.assignRolesToUser(user.id, roles, createdBy);
+      }
+
+      // Return user with roles
+      const userWithRoles = await this.getUserWithRoles(user.id);
+
+      this.logger.info('User created successfully with roles', {
+        userId: user.id,
+        rolesAssigned: roles.length,
+      });
+
+      return userWithRoles;
+    } catch (error) {
+      this.logger.error('Failed to create user with roles', {
+        userData: { email: userData.email, username: userData.username },
+        roles,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create a restaurant administrator
+   * @param {Object} userData - User data
+   * @param {String} restaurantId - Restaurant ID
+   * @param {String} createdBy - ID of user creating this user
+   * @returns {Object} Created restaurant administrator
+   */
+  async createRestaurantAdministrator(userData, restaurantId, createdBy = null) {
+    this.logger.info('Creating restaurant administrator', {
+      email: userData.email,
+      restaurantId,
+    });
+
+    // Ensure email is required for restaurant administrators
+    if (!userData.email) {
+      throw new Error('Email é obrigatório para administradores de restaurante');
+    }
+
+    const roles = [
+      {
+        roleName: 'restaurant_administrator',
+        restaurantId: restaurantId,
+        isPrimary: true,
+      },
+    ];
+
+    return await this.createUserWithRoles(
+      { ...userData, restaurant_id: restaurantId },
+      roles,
+      createdBy
+    );
+  }
+
+  /**
+   * Assign roles to a user
+   * @param {String} userId - User ID
+   * @param {Array} roles - Array of role assignments
+   * @param {String} assignedBy - ID of user assigning roles
+   */
+  async assignRolesToUser(userId, roles, assignedBy = null) {
+    this.logger.info('Assigning roles to user', { userId, rolesCount: roles.length });
+
+    try {
+      for (const roleAssignment of roles) {
+        const {
+          roleName,
+          restaurantId = null,
+          locationId = null,
+          isPrimary = false,
+        } = roleAssignment;
+
+        // Find the role
+        const role = await this.roleModel.findByName(roleName);
+        if (!role) {
+          throw new Error(`Role '${roleName}' not found`);
+        }
+
+        // Create the assignment
+        await this.userRoleModel.assignRole({
+          user_id: userId,
+          role_id: role.id,
+          restaurant_id: restaurantId,
+          location_id: locationId,
+          is_primary_role: isPrimary,
+          assigned_by: assignedBy,
+        });
+      }
+
+      this.logger.info('Roles assigned successfully', { userId, rolesCount: roles.length });
+    } catch (error) {
+      this.logger.error('Failed to assign roles to user', {
+        userId,
+        roles,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get user with all roles
+   * @param {String} userId - User ID
+   * @returns {Object} User with roles information
+   */
+  async getUserWithRoles(userId) {
+    this.logger.debug('Getting user with roles', { userId });
+
+    try {
+      // Get basic user data
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get user roles
+      const roles = await this.userRoleModel.getUserRoles(userId);
+      const primaryRole = await this.userRoleModel.getUserPrimaryRole(userId);
+
+      return {
+        ...user,
+        roles: roles || [],
+        primaryRole: primaryRole || null,
+        // Backward compatibility
+        role: primaryRole?.role_name || null,
+        is_admin: primaryRole?.is_admin_role || false,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get user with roles', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user has a specific role
+   * @param {String} userId - User ID
+   * @param {String} roleName - Role name
+   * @param {Object} context - Optional context (restaurant_id, location_id)
+   * @returns {Boolean} True if user has the role
+   */
+  async userHasRole(userId, roleName, context = {}) {
+    try {
+      return await this.userRoleModel.userHasRole(userId, roleName, context);
+    } catch (error) {
+      this.logger.error('Failed to check user role', {
+        userId,
+        roleName,
+        context,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Check if user has admin access
+   * @param {String} userId - User ID
+   * @returns {Boolean} True if user has admin access
+   */
+  async userHasAdminAccess(userId) {
+    try {
+      return await this.userRoleModel.userHasAdminAccess(userId);
+    } catch (error) {
+      this.logger.error('Failed to check user admin access', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update user's primary role
+   * @param {String} userId - User ID
+   * @param {String} roleName - Role name to set as primary
+   * @returns {Boolean} True if successful
+   */
+  async setUserPrimaryRole(userId, roleName) {
+    this.logger.info('Setting user primary role', { userId, roleName });
+
+    try {
+      const role = await this.roleModel.findByName(roleName);
+      if (!role) {
+        throw new Error(`Role '${roleName}' not found`);
+      }
+
+      const success = await this.userRoleModel.setPrimaryRole(userId, role.id);
+
+      if (success) {
+        this.logger.info('Primary role set successfully', { userId, roleName });
+      } else {
+        this.logger.warn('Failed to set primary role', { userId, roleName });
+      }
+
+      return success;
+    } catch (error) {
+      this.logger.error('Failed to set user primary role', {
+        userId,
+        roleName,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Revoke role from user
+   * @param {String} userId - User ID
+   * @param {String} roleName - Role name to revoke
+   * @param {Object} context - Optional context (restaurant_id, location_id)
+   * @returns {Boolean} True if successful
+   */
+  async revokeUserRole(userId, roleName, context = {}) {
+    this.logger.info('Revoking user role', { userId, roleName, context });
+
+    try {
+      const role = await this.roleModel.findByName(roleName);
+      if (!role) {
+        throw new Error(`Role '${roleName}' not found`);
+      }
+
+      const success = await this.userRoleModel.revokeRole(userId, role.id, context);
+
+      if (success) {
+        this.logger.info('Role revoked successfully', { userId, roleName, context });
+      } else {
+        this.logger.warn('Failed to revoke role', { userId, roleName, context });
+      }
+
+      return success;
+    } catch (error) {
+      this.logger.error('Failed to revoke user role', {
+        userId,
+        roleName,
+        context,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get all available roles
+   * @returns {Array} Array of roles
+   */
+  async getAvailableRoles() {
+    try {
+      return await this.roleModel.getActiveRoles();
+    } catch (error) {
+      this.logger.error('Failed to get available roles', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get roles by scope
+   * @param {String} scope - Role scope (system, restaurant, location)
+   * @returns {Array} Array of roles
+   */
+  async getRolesByScope(scope) {
+    try {
+      return await this.roleModel.getRolesByScope(scope);
+    } catch (error) {
+      this.logger.error('Failed to get roles by scope', { scope, error: error.message });
+      throw error;
+    }
   }
 }
 

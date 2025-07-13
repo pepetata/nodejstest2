@@ -3,6 +3,7 @@ const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const { logger } = require('../utils/logger');
+
 class UserModel extends BaseModel {
   constructor() {
     super();
@@ -38,9 +39,9 @@ class UserModel extends BaseModel {
    * Use ONLY for authentication logic, never expose result to client
    */
   async findUserForLogin(email) {
-    this.logger.debug('Finding user for login by email (with restaurant join)', { email });
+    this.logger.debug('Finding user for login by email (with restaurant and role data)', { email });
     try {
-      // Join users with restaurants to get full restaurant data
+      // Join users with restaurants and primary role to get full data for authentication
       const query = `
         SELECT
           u.*,
@@ -49,9 +50,24 @@ class UserModel extends BaseModel {
           r.restaurant_url_name AS restaurant_subdomain,
           r.business_type AS restaurant_business_type,
           r.logo AS restaurant_logo,
-          r.favicon AS restaurant_favicon
+          r.favicon AS restaurant_favicon,
+          primary_role.role_name AS primary_role,
+          primary_role.role_display_name AS primary_role_display,
+          primary_role.is_admin_role AS is_admin
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
+        LEFT JOIN (
+          SELECT
+            ur.user_id,
+            roles.name as role_name,
+            roles.display_name as role_display_name,
+            roles.is_admin_role
+          FROM user_roles ur
+          JOIN roles ON ur.role_id = roles.id
+          WHERE ur.is_primary_role = true
+            AND ur.is_active = true
+            AND (ur.valid_until IS NULL OR ur.valid_until > CURRENT_TIMESTAMP)
+        ) primary_role ON u.id = primary_role.user_id
         WHERE LOWER(u.email) = $1
         LIMIT 1
       `;
@@ -65,13 +81,16 @@ class UserModel extends BaseModel {
           id: row.id,
           email: row.email,
           password: row.password, // Include for login validation
-          name: row.name,
-          role: row.role,
+          full_name: row.full_name,
+          username: row.username,
           status: row.status,
           restaurant_id: row.restaurant_id,
           restaurant_subdomain: row.restaurant_subdomain,
           created_at: row.created_at,
           updated_at: row.updated_at,
+          // Role information for backward compatibility
+          role: row.primary_role, // Primary role name
+          is_admin: row.is_admin,
         };
 
         // Add restaurant data if user has a restaurant
@@ -90,7 +109,7 @@ class UserModel extends BaseModel {
       }
       return null;
     } catch (error) {
-      this.logger.error('Failed to find user for login by email (with join)', {
+      this.logger.error('Failed to find user for login by email (with joins)', {
         email,
         error: error.message,
       });
@@ -106,17 +125,11 @@ class UserModel extends BaseModel {
   }
 
   /**
-   * Validation schema for user creation
+   * Validation schema for user creation (updated for multiple roles)
    */
   get createSchema() {
     return Joi.object({
-      email: Joi.string()
-        .email()
-        .when('role', {
-          is: Joi.string().valid('restaurant_administrator', 'location_administrator'),
-          then: Joi.required(),
-          otherwise: Joi.optional().allow(null),
-        }),
+      email: Joi.string().email().optional().allow(null),
       username: Joi.string().alphanum().min(3).max(100).when('email', {
         is: Joi.exist(),
         then: Joi.optional(),
@@ -124,23 +137,7 @@ class UserModel extends BaseModel {
       }),
       password: Joi.string().min(8).max(255).required(),
       full_name: Joi.string().trim().min(2).max(255).required(),
-      role: Joi.string()
-        .valid(
-          'restaurant_administrator',
-          'location_administrator',
-          'waiter',
-          'food_runner',
-          'kds_operator',
-          'pos_operator'
-        )
-        .required(),
-      restaurant_id: Joi.string()
-        .guid()
-        .when('role', {
-          is: 'restaurant_administrator',
-          then: Joi.required(),
-          otherwise: Joi.optional().allow(null),
-        }),
+      restaurant_id: Joi.string().guid().optional().allow(null),
       status: Joi.string().valid('pending', 'active', 'inactive', 'suspended').default('pending'),
       created_by: Joi.string()
         .uuid({ version: ['uuidv4'] })
@@ -151,21 +148,13 @@ class UserModel extends BaseModel {
   }
 
   /**
-   * Validation schema for user updates
+   * Validation schema for user updates (updated for multiple roles)
    */
   get updateSchema() {
     return Joi.object({
       email: Joi.string().email().allow(null),
       username: Joi.string().alphanum().min(3).max(100).allow(null),
       full_name: Joi.string().trim().min(2).max(255),
-      role: Joi.string().valid(
-        'restaurant_administrator',
-        'location_administrator',
-        'waiter',
-        'food_runner',
-        'kds_operator',
-        'pos_operator'
-      ),
       restaurant_id: Joi.string().guid().allow(null),
       status: Joi.string().valid('pending', 'active', 'inactive', 'suspended'),
       email_confirmed: Joi.boolean(),
@@ -239,13 +228,12 @@ class UserModel extends BaseModel {
   }
 
   /**
-   * Create new user
+   * Create new user (updated for multiple roles)
    */
   async create(userData) {
     this.logger.info('Creating new user', {
       email: userData.email,
       username: userData.username,
-      role: userData.role,
       restaurant_id: userData.restaurant_id,
     });
 
@@ -303,7 +291,6 @@ class UserModel extends BaseModel {
         user_id: user.id,
         email: user.email,
         username: user.username,
-        role: user.role,
       });
 
       return user;
@@ -355,7 +342,7 @@ class UserModel extends BaseModel {
    * Find user by ID with restaurant data (for authentication)
    */
   async findByIdWithRestaurant(id) {
-    this.logger.debug('Finding user by ID with restaurant data', { user_id: id });
+    this.logger.debug('Finding user by ID with restaurant and role data', { user_id: id });
     try {
       let query, values;
 
@@ -369,9 +356,24 @@ class UserModel extends BaseModel {
             r.restaurant_url_name AS restaurant_subdomain,
             r.business_type AS restaurant_business_type,
             r.logo AS restaurant_logo,
-            r.favicon AS restaurant_favicon
+            r.favicon AS restaurant_favicon,
+            primary_role.role_name AS primary_role,
+            primary_role.role_display_name AS primary_role_display,
+            primary_role.is_admin_role AS is_admin
           FROM users u
           LEFT JOIN restaurants r ON u.restaurant_id = r.id
+          LEFT JOIN (
+            SELECT
+              ur.user_id,
+              roles.name as role_name,
+              roles.display_name as role_display_name,
+              roles.is_admin_role
+            FROM user_roles ur
+            JOIN roles ON ur.role_id = roles.id
+            WHERE ur.is_primary_role = true
+              AND ur.is_active = true
+              AND (ur.valid_until IS NULL OR ur.valid_until > CURRENT_TIMESTAMP)
+          ) primary_role ON u.id = primary_role.user_id
           WHERE u.id = $1
           LIMIT 1
         `;
@@ -385,9 +387,24 @@ class UserModel extends BaseModel {
             r.restaurant_url_name AS restaurant_subdomain,
             r.business_type AS restaurant_business_type,
             r.logo AS restaurant_logo,
-            r.favicon AS restaurant_favicon
+            r.favicon AS restaurant_favicon,
+            primary_role.role_name AS primary_role,
+            primary_role.role_display_name AS primary_role_display,
+            primary_role.is_admin_role AS is_admin
           FROM users u
           LEFT JOIN restaurants r ON u.restaurant_id = r.id
+          LEFT JOIN (
+            SELECT
+              ur.user_id,
+              roles.name as role_name,
+              roles.display_name as role_display_name,
+              roles.is_admin_role
+            FROM user_roles ur
+            JOIN roles ON ur.role_id = roles.id
+            WHERE ur.is_primary_role = true
+              AND ur.is_active = true
+              AND (ur.valid_until IS NULL OR ur.valid_until > CURRENT_TIMESTAMP)
+          ) primary_role ON u.id = primary_role.user_id
           WHERE u.id = $1
           LIMIT 1
         `;
@@ -404,13 +421,16 @@ class UserModel extends BaseModel {
         const userData = {
           id: row.id,
           email: row.email,
-          name: row.name,
-          role: row.role,
+          full_name: row.full_name,
+          username: row.username,
           status: row.status,
           restaurant_id: row.restaurant_id,
           restaurant_subdomain: row.restaurant_subdomain,
           created_at: row.created_at,
           updated_at: row.updated_at,
+          // Role information for backward compatibility
+          role: row.primary_role, // Primary role name
+          is_admin: row.is_admin,
         };
 
         // Add restaurant data if user has a restaurant
@@ -429,7 +449,7 @@ class UserModel extends BaseModel {
       }
       return null;
     } catch (error) {
-      this.logger.error('Failed to find user by ID with restaurant data', {
+      this.logger.error('Failed to find user by ID with restaurant and role data', {
         user_id: id,
         error: error.message,
       });

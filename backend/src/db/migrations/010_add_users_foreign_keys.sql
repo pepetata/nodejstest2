@@ -2,52 +2,90 @@
 -- Created: 2025-07-06
 -- Purpose: Add foreign key relationships after all tables are created
 
--- Add foreign key constraint from users to restaurants
-ALTER TABLE users
-ADD CONSTRAINT fk_users_restaurant_id
-FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE;
+-- Add foreign key constraint from users to restaurants (if not exists)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_users_restaurant_id'
+        AND table_name = 'users'
+    ) THEN
+        ALTER TABLE users
+        ADD CONSTRAINT fk_users_restaurant_id
+        FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
--- Add foreign key constraint from users to users (created_by)
-ALTER TABLE users
-ADD CONSTRAINT fk_users_created_by
-FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+-- Add foreign key constraint from users to users (created_by) (if not exists)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_users_created_by'
+        AND table_name = 'users'
+    ) THEN
+        ALTER TABLE users
+        ADD CONSTRAINT fk_users_created_by
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
--- Add foreign key constraints for user_location_assignments
-ALTER TABLE user_location_assignments
-ADD CONSTRAINT fk_user_location_assignments_user_id
-FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+-- Add foreign key constraints for user_location_assignments (if not exists)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_user_location_assignments_user_id'
+        AND table_name = 'user_location_assignments'
+    ) THEN
+        ALTER TABLE user_location_assignments
+        ADD CONSTRAINT fk_user_location_assignments_user_id
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
-ALTER TABLE user_location_assignments
-ADD CONSTRAINT fk_user_location_assignments_location_id
-FOREIGN KEY (location_id) REFERENCES restaurant_locations(id) ON DELETE CASCADE;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_user_location_assignments_location_id'
+        AND table_name = 'user_location_assignments'
+    ) THEN
+        ALTER TABLE user_location_assignments
+        ADD CONSTRAINT fk_user_location_assignments_location_id
+        FOREIGN KEY (location_id) REFERENCES restaurant_locations(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
-ALTER TABLE user_location_assignments
-ADD CONSTRAINT fk_user_location_assignments_assigned_by
-FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_user_location_assignments_assigned_by'
+        AND table_name = 'user_location_assignments'
+    ) THEN
+        ALTER TABLE user_location_assignments
+        ADD CONSTRAINT fk_user_location_assignments_assigned_by
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL;
+    END IF;
+END $$;
 
--- Add check constraints for role-based business logic
--- Restaurant administrators must have a restaurant_id and email
-ALTER TABLE users
-ADD CONSTRAINT chk_restaurant_admin_requirements
-CHECK (
-    role != 'restaurant_administrator' OR
-    (restaurant_id IS NOT NULL AND email IS NOT NULL)
-);
+-- Note: Role-based constraints have been moved to the multiple roles system
+-- Role business logic is now handled by the application layer with user_roles table
 
--- Location administrators must have an email
-ALTER TABLE users
-ADD CONSTRAINT chk_location_admin_requirements
-CHECK (
-    role != 'location_administrator' OR
-    email IS NOT NULL
-);
-
--- Non-admin roles must have a username if they don't have an email
-ALTER TABLE users
-ADD CONSTRAINT chk_username_or_email_required
-CHECK (
-    email IS NOT NULL OR username IS NOT NULL
-);
+-- Basic constraint: Users must have either email or username
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'chk_username_or_email_required'
+        AND table_name = 'users'
+    ) THEN
+        ALTER TABLE users
+        ADD CONSTRAINT chk_username_or_email_required
+        CHECK (email IS NOT NULL OR username IS NOT NULL);
+    END IF;
+END $$;
 
 -- Only one primary location per user
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_primary_location_unique
