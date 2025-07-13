@@ -84,12 +84,25 @@ const AdminProtectedRoute = ({ children }) => {
     ); // Better loading state
   }
 
-  // Check if user is authenticated
-  if (!isAuthenticated) {
-    console.log('AdminProtectedRoute - User not authenticated, redirecting to login');
+  // Check if user is authenticated - both Redux state and localStorage token
+  const hasValidToken = storage.get('token');
+  const isUserAuthenticated = isAuthenticated && hasValidToken;
+
+  if (!isUserAuthenticated) {
+    console.log(
+      'AdminProtectedRoute - User not authenticated or no valid token, redirecting to login'
+    );
+
+    // Clear any stale Redux state if token is missing
+    if (isAuthenticated && !hasValidToken) {
+      console.log('AdminProtectedRoute - Clearing stale authentication state');
+      dispatch({ type: 'auth/logout' });
+    }
+
     if (isSubdomain) {
-      // On subdomain, redirect to /login
-      return <Navigate to="/login" replace />;
+      // On subdomain, redirect to main app home page (not login)
+      window.location.href = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
+      return null;
     } else {
       // On main app, redirect to /:restaurantSlug/login
       return <Navigate to={`/${restaurantSlug}/login`} replace />;

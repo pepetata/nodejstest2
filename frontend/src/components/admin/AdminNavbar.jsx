@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/authSlice';
+import { storage } from '../../store/authSlice';
 import LogoutConfirmationModal from './LogoutConfirmationModal';
 import '../../styles/admin/adminNavbar.scss';
 
@@ -9,9 +10,21 @@ const AdminNavbar = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const { restaurantSlug } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+  console.log(`AdminNavbar - user:`, user);
+
+  // Check authentication state consistency
+  useEffect(() => {
+    const hasValidToken = storage.get('token');
+    const isAuthenticated = !!user;
+
+    // If Redux thinks user is authenticated but no token in localStorage, clear Redux state
+    if (isAuthenticated && !hasValidToken) {
+      console.log('AdminNavbar - Detected stale authentication state, clearing...');
+      dispatch(logout());
+    }
+  }, [user, dispatch]);
 
   // Check if we're on a subdomain (no restaurantSlug in URL params)
   const isSubdomain =
@@ -35,12 +48,26 @@ const AdminNavbar = () => {
 
   const handleLogoutConfirm = async () => {
     try {
+      // Clear authentication data from localStorage first
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:root');
+
+      // Then dispatch logout action
       await dispatch(logout()).unwrap();
-      navigate('/');
+
+      // Redirect to main app home page (not login page)
+      window.location.href = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if logout fails, redirect to home
-      navigate('/');
+
+      // Even if logout fails, clear local auth data and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:root');
+      window.location.href = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
     }
   };
 
@@ -60,6 +87,14 @@ const AdminNavbar = () => {
     return currentPath.startsWith(path);
   };
 
+  // Only render navbar if user is properly authenticated
+  const hasValidToken = storage.get('token');
+  const isAuthenticated = !!user && hasValidToken;
+
+  if (!isAuthenticated) {
+    return null; // Don't render navbar if not authenticated
+  }
+
   return (
     <>
       <nav className="admin-navbar">
@@ -71,7 +106,7 @@ const AdminNavbar = () => {
                 src={restaurant.logo}
                 alt={`${restaurant.name} logo`}
                 onError={(e) => {
-                  e.target.src = '/images/default-restaurant-logo.png';
+                  e.target.src = '/public/logos/padre/logo.scg'; // TODO: use the field
                 }}
               />
               <span className="admin-restaurant-name">{restaurant.name}</span>
