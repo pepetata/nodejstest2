@@ -3,35 +3,42 @@ import PropTypes from 'prop-types';
 import userService from '../../services/userService';
 import '../../styles/Auth.scss';
 
-const PendingConfirmationModal = ({ isOpen, onClose, email }) => {
+const PendingConfirmationModal = ({ isOpen, onClose, onEmailSentSuccess, email }) => {
   const [isResending, setIsResending] = useState(false);
-  const [resendStatus, setResendStatus] = useState(null); // 'success', 'error', or null
-  const [resendMessage, setResendMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleResendConfirmation = async () => {
     setIsResending(true);
-    setResendStatus(null);
-    setResendMessage('');
+    setErrorMessage('');
 
     try {
       await userService.resendConfirmation({ email });
-      setResendStatus('success');
-      setResendMessage(
-        'E-mail de confirmação reenviado com sucesso! Verifique sua caixa de entrada.'
-      );
+      // Call the success callback to show the email sent modal
+      onEmailSentSuccess();
     } catch (error) {
-      setResendStatus('error');
-      setResendMessage(
-        error.response?.data?.error || 'Erro ao reenviar e-mail de confirmação. Tente novamente.'
-      );
+      // Extract error message properly - handle nested error objects
+      let errorMsg = 'Erro ao reenviar e-mail de confirmação. Tente novamente.';
+
+      if (error.response?.data) {
+        if (typeof error.response.data.error === 'string') {
+          errorMsg = error.response.data.error;
+        } else if (error.response.data.error?.message) {
+          errorMsg = error.response.data.error.message;
+        } else if (error.response.data.message) {
+          errorMsg = error.response.data.message;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+
+      setErrorMessage(errorMsg);
     } finally {
       setIsResending(false);
     }
   };
 
   const handleClose = () => {
-    setResendStatus(null);
-    setResendMessage('');
+    setErrorMessage('');
     onClose();
   };
 
@@ -98,13 +105,7 @@ const PendingConfirmationModal = ({ isOpen, onClose, email }) => {
             clique no botão abaixo para reenviar.
           </p>
 
-          {resendMessage && (
-            <div
-              className={`alert ${resendStatus === 'success' ? 'success-alert' : 'error-alert'}`}
-            >
-              {resendMessage}
-            </div>
-          )}
+          {errorMessage && <div className="alert error-alert">{errorMessage}</div>}
         </div>
 
         <div className="modal-footer">
@@ -127,6 +128,7 @@ const PendingConfirmationModal = ({ isOpen, onClose, email }) => {
 PendingConfirmationModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  onEmailSentSuccess: PropTypes.func.isRequired,
   email: PropTypes.string.isRequired,
 };
 

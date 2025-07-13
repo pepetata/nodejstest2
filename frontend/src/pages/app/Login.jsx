@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import '../../styles/login.scss';
 import RememberMeTooltip from '../../components/common/RememberMeTooltip';
 import PendingConfirmationModal from '../../components/common/PendingConfirmationModal';
+import EmailSentModal from '../../components/common/EmailSentModal';
 
 const LoginPage = ({ subdomain }) => {
   const [formData, setFormData] = React.useState({
@@ -16,6 +17,12 @@ const LoginPage = ({ subdomain }) => {
   const [rememberMe, setRememberMe] = React.useState(false);
   const [showPendingModal, setShowPendingModal] = React.useState(false);
   const [pendingEmail, setPendingEmail] = React.useState('');
+  const [showEmailSentModal, setShowEmailSentModal] = React.useState(false);
+
+  // Debug modal state changes
+  React.useEffect(() => {
+    console.log('Modal state changed:', { showPendingModal, pendingEmail });
+  }, [showPendingModal, pendingEmail]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const authError = useSelector((state) => state.auth.error);
@@ -39,6 +46,17 @@ const LoginPage = ({ subdomain }) => {
   const handleClosePendingModal = () => {
     setShowPendingModal(false);
     setPendingEmail('');
+  };
+
+  const handleEmailSentSuccess = () => {
+    // Close pending modal and show email sent modal
+    setShowPendingModal(false);
+    setShowEmailSentModal(true);
+  };
+
+  const handleCloseEmailSentModal = () => {
+    setShowEmailSentModal(false);
+    setPendingEmail(''); // Clear the email when closing success modal
   };
 
   const handleSubmit = async (e) => {
@@ -66,11 +84,15 @@ const LoginPage = ({ subdomain }) => {
       } else if (login.rejected.match(resultAction)) {
         // Check if it's a pending confirmation error
         const errorPayload = resultAction.payload;
+        console.log('Login rejected, error payload:', errorPayload); // Debug
+
         if (errorPayload && errorPayload.code === 'PENDING_CONFIRMATION') {
+          console.log('PENDING_CONFIRMATION detected, showing modal'); // Debug
           // Show the pending confirmation modal
           setPendingEmail(errorPayload.email || formData.email);
           setShowPendingModal(true);
         } else {
+          console.log('Not a PENDING_CONFIRMATION error, showing regular error'); // Debug
           // Handle other login errors normally
           setError(errorPayload?.error || 'Erro no login. Tente novamente.');
         }
@@ -172,6 +194,14 @@ const LoginPage = ({ subdomain }) => {
       <PendingConfirmationModal
         isOpen={showPendingModal}
         onClose={handleClosePendingModal}
+        onEmailSentSuccess={handleEmailSentSuccess}
+        email={pendingEmail}
+      />
+
+      {/* Email Sent Success Modal */}
+      <EmailSentModal
+        isOpen={showEmailSentModal}
+        onClose={handleCloseEmailSentModal}
         email={pendingEmail}
       />
     </>

@@ -28,8 +28,10 @@ export const login = createAsyncThunk(
       storage.set('rememberMe', rememberMe ? 'true' : '', rememberMe);
       return { ...data, rememberMe };
     } catch (err) {
+      console.log('AuthSlice error:', err.response?.data); // Debug
       // Handle pending confirmation error specifically
       if (err.response?.data?.code === 'PENDING_CONFIRMATION') {
+        console.log('AuthSlice found PENDING_CONFIRMATION'); // Debug
         return rejectWithValue({
           error: err.response.data.error,
           code: err.response.data.code,
@@ -39,7 +41,10 @@ export const login = createAsyncThunk(
 
       // Show backend error message in Portuguese if present
       let errorMsg =
-        err.response?.data?.error?.message || err.response?.data?.message || err.message;
+        err.response?.data?.error?.message ||
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message;
       if (err.response?.status === 429) {
         errorMsg = err.response?.data?.erro?.mensagem || errorMsg;
       }

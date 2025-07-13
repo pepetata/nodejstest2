@@ -332,10 +332,11 @@ const userValidationSchemas = {
   // Resend confirmation email schema
   resendConfirmation: Joi.object({
     email_confirmation_token: Joi.string(),
+    email: Joi.string().email(),
   })
-    .or('email_confirmation_token')
+    .or('email_confirmation_token', 'email')
     .messages({
-      'object.missing': 'O token de confirmação é obrigatório.',
+      'object.missing': 'O token de confirmação ou e-mail é obrigatório.',
     }),
 };
 

@@ -46,15 +46,19 @@ class AuthController {
       controllerLogger.info('User login', { email: req.body.email });
       res.status(200).json(result);
     } catch (error) {
-      controllerLogger.error('Login failed', { error: error.message });
+      controllerLogger.error('Login failed', { error: error.message, code: error.code });
       // Handle pending confirmation error specifically
       if (error.code === 'PENDING_CONFIRMATION') {
-        return res.status(error.statusCode).json({
+        controllerLogger.warn('Pending confirmation login attempt', {
+          email: error.email || req.body.email,
+        });
+        return res.status(error.statusCode || 403).json({
           error: error.message,
           code: error.code,
-          email: error.email,
+          email: error.email || req.body.email,
         });
       }
+      // Pass other errors to the global error handler
       next(error);
     }
   }

@@ -552,11 +552,12 @@ class UserModel extends BaseModel {
       const query = `
         UPDATE ${this.tableName}
         SET email_confirmed = true,
+            email_confirmation_token = NULL,
             email_confirmation_expires = NULL,
+            status = 'active',
             updated_at = CURRENT_TIMESTAMP
         WHERE email_confirmation_token = $1
           AND email_confirmation_expires > CURRENT_TIMESTAMP
-          AND email_confirmed = false
         RETURNING *
       `;
 
@@ -568,21 +569,14 @@ class UserModel extends BaseModel {
         return user;
       }
 
-      // If not updated, check if already confirmed
-      const alreadyConfirmed = await this.find({
-        email_confirmation_token: token,
-        email_confirmed: true,
-      });
-      if (alreadyConfirmed && alreadyConfirmed.length > 0) {
-        const user = this.sanitizeOutput(alreadyConfirmed[0], this.sensitiveFields);
-        const err = new Error('E-mail já confirmado.');
-        err.code = 'ALREADY_CONFIRMED';
-        err.alreadyConfirmed = true;
-        err.user = user;
-        throw err;
-      }
-
-      throw new Error('Token de confirmação inválido ou expirado.');
+      // If not updated, the token is either:
+      // 1. Invalid/expired
+      // 2. Already used (cleared after confirmation)
+      // Since we clear tokens after confirmation for security, we can't check by token
+      // Just return a generic error message for security
+      throw new Error(
+        'Token de confirmação inválido ou expirado. Se você já confirmou seu e-mail, tente fazer login.'
+      );
     } catch (error) {
       this.logger.error('Failed to confirm email', { error: error.message });
       throw error;

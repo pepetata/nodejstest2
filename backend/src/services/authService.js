@@ -70,6 +70,18 @@ class AuthService {
     const { email, password } = credentials;
     const serviceLogger = this.logger.child({ operation: 'login', email });
     try {
+      // TEMPORARY TEST: Simulate pending status for test email
+      if (email === 'test@pending.com') {
+        serviceLogger.warn('TESTING: Simulating pending status for test email');
+        const error = new Error(
+          'Sua conta ainda não foi confirmada. Verifique seu e-mail para confirmar sua conta.'
+        );
+        error.statusCode = 403;
+        error.code = 'PENDING_CONFIRMATION';
+        error.email = email;
+        throw error;
+      }
+
       // Find user (with password, for login only)
       const user = await userModel.findUserForLogin(email);
       if (!user) {
@@ -122,6 +134,12 @@ class AuthService {
       };
     } catch (error) {
       serviceLogger.error('Failed to login', { error: error.message });
+
+      // If this is a PENDING_CONFIRMATION error, preserve all properties
+      if (error.code === 'PENDING_CONFIRMATION') {
+        throw error; // Re-throw the original error with all properties intact
+      }
+
       let mensagemErro = error.message;
       if (mensagemErro === 'Invalid credentials') {
         mensagemErro = 'Credenciais inválidas. Verifique seu e-mail e senha.';

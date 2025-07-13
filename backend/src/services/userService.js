@@ -645,30 +645,57 @@ class UserService {
 
   /**
    * Resend confirmation email
-   * @param {Object} params - { email, username }
+   * @param {Object} params - { email_confirmation_token, email }
    * @returns {Promise<void>}
    */
-  async resendConfirmationEmail({ email_confirmation_token }) {
+  async resendConfirmationEmail({ email_confirmation_token, email }) {
     const serviceLogger = this.logger.child({ operation: 'resendConfirmationEmail' });
-    serviceLogger.info('Resending confirmation email', { email_confirmation_token });
-    // Find user by email or username
+    serviceLogger.info('Resending confirmation email', { email_confirmation_token, email });
+    // Find user by email or token
     let user = null;
     if (email_confirmation_token) {
       user = await this.userModel.findByEmailConfirmationToken(email_confirmation_token);
     }
 
-    if (!user) {
-      // Translate error for end user
-      const error = new Error('Usuário não encontrado. Verifique o token de confirmação.');
-      error.statusCode = 404;
-      serviceLogger.warn('User not found for confirmation email', {
-        email_confirmation_token,
-      });
-      throw error;
+    // If no user found with token (expired/cleared), try to find by email
+    if (!user && email) {
+      user = await this.userModel.findByEmail(email);
     }
 
+    if (!user) {
+      // If still no user found, provide helpful guidance
+      // For expired tokens without email, we can't identify the user
+      if (email_confirmation_token && !email) {
+        const error = new Error(
+          'Token de confirmação expirado. Por favor, informe seu e-mail para reenviar a confirmação.'
+        );
+        error.statusCode = 400;
+        error.needsEmail = true;
+        serviceLogger.warn('Expired token without email provided', {
+          email_confirmation_token,
+        });
+        throw error;
+      } else {
+        const error = new Error(
+          'Usuário não encontrado. Verifique se o e-mail está correto ou entre em contato com o suporte.'
+        );
+        error.statusCode = 404;
+        serviceLogger.warn('User not found for confirmation email', {
+          email_confirmation_token,
+          email,
+        });
+        throw error;
+      }
+    }
+
+    // Check if email is already confirmed but allow resending if explicitly requested
     if (user.email_confirmed) {
-      throw new Error('O e-mail já foi confirmado.');
+      serviceLogger.info('Email already confirmed, but allowing resend as requested', {
+        user_id: user.id,
+        current_status: user.status,
+      });
+      // Don't throw error, continue to send new confirmation email
+      // This allows users to get a fresh confirmation link even if already confirmed
     }
     // Generate new token and expiration
     const token = this.userModel.generateEmailConfirmationToken();

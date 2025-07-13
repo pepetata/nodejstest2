@@ -444,6 +444,14 @@
   margin-bottom: 1.5rem;
   display: flex;
   justify-content: center;
+
+  &.success-icon {
+    svg {
+      path {
+        stroke: #10b981; // Green color for success
+      }
+    }
+  }
 }
 
 .confirmation-message {

@@ -747,7 +747,7 @@ class UserController {
    */
   resendConfirmationEmail = asyncHandler(async (req, res) => {
     const requestId = req.requestId || `req_${Date.now()}`;
-    const { email_confirmation_token } = req.body;
+    const { email_confirmation_token, email } = req.body;
     const controllerLogger = this.logger.child({
       operation: 'resendConfirmationEmail',
       requestId,
@@ -756,7 +756,7 @@ class UserController {
     });
     controllerLogger.info('Resending confirmation email');
     try {
-      await this.userService.resendConfirmationEmail({ email_confirmation_token });
+      await this.userService.resendConfirmationEmail({ email_confirmation_token, email });
       return res
         .status(200)
         .json(
@@ -767,16 +767,20 @@ class UserController {
         );
     } catch (error) {
       controllerLogger.error('Failed to resend confirmation email', { error: error.message });
-      return res
-        .status(400)
-        .json(
-          ResponseFormatter.error(
-            error.message || 'Não foi possível reenviar o e-mail de confirmação.',
-            400,
-            null,
-            requestId
-          )
-        );
+
+      // Include flags in error response if present
+      const errorDetails = {};
+      if (error.needsEmail) errorDetails.needsEmail = true;
+      if (error.alreadyConfirmed) errorDetails.alreadyConfirmed = true;
+
+      const errorResponse = ResponseFormatter.error(
+        error.message || 'Não foi possível reenviar o e-mail de confirmação.',
+        error.statusCode || 400,
+        Object.keys(errorDetails).length > 0 ? errorDetails : null,
+        requestId
+      );
+
+      return res.status(error.statusCode || 400).json(errorResponse);
     }
   });
 

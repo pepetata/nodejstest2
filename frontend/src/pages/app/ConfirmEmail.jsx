@@ -10,6 +10,8 @@ export default function ConfirmEmail() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [allowResend, setAllowResend] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [email, setEmail] = useState('');
   const hasConfirmed = useRef(false); // Use ref to prevent double request
 
   const token = searchParams.get('token');
@@ -62,11 +64,40 @@ export default function ConfirmEmail() {
     setResending(true);
     setResent(false);
     try {
-      await userService.resendConfirmation({ token });
+      // Try with token first, then with email if available
+      if (email) {
+        await userService.resendConfirmation({ email });
+      } else {
+        await userService.resendConfirmation({ token });
+      }
       setResent(true);
       setMessage('Novo e-mail de confirmação enviado! Verifique sua caixa de entrada.');
+      setShowEmailInput(false);
     } catch (err) {
-      setMessage(err?.response?.data?.message || 'Erro ao reenviar o e-mail de confirmação.');
+      const errorMessage =
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
+        'Erro ao reenviar o e-mail de confirmação.';
+
+      // If error indicates we need email, show email input
+      if (
+        err?.response?.data?.error?.details?.needsEmail ||
+        err?.response?.data?.needsEmail ||
+        errorMessage.includes('informe seu e-mail')
+      ) {
+        setShowEmailInput(true);
+        setMessage('Token expirado. Por favor, informe seu e-mail para reenviar a confirmação:');
+      } else if (
+        err?.response?.data?.error?.details?.alreadyConfirmed ||
+        err?.response?.data?.alreadyConfirmed ||
+        errorMessage.includes('já foi confirmado')
+      ) {
+        setStatus('alreadyConfirmed');
+        setMessage('Seu e-mail já está confirmado! Você pode fazer login normalmente.');
+        setAllowResend(false);
+      } else {
+        setMessage(errorMessage);
+      }
     }
     setResending(false);
   };
@@ -76,12 +107,32 @@ export default function ConfirmEmail() {
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md text-center">
         <h2 className="text-2xl font-bold mb-4">Confirmação de E-mail</h2>
         <p className="mb-6 text-gray-700">{message}</p>
-        {status === 'expired' && allowResend && (
-          <button className="standard-btn" onClick={handleResend} disabled={resending}>
-            {resending ? 'Enviando...' : 'Reenviar e-mail de confirmação'}
-          </button>
+
+        {status === 'expired' && allowResend && !resent && (
+          <div>
+            {showEmailInput && (
+              <div className="mb-4">
+                <input
+                  type="email"
+                  placeholder="Digite seu e-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+            <button
+              className="standard-btn"
+              onClick={handleResend}
+              disabled={resending || (showEmailInput && !email)}
+            >
+              {resending ? 'Enviando...' : 'Reenviar e-mail de confirmação'}
+            </button>
+          </div>
         )}
+
         {resent && <p className="mt-4 text-green-600">E-mail reenviado com sucesso!</p>}
+
         {(status === 'success' || status === 'alreadyConfirmed') && (
           <button
             className="mt-4 standard-btn"
