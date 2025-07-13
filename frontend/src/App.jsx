@@ -4,14 +4,14 @@ import { useSelector } from 'react-redux';
 import Layout from './components/common/Layout';
 
 // Pages
-import Home from './pages/Home.jsx';
-import MenuPage from './pages/MenuPage.jsx';
-import Register from './pages/Register.jsx';
-import NotFound from './pages/NotFound.jsx';
-import Login from './pages/Login.jsx';
-import ConfirmEmail from './pages/ConfirmEmail.jsx';
-import ForgotPassword from './pages/ForgotPassword.jsx';
-import ResetPassword from './pages/ResetPassword.jsx';
+import Home from './pages/app/Home.jsx';
+import MenuPage from './pages/app/MenuPage.jsx';
+import Register from './pages/app/Register.jsx';
+import NotFound from './pages/app/NotFound.jsx';
+import Login from './pages/app/Login.jsx';
+import ConfirmEmail from './pages/app/ConfirmEmail.jsx';
+import ForgotPassword from './pages/app/ForgotPassword.jsx';
+import ResetPassword from './pages/app/ResetPassword.jsx';
 
 function App({ getSubdomain }) {
   const isAuthenticated = useSelector((state) => !!state.auth.user);

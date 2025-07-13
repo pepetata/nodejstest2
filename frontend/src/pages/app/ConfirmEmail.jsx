@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import userService from '../services/userService';
+import userService from '../../services/userService';
 
 export default function ConfirmEmail() {
   const [searchParams] = useSearchParams();

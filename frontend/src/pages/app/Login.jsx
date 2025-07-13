@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { login } from '../store/authSlice';
+import { login } from '../../store/authSlice';
 import PropTypes from 'prop-types';
 import '../styles/login.scss';
-import RememberMeTooltip from '../components/common/RememberMeTooltip';
+import RememberMeTooltip from '../../components/common/RememberMeTooltip';
 
 const LoginPage = ({ subdomain }) => {
   const [formData, setFormData] = React.useState({

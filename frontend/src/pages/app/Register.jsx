@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import TermsModal from '../components/common/TermsModal';
-import restaurantService from '../services/restaurantService';
+import TermsModal from '../../components/common/TermsModal';
+import restaurantService from '../../services/restaurantService';
 import '../styles/Auth.scss';
 import '../styles/register.scss';
 

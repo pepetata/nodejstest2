@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import AppNavbar from '../components/common/Navbar';
-import userService from '../services/userService';
+import AppNavbar from '../../components/common/Navbar';
+import userService from '../../services/userService';
 import '../styles/login.scss';
 
 const ResetPassword = () => {
