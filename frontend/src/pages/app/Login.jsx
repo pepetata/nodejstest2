@@ -5,8 +5,7 @@ import { login } from '../../store/authSlice';
 import PropTypes from 'prop-types';
 import '../../styles/login.scss';
 import RememberMeTooltip from '../../components/common/RememberMeTooltip';
-import PendingConfirmationModal from '../../components/common/PendingConfirmationModal';
-import EmailSentModal from '../../components/common/EmailSentModal';
+import userService from '../../services/userService';
 
 const LoginPage = ({ subdomain }) => {
   const [formData, setFormData] = React.useState({
@@ -18,6 +17,8 @@ const LoginPage = ({ subdomain }) => {
   const [showPendingModal, setShowPendingModal] = React.useState(false);
   const [pendingEmail, setPendingEmail] = React.useState('');
   const [showEmailSentModal, setShowEmailSentModal] = React.useState(false);
+  const [isResending, setIsResending] = React.useState(false);
+  const [resendError, setResendError] = React.useState('');
 
   // Debug modal state changes
   React.useEffect(() => {
@@ -46,6 +47,7 @@ const LoginPage = ({ subdomain }) => {
   const handleClosePendingModal = () => {
     setShowPendingModal(false);
     setPendingEmail('');
+    setResendError('');
   };
 
   const handleEmailSentSuccess = () => {
@@ -57,6 +59,36 @@ const LoginPage = ({ subdomain }) => {
   const handleCloseEmailSentModal = () => {
     setShowEmailSentModal(false);
     setPendingEmail(''); // Clear the email when closing success modal
+  };
+
+  const handleResendConfirmation = async () => {
+    setIsResending(true);
+    setResendError('');
+
+    try {
+      await userService.resendConfirmation({ email: pendingEmail });
+      // Call the success callback to show the email sent modal
+      handleEmailSentSuccess();
+    } catch (error) {
+      // Extract error message properly - handle nested error objects
+      let errorMsg = 'Erro ao reenviar e-mail de confirmação. Tente novamente.';
+
+      if (error.response?.data) {
+        if (typeof error.response.data.error === 'string') {
+          errorMsg = error.response.data.error;
+        } else if (error.response.data.error?.message) {
+          errorMsg = error.response.data.error.message;
+        } else if (error.response.data.message) {
+          errorMsg = error.response.data.message;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+
+      setResendError(errorMsg);
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -191,19 +223,143 @@ const LoginPage = ({ subdomain }) => {
       </div>
 
       {/* Pending Confirmation Modal */}
-      <PendingConfirmationModal
-        isOpen={showPendingModal}
-        onClose={handleClosePendingModal}
-        onEmailSentSuccess={handleEmailSentSuccess}
-        email={pendingEmail}
-      />
+      {showPendingModal && (
+        <div
+          className="modal-overlay"
+          onClick={handleClosePendingModal}
+          onKeyDown={(e) => e.key === 'Escape' && handleClosePendingModal()}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="dialog"
+          >
+            <div className="modal-header">
+              <h2 className="modal-title">Confirmação de E-mail Necessária</h2>
+              <button className="modal-close" onClick={handleClosePendingModal} aria-label="Fechar">
+                &times;
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="confirmation-icon">
+                <svg
+                  width="64"
+                  height="64"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M3 8L10.8906 13.2604C11.5624 13.7083 12.4376 13.7083 13.1094 13.2604L21 8M5 19H19C20.1046 19 21 18.1046 21 17V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V17C3 18.1046 3.89543 19 5 19Z"
+                    stroke="#f59e0b"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+
+              <p className="confirmation-message">
+                Sua conta ainda não foi confirmada. Para acessar o sistema, você precisa confirmar
+                seu e-mail através do link enviado para:
+              </p>
+
+              <div className="email-display">
+                <strong>{pendingEmail}</strong>
+              </div>
+
+              <p className="instruction-text">
+                Verifique sua caixa de entrada e também a pasta de spam. Se você não recebeu o
+                e-mail, clique no botão abaixo para reenviar.
+              </p>
+
+              {resendError && <div className="alert error-alert">{resendError}</div>}
+            </div>
+
+            <div className="modal-footer">
+              <button className="auth-button secondary" onClick={handleClosePendingModal}>
+                Fechar
+              </button>
+              <button
+                className="auth-button primary"
+                onClick={handleResendConfirmation}
+                disabled={isResending}
+              >
+                {isResending ? 'Reenviando...' : 'Reenviar E-mail'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Email Sent Success Modal */}
-      <EmailSentModal
-        isOpen={showEmailSentModal}
-        onClose={handleCloseEmailSentModal}
-        email={pendingEmail}
-      />
+      {showEmailSentModal && (
+        <div
+          className="modal-overlay"
+          onClick={handleCloseEmailSentModal}
+          onKeyDown={(e) => e.key === 'Escape' && handleCloseEmailSentModal()}
+          role="button"
+          tabIndex={0}
+          aria-label="Close modal"
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} role="dialog">
+            <div className="modal-header">
+              <h2 className="modal-title">E-mail Enviado com Sucesso!</h2>
+              <button
+                className="modal-close"
+                onClick={handleCloseEmailSentModal}
+                aria-label="Fechar"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="confirmation-icon success-icon">
+                <svg
+                  width="64"
+                  height="64"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                    stroke="#10b981"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+
+              <p className="confirmation-message">
+                O e-mail de confirmação foi reenviado com sucesso para:
+              </p>
+
+              <div className="email-display">
+                <strong>{pendingEmail}</strong>
+              </div>
+
+              <p className="instruction-text">
+                Verifique sua caixa de entrada e também a pasta de spam. Clique no link de
+                confirmação no e-mail para ativar sua conta.
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button className="auth-button primary" onClick={handleCloseEmailSentModal}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
