@@ -28,13 +28,22 @@ export const login = createAsyncThunk(
       storage.set('rememberMe', rememberMe ? 'true' : '', rememberMe);
       return { ...data, rememberMe };
     } catch (err) {
+      // Handle pending confirmation error specifically
+      if (err.response?.data?.code === 'PENDING_CONFIRMATION') {
+        return rejectWithValue({
+          error: err.response.data.error,
+          code: err.response.data.code,
+          email: err.response.data.email,
+        });
+      }
+
       // Show backend error message in Portuguese if present
       let errorMsg =
         err.response?.data?.error?.message || err.response?.data?.message || err.message;
       if (err.response?.status === 429) {
         errorMsg = err.response?.data?.erro?.mensagem || errorMsg;
       }
-      return rejectWithValue(errorMsg);
+      return rejectWithValue({ error: errorMsg });
     }
   }
 );
@@ -93,7 +102,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload;
+        state.error = action.payload?.error || action.payload;
       })
       .addCase(rehydrate.fulfilled, (state, action) => {
         state.user = action.payload.user;

@@ -47,6 +47,14 @@ class AuthController {
       res.status(200).json(result);
     } catch (error) {
       controllerLogger.error('Login failed', { error: error.message });
+      // Handle pending confirmation error specifically
+      if (error.code === 'PENDING_CONFIRMATION') {
+        return res.status(error.statusCode).json({
+          error: error.message,
+          code: error.code,
+          email: error.email,
+        });
+      }
       next(error);
     }
   }

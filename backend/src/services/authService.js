@@ -86,6 +86,31 @@ class AuthService {
         error.statusCode = 401;
         throw error;
       }
+
+      // Check if user status is pending (needs email confirmation)
+      if (user.status === 'pending') {
+        serviceLogger.warn('Login attempt with pending status', { email, userId: user.id });
+        const error = new Error(
+          'Sua conta ainda não foi confirmada. Verifique seu e-mail para confirmar sua conta.'
+        );
+        error.statusCode = 403;
+        error.code = 'PENDING_CONFIRMATION';
+        error.email = user.email;
+        throw error;
+      }
+
+      // Check if user is active
+      if (user.status !== 'active') {
+        serviceLogger.warn('Login attempt with inactive status', {
+          email,
+          userId: user.id,
+          status: user.status,
+        });
+        const error = new Error('Sua conta não está ativa. Entre em contato com o suporte.');
+        error.statusCode = 403;
+        throw error;
+      }
+
       // Generate token
       const token = generateToken(user.id);
       serviceLogger.info('User logged in successfully', { userId: user.id });
