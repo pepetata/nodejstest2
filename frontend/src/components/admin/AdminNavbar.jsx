@@ -13,7 +13,7 @@ const AdminNavbar = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const restaurant = useSelector((state) => state.auth.restaurant);
-  // console.log(`AdminNavbar - user:`, user);
+  console.log(`AdminNavbar - user:`, user);
   // console.log(`AdminNavbar - restaurant:`, restaurant);
 
   // Check authentication state consistency - use useMemo to prevent flickering

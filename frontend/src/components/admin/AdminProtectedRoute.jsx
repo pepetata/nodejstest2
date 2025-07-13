@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { setUser } from '../../store/authSlice';
@@ -9,13 +9,16 @@ import PropTypes from 'prop-types';
 const AdminProtectedRoute = ({ children }) => {
   const { restaurantSlug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isRehydrating, setIsRehydrating] = useState(true);
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => !!state.auth.user);
   const user = useSelector((state) => state.auth.user);
+  const authStatus = useSelector((state) => state.auth.status);
 
   console.log('AdminProtectedRoute - isAuthenticated:', isAuthenticated);
   console.log('AdminProtectedRoute - user:', user);
   console.log('AdminProtectedRoute - restaurantSlug:', restaurantSlug);
+  console.log('AdminProtectedRoute - authStatus:', authStatus);
 
   // Check if we're on a subdomain (no restaurantSlug in URL params)
   const isSubdomain =
@@ -25,6 +28,37 @@ const AdminProtectedRoute = ({ children }) => {
     window.location.hostname.includes('.localhost');
 
   console.log('AdminProtectedRoute - isSubdomain:', isSubdomain);
+
+  // Handle initial rehydration state - simple timeout approach
+  useEffect(() => {
+    const hasToken = storage.get('token');
+    console.log('AdminProtectedRoute - Initial rehydration check:', {
+      hasToken: !!hasToken,
+      isAuthenticated,
+    });
+
+    if (!hasToken) {
+      // No token, no need to wait for rehydration
+      console.log('AdminProtectedRoute - No token, stopping rehydration immediately');
+      setIsRehydrating(false);
+    } else {
+      // We have a token, give rehydration some time to complete
+      console.log('AdminProtectedRoute - Token found, waiting for rehydration...');
+      const timeoutId = setTimeout(() => {
+        console.log('AdminProtectedRoute - Rehydration timeout completed');
+        setIsRehydrating(false);
+      }, 1000); // Wait 1 second for rehydration
+
+      // If user gets authenticated before timeout, stop waiting immediately
+      if (isAuthenticated) {
+        console.log('AdminProtectedRoute - User authenticated during wait, stopping rehydration');
+        clearTimeout(timeoutId);
+        setIsRehydrating(false);
+      }
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isAuthenticated]); // Only depend on isAuthenticated to avoid loops
 
   // Handle cross-domain authentication
   useEffect(() => {
@@ -84,6 +118,25 @@ const AdminProtectedRoute = ({ children }) => {
     ); // Better loading state
   }
 
+  // Show loading state while rehydrating authentication
+  if (isRehydrating) {
+    console.log('AdminProtectedRoute - Rehydrating authentication state...');
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          fontSize: '18px',
+          color: '#666',
+        }}
+      >
+        Carregando painel administrativo...
+      </div>
+    );
+  }
+
   // Check if user is authenticated - both Redux state and localStorage token
   const hasValidToken = storage.get('token');
   const isUserAuthenticated = isAuthenticated && hasValidToken;
@@ -100,8 +153,9 @@ const AdminProtectedRoute = ({ children }) => {
     }
 
     if (isSubdomain) {
-      // On subdomain, redirect to main app home page (not login)
-      window.location.href = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
+      // On subdomain, redirect to main app login page
+      const mainAppUrl = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
+      window.location.href = `${mainAppUrl}/login`;
       return null;
     } else {
       // On main app, redirect to /:restaurantSlug/login
