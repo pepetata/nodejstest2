@@ -12,8 +12,8 @@ const authMiddleware = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('[authMiddleware] Decoded userId from JWT:', decoded.userId);
-    const user = await userModel.findById(decoded.userId);
-    console.log('[authMiddleware] userModel.findById result:', user);
+    const user = await userModel.findByIdWithRestaurant(decoded.userId);
+    console.log('[authMiddleware] userModel.findByIdWithRestaurant result:', user);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid token. User not found.' });

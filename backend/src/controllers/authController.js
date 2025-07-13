@@ -13,7 +13,19 @@ class AuthController {
       }
       const { password, ...userWithoutPassword } = req.user;
       controllerLogger.info('Returning current user', { userId: req.user.id });
-      res.status(200).json({ user: userWithoutPassword });
+
+      // Structure the response with restaurant data if available
+      const response = { user: userWithoutPassword };
+
+      if (req.user.restaurant) {
+        response.restaurant = req.user.restaurant;
+        controllerLogger.info('Including restaurant data in me response', {
+          restaurantId: req.user.restaurant.id,
+          restaurantName: req.user.restaurant.name,
+        });
+      }
+
+      res.status(200).json(response);
     } catch (error) {
       controllerLogger.error('Failed to get current user', { error: error.message });
       next(error);

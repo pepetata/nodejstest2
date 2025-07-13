@@ -128,6 +128,10 @@
     @media (max-width: 768px) {
       gap: 1rem;
     }
+
+    @media (max-width: 480px) {
+      gap: 0.75rem;
+    }
   }
 
   .admin-user-actions {
@@ -177,10 +181,28 @@
   }
 
   .admin-app-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 480px) {
+      padding: 0.15rem;
+      border-radius: 8px;
+    }
+
     img {
-      width: 45px;
-      height: 45px;
-      border-radius: 10px;
+      max-height: 40px;
+      width: auto;
+      border-radius: 8px;
       transition: transform 0.3s ease;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 
@@ -189,8 +211,12 @@
       }
 
       @media (max-width: 768px) {
-        width: 35px;
-        height: 35px;
+        max-height: 32px;
+      }
+
+      @media (max-width: 480px) {
+        max-height: 28px;
+        border-radius: 6px;
       }
     }
   }

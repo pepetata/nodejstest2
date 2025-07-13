@@ -126,12 +126,26 @@ class AuthService {
       // Generate token
       const token = generateToken(user.id);
       serviceLogger.info('User logged in successfully', { userId: user.id });
+
       // Sanitize user before returning (remove password)
       const { password: _pw, ...userSafe } = user;
-      return {
+
+      // Structure the response with restaurant data if available
+      const response = {
         user: userSafe,
         token,
       };
+
+      // Add restaurant data to the response if user has a restaurant
+      if (user.restaurant) {
+        response.restaurant = user.restaurant;
+        serviceLogger.info('Including restaurant data in login response', {
+          restaurantId: user.restaurant.id,
+          restaurantName: user.restaurant.name,
+        });
+      }
+
+      return response;
     } catch (error) {
       serviceLogger.error('Failed to login', { error: error.message });
 

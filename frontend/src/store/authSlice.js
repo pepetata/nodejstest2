@@ -57,10 +57,15 @@ export const rehydrate = createAsyncThunk('auth/rehydrate', async (_, { rejectWi
   try {
     const token = storage.get('token');
     const rememberMe = storage.get('rememberMe') === 'true';
-    if (!token) return { user: null, token: null, rememberMe };
+    if (!token) return { user: null, token: null, restaurant: null, rememberMe };
     // Set token in axios headers (api.js already does this)
     const data = await authService.getCurrentUser();
-    return { user: data.user, token, rememberMe };
+    return {
+      user: data.user,
+      token,
+      restaurant: data.restaurant || null,
+      rememberMe,
+    };
   } catch (err) {
     storage.remove('token');
     storage.remove('rememberMe');
@@ -71,6 +76,7 @@ export const rehydrate = createAsyncThunk('auth/rehydrate', async (_, { rejectWi
 const initialState = {
   user: null,
   token: null,
+  restaurant: null,
   status: 'idle',
   error: null,
   rememberMe: false,
@@ -83,6 +89,7 @@ const authSlice = createSlice({
     logout(state) {
       state.user = null;
       state.token = null;
+      state.restaurant = null;
       state.status = 'idle';
       state.error = null;
       state.rememberMe = false;
@@ -103,6 +110,7 @@ const authSlice = createSlice({
         state.status = 'succeeded';
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.restaurant = action.payload.restaurant || null;
         state.rememberMe = !!action.payload.rememberMe;
       })
       .addCase(login.rejected, (state, action) => {
@@ -112,6 +120,7 @@ const authSlice = createSlice({
       .addCase(rehydrate.fulfilled, (state, action) => {
         state.user = action.payload.user;
         state.token = action.payload.token;
+        state.restaurant = action.payload.restaurant || null;
         state.rememberMe = !!action.payload.rememberMe;
         state.status = 'idle';
       })

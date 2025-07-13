@@ -40,9 +40,16 @@ class UserModel extends BaseModel {
   async findUserForLogin(email) {
     this.logger.debug('Finding user for login by email (with restaurant join)', { email });
     try {
-      // Join users with restaurants to get restaurant_url_name as restaurant_subdomain
+      // Join users with restaurants to get full restaurant data
       const query = `
-        SELECT u.*, r.restaurant_url_name AS restaurant_subdomain
+        SELECT
+          u.*,
+          r.id AS restaurant_id,
+          r.restaurant_name AS restaurant_name,
+          r.restaurant_url_name AS restaurant_subdomain,
+          r.business_type AS restaurant_business_type,
+          r.logo AS restaurant_logo,
+          r.favicon AS restaurant_favicon
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
         WHERE LOWER(u.email) = $1
@@ -51,8 +58,35 @@ class UserModel extends BaseModel {
       const values = [email.toLowerCase()];
       const result = await this.executeQuery(query, values);
       if (result.rows.length > 0) {
-        // For login, return raw user (including password)
-        return result.rows[0];
+        const row = result.rows[0];
+
+        // Separate user and restaurant data
+        const userData = {
+          id: row.id,
+          email: row.email,
+          password: row.password, // Include for login validation
+          name: row.name,
+          role: row.role,
+          status: row.status,
+          restaurant_id: row.restaurant_id,
+          restaurant_subdomain: row.restaurant_subdomain,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        };
+
+        // Add restaurant data if user has a restaurant
+        if (row.restaurant_id) {
+          userData.restaurant = {
+            id: row.restaurant_id,
+            name: row.restaurant_name,
+            url: row.restaurant_subdomain,
+            business_type: row.restaurant_business_type,
+            logo: row.restaurant_logo,
+            favicon: row.restaurant_favicon,
+          };
+        }
+
+        return userData;
       }
       return null;
     } catch (error) {
@@ -310,6 +344,92 @@ class UserModel extends BaseModel {
       return null;
     } catch (error) {
       this.logger.error('Failed to find user by ID', {
+        user_id: id,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Find user by ID with restaurant data (for authentication)
+   */
+  async findByIdWithRestaurant(id) {
+    this.logger.debug('Finding user by ID with restaurant data', { user_id: id });
+    try {
+      let query, values;
+
+      if (this.isValidUuid(id)) {
+        const { sanitizedUuid } = this.validateUuid(id);
+        query = `
+          SELECT
+            u.*,
+            r.id AS restaurant_id,
+            r.restaurant_name AS restaurant_name,
+            r.restaurant_url_name AS restaurant_subdomain,
+            r.business_type AS restaurant_business_type,
+            r.logo AS restaurant_logo,
+            r.favicon AS restaurant_favicon
+          FROM users u
+          LEFT JOIN restaurants r ON u.restaurant_id = r.id
+          WHERE u.id = $1
+          LIMIT 1
+        `;
+        values = [sanitizedUuid];
+      } else if (/^\d+$/.test(id)) {
+        query = `
+          SELECT
+            u.*,
+            r.id AS restaurant_id,
+            r.restaurant_name AS restaurant_name,
+            r.restaurant_url_name AS restaurant_subdomain,
+            r.business_type AS restaurant_business_type,
+            r.logo AS restaurant_logo,
+            r.favicon AS restaurant_favicon
+          FROM users u
+          LEFT JOIN restaurants r ON u.restaurant_id = r.id
+          WHERE u.id = $1
+          LIMIT 1
+        `;
+        values = [Number(id)];
+      } else {
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID ou número.');
+      }
+
+      const result = await this.executeQuery(query, values);
+      if (result.rows.length > 0) {
+        const row = result.rows[0];
+
+        // Separate user and restaurant data
+        const userData = {
+          id: row.id,
+          email: row.email,
+          name: row.name,
+          role: row.role,
+          status: row.status,
+          restaurant_id: row.restaurant_id,
+          restaurant_subdomain: row.restaurant_subdomain,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        };
+
+        // Add restaurant data if user has a restaurant
+        if (row.restaurant_id) {
+          userData.restaurant = {
+            id: row.restaurant_id,
+            name: row.restaurant_name,
+            url: row.restaurant_subdomain,
+            business_type: row.restaurant_business_type,
+            logo: row.restaurant_logo,
+            favicon: row.restaurant_favicon,
+          };
+        }
+
+        return userData;
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to find user by ID with restaurant data', {
         user_id: id,
         error: error.message,
       });

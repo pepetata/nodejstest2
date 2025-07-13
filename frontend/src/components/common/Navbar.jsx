@@ -85,38 +85,27 @@ const AppNavbar = () => {
               </div>
 
               {/* Authentication buttons */}
-              {isAuthenticated ? (
-                <Nav.Link href="#" onClick={handleLogout} className="menu-btn">
-                  Welcome, {user?.name || 'User'} - Logout
-                </Nav.Link>
-              ) : (
-                <>
-                  {/* Hide Entrar button on /login page */}
-                  {location.pathname !== '/login' && (
-                    <Button
-                      variant="outline-primary"
-                      as={Link}
-                      to="/login"
-                      size="sm"
-                      className="menu-btn"
-                    >
-                      Entrar
-                    </Button>
-                  )}
-                  {/* Hide Registrar button on register page */}
-                  {!location.pathname.includes('/register') && (
-                    <Button
-                      variant="primary"
-                      as={Link}
-                      to="/register"
-                      size="sm"
-                      className="menu-btn"
-                    >
-                      Registrar
-                    </Button>
-                  )}
-                </>
-              )}
+
+              <>
+                {/* Hide Entrar button on /login page */}
+                {location.pathname !== '/login' && (
+                  <Button
+                    variant="outline-primary"
+                    as={Link}
+                    to="/login"
+                    size="sm"
+                    className="menu-btn"
+                  >
+                    Entrar
+                  </Button>
+                )}
+                {/* Hide Registrar button on register page */}
+                {!location.pathname.includes('/register') && (
+                  <Button variant="primary" as={Link} to="/register" size="sm" className="menu-btn">
+                    Registrar
+                  </Button>
+                )}
+              </>
             </div>
           </Nav>
         </Navbar.Collapse>

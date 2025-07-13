@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { useEffect } from 'react';
+import { logout } from './store/authSlice';
 import Layout from './components/common/Layout';
 
 // Pages
@@ -24,8 +26,36 @@ import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
 
 function App({ getSubdomain }) {
   const isAuthenticated = useSelector((state) => !!state.auth.user);
+  const dispatch = useDispatch();
   const subdomain = getSubdomain ? getSubdomain() : null;
   console.log(`Subdomain detected: ${subdomain}`);
+
+  // Check for logout parameter and force clear authentication
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldLogout = urlParams.get('logout');
+
+    if (shouldLogout === 'true') {
+      console.log('Logout parameter detected, forcing authentication clear');
+
+      // Clear all possible authentication data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:root');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+
+      // Dispatch logout action
+      dispatch(logout());
+
+      // Clean up URL by removing logout parameter
+      urlParams.delete('logout');
+      const queryString = urlParams.toString();
+      const newUrl = window.location.pathname + (queryString ? `?${queryString}` : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [dispatch]);
 
   // Protected route wrapper
   const ProtectedRoute = ({ children }) => {
