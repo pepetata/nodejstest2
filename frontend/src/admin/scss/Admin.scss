@@ -1,0 +1,93 @@
+.admin-navbar {
+  display: flex;
+  align-items: center;
+  background: #1650a1;
+  padding: 0.5rem 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  .admin-navbar-logo img {
+    height: 40px;
+    margin-right: 2rem;
+  }
+  .admin-navbar-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    li {
+      a {
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.08rem;
+        text-decoration: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: background 0.15s;
+        &.active,
+        &:hover {
+          background: #ffaa00;
+          color: #1650a1;
+        }
+      }
+    }
+  }
+}
+
+.admin-home-container {
+  max-width: 900px;
+  margin: 2.5rem auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem 2rem 2rem 2rem;
+}
+.admin-home-desc {
+  color: #1650a1;
+  font-size: 1.15rem;
+  margin-bottom: 2.5rem;
+}
+.admin-home-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: flex-start;
+}
+.admin-home-section-card {
+  background: #f8fafc;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  min-width: 220px;
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.admin-home-section-btn {
+  background: #ffaa00;
+  color: #1650a1;
+  font-weight: 700;
+  font-size: 1.08rem;
+  border: none;
+  border-radius: 6px;
+  padding: 0.7rem 1.5rem;
+  margin-bottom: 0.7rem;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.admin-home-section-btn:hover {
+  background: #ffb733;
+}
+.admin-home-section-desc {
+  color: #333;
+  font-size: 0.98rem;
+}
+
+.admin-page {
+  max-width: 800px;
+  margin: 2.5rem auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2rem 2rem 2rem;
+}

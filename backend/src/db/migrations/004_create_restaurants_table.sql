@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
     whatsapp VARCHAR(20),
     website VARCHAR(255),
     description TEXT,
+    logo VARCHAR(255),
+    favicon VARCHAR(255),
 
     -- Business Status
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'inactive', 'suspended')),
