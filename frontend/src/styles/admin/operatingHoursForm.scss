@@ -1,0 +1,133 @@
+// Operating Hours Form Styles
+.operating-hours-form {
+  .day-hours-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .day-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #495057;
+  }
+
+  .closed-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #6c757d;
+    cursor: pointer;
+  }
+
+  .time-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .time-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .time-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .time-input {
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+    width: 100%;
+    font-family: monospace;
+
+    &:disabled {
+      background-color: #f8f9fa;
+      color: #6c757d;
+    }
+
+    // Force 24-hour format
+    &::-webkit-datetime-edit-ampm-field {
+      display: none;
+    }
+
+    &::-webkit-datetime-edit-hour-field {
+      color: #495057;
+    }
+  }
+
+  .time-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  // Tablet and Desktop - inline layout
+  @media (min-width: 768px) {
+    .day-hours-row {
+      flex-direction: row;
+      align-items: center;
+      gap: 15px;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+
+    .day-header {
+      margin-bottom: 0;
+      justify-content: flex-start;
+      gap: 12px;
+      min-width: 200px;
+    }
+
+    .day-label {
+      min-width: 120px;
+    }
+
+    .closed-toggle {
+      min-width: 80px;
+    }
+
+    .time-fields {
+      flex-direction: row;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .time-field {
+      flex-direction: row;
+      align-items: center;
+      gap: 5px;
+      min-width: 140px;
+    }
+
+    .time-label {
+      font-size: 12px;
+      min-width: 60px;
+    }
+
+    .time-input {
+      width: 90px;
+    }
+  }
+}
