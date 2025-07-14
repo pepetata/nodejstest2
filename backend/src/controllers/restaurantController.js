@@ -501,6 +501,156 @@ class RestaurantController {
       next(error);
     }
   });
+
+  /**
+   * Get restaurant locations
+   * GET /api/v1/restaurants/:id/locations
+   */
+  getRestaurantLocations = asyncHandler(async (req, res, next) => {
+    const controllerLogger = this.logger.child({ method: 'getRestaurantLocations' });
+
+    try {
+      controllerLogger.info('Getting restaurant locations', {
+        restaurantId: req.params.id,
+        userId: req.user?.id,
+      });
+
+      const locations = await this.restaurantService.getRestaurantLocations(
+        req.params.id,
+        req.user
+      );
+
+      controllerLogger.debug('Restaurant locations retrieved successfully', {
+        locationCount: locations.length,
+      });
+
+      res
+        .status(200)
+        .json(
+          ResponseFormatter.success({ locations }, 'Restaurant locations retrieved successfully')
+        );
+    } catch (error) {
+      controllerLogger.error('Error getting restaurant locations', {
+        error: error.message,
+        stack: error.stack,
+      });
+      next(error);
+    }
+  });
+
+  /**
+   * Upload restaurant media
+   * POST /api/v1/restaurants/:id/media
+   */
+  uploadRestaurantMedia = asyncHandler(async (req, res, next) => {
+    const controllerLogger = this.logger.child({ method: 'uploadRestaurantMedia' });
+
+    try {
+      controllerLogger.info('Uploading restaurant media', {
+        restaurantId: req.params.id,
+        mediaType: req.body.mediaType,
+        fileCount: req.files?.length || 0,
+        userId: req.user?.id,
+      });
+
+      const mediaData = await this.restaurantService.uploadRestaurantMedia(
+        req.params.id,
+        req.files,
+        req.body.mediaType,
+        req.user
+      );
+
+      controllerLogger.debug('Restaurant media uploaded successfully', {
+        uploadedFiles: mediaData.files?.length || 0,
+      });
+
+      res
+        .status(201)
+        .json(
+          ResponseFormatter.success(
+            { mediaType: req.body.mediaType, files: mediaData.files },
+            'Media uploaded successfully'
+          )
+        );
+    } catch (error) {
+      controllerLogger.error('Error uploading restaurant media', {
+        error: error.message,
+        stack: error.stack,
+      });
+      next(error);
+    }
+  });
+
+  /**
+   * Delete restaurant media
+   * DELETE /api/v1/restaurants/:id/media/:mediaId
+   */
+  deleteRestaurantMedia = asyncHandler(async (req, res, next) => {
+    const controllerLogger = this.logger.child({ method: 'deleteRestaurantMedia' });
+
+    try {
+      controllerLogger.info('Deleting restaurant media', {
+        restaurantId: req.params.id,
+        mediaId: req.params.mediaId,
+        mediaType: req.query.type,
+        userId: req.user?.id,
+      });
+
+      await this.restaurantService.deleteRestaurantMedia(
+        req.params.id,
+        req.params.mediaId,
+        req.query.type,
+        req.user
+      );
+
+      controllerLogger.debug('Restaurant media deleted successfully');
+
+      res.status(200).json(ResponseFormatter.success(null, 'Media deleted successfully'));
+    } catch (error) {
+      controllerLogger.error('Error deleting restaurant media', {
+        error: error.message,
+        stack: error.stack,
+      });
+      next(error);
+    }
+  });
+
+  /**
+   * Update restaurant location
+   * PUT /api/v1/restaurants/:restaurantId/locations/:locationId
+   */
+  updateRestaurantLocation = asyncHandler(async (req, res, next) => {
+    const controllerLogger = this.logger.child({ method: 'updateRestaurantLocation' });
+
+    try {
+      controllerLogger.info('Updating restaurant location', {
+        restaurantId: req.params.restaurantId,
+        locationId: req.params.locationId,
+        userId: req.user?.id,
+      });
+
+      const updatedLocation = await this.restaurantService.updateRestaurantLocation(
+        req.params.restaurantId,
+        req.params.locationId,
+        req.body,
+        req.user
+      );
+
+      controllerLogger.debug('Restaurant location updated successfully');
+
+      res
+        .status(200)
+        .json(
+          ResponseFormatter.success({ location: updatedLocation }, 'Location updated successfully')
+        );
+    } catch (error) {
+      controllerLogger.error('Error updating restaurant location', {
+        error: error.message,
+        stack: error.stack,
+      });
+      next(error);
+    }
+  });
 }
 
 module.exports = RestaurantController;

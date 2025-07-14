@@ -926,6 +926,189 @@ class RestaurantService {
   isAdmin(user) {
     return ['restaurant_administrator', 'location_administrator'].includes(user.role);
   }
+
+  /**
+   * Get restaurant locations
+   * @param {String} restaurantId - Restaurant ID
+   * @param {Object} user - User object
+   * @returns {Array} Array of locations
+   */
+  async getRestaurantLocations(restaurantId, user) {
+    const serviceLogger = this.logger.child({ method: 'getRestaurantLocations' });
+
+    try {
+      serviceLogger.debug('Getting restaurant locations', {
+        restaurantId,
+        userId: user?.id,
+      });
+
+      // Check if restaurant exists
+      const restaurant = await this.restaurantModel.findById(restaurantId);
+      if (!restaurant) {
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Get all locations for this restaurant
+      const locations = await RestaurantLocationModel.getByRestaurantId(restaurantId);
+
+      serviceLogger.debug('Restaurant locations retrieved', {
+        locationCount: locations.length,
+      });
+
+      return locations;
+    } catch (error) {
+      serviceLogger.error('Error getting restaurant locations', {
+        error: error.message,
+        restaurantId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update restaurant location
+   * @param {String} restaurantId - Restaurant ID
+   * @param {String} locationId - Location ID
+   * @param {Object} locationData - Location data to update
+   * @param {Object} user - User object
+   * @returns {Object} Updated location
+   */
+  async updateRestaurantLocation(restaurantId, locationId, locationData, user) {
+    const serviceLogger = this.logger.child({ method: 'updateRestaurantLocation' });
+
+    try {
+      serviceLogger.debug('Updating restaurant location', {
+        restaurantId,
+        locationId,
+        userId: user?.id,
+      });
+
+      // Check if restaurant exists
+      const restaurant = await this.restaurantModel.findById(restaurantId);
+      if (!restaurant) {
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Check if location exists and belongs to this restaurant
+      const location = await RestaurantLocationModel.findById(locationId);
+      if (!location || location.restaurant_id !== restaurantId) {
+        const error = new Error('Location not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Update the location
+      const updatedLocation = await RestaurantLocationModel.update(locationId, locationData);
+
+      serviceLogger.debug('Restaurant location updated successfully');
+
+      return updatedLocation;
+    } catch (error) {
+      serviceLogger.error('Error updating restaurant location', {
+        error: error.message,
+        restaurantId,
+        locationId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Upload restaurant media
+   * @param {String} restaurantId - Restaurant ID
+   * @param {Array} files - Array of files to upload
+   * @param {String} mediaType - Type of media (logo, favicon, images, videos)
+   * @param {Object} user - User object
+   * @returns {Object} Upload result
+   */
+  async uploadRestaurantMedia(restaurantId, files, mediaType, user) {
+    const serviceLogger = this.logger.child({ method: 'uploadRestaurantMedia' });
+
+    try {
+      serviceLogger.debug('Uploading restaurant media', {
+        restaurantId,
+        mediaType,
+        fileCount: files?.length || 0,
+        userId: user?.id,
+      });
+
+      // Check if restaurant exists
+      const restaurant = await this.restaurantModel.findById(restaurantId);
+      if (!restaurant) {
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // For now, return mock data - actual file upload implementation would go here
+      const uploadedFiles =
+        files?.map((file, index) => ({
+          id: `file_${Date.now()}_${index}`,
+          name: file.originalname || `file_${index}`,
+          url: `/uploads/${mediaType}/${restaurantId}/${file.filename || file.originalname}`,
+          size: file.size || 0,
+          uploadedAt: new Date(),
+        })) || [];
+
+      serviceLogger.debug('Restaurant media uploaded successfully', {
+        uploadedCount: uploadedFiles.length,
+      });
+
+      return { files: uploadedFiles };
+    } catch (error) {
+      serviceLogger.error('Error uploading restaurant media', {
+        error: error.message,
+        restaurantId,
+        mediaType,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete restaurant media
+   * @param {String} restaurantId - Restaurant ID
+   * @param {String} mediaId - Media ID to delete
+   * @param {String} mediaType - Type of media
+   * @param {Object} user - User object
+   * @returns {Boolean} Success status
+   */
+  async deleteRestaurantMedia(restaurantId, mediaId, mediaType, user) {
+    const serviceLogger = this.logger.child({ method: 'deleteRestaurantMedia' });
+
+    try {
+      serviceLogger.debug('Deleting restaurant media', {
+        restaurantId,
+        mediaId,
+        mediaType,
+        userId: user?.id,
+      });
+
+      // Check if restaurant exists
+      const restaurant = await this.restaurantModel.findById(restaurantId);
+      if (!restaurant) {
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // For now, return success - actual file deletion implementation would go here
+      serviceLogger.debug('Restaurant media deleted successfully');
+
+      return true;
+    } catch (error) {
+      serviceLogger.error('Error deleting restaurant media', {
+        error: error.message,
+        restaurantId,
+        mediaId,
+      });
+      throw error;
+    }
+  }
 }
 
 module.exports = new RestaurantService();

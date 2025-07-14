@@ -42,7 +42,8 @@ INSERT INTO restaurant_locations (
         "thursday": {"open": "18:00", "close": "23:00", "closed": false},
         "friday": {"open": "18:00", "close": "00:00", "closed": false},
         "saturday": {"open": "18:00", "close": "00:00", "closed": false},
-        "sunday": {"open": "18:00", "close": "23:00", "closed": false}
+        "sunday": {"open": "18:00", "close": "23:00", "closed": false},
+        "holidays": {"open": "19:00", "close": "22:00", "closed": false}
     }',
     ARRAY['digital_menu', 'online_ordering', 'delivery_tracking', 'table_reservations'],
     true,
@@ -69,7 +70,8 @@ INSERT INTO restaurant_locations (
         "thursday": {"open": "11:00", "close": "22:00", "closed": false},
         "friday": {"open": "11:00", "close": "23:00", "closed": false},
         "saturday": {"open": "11:00", "close": "23:00", "closed": false},
-        "sunday": {"open": "12:00", "close": "21:00", "closed": false}
+        "sunday": {"open": "12:00", "close": "21:00", "closed": false},
+        "holidays": {"open": "00:00", "close": "00:00", "closed": true}
     }',
     ARRAY['digital_menu', 'takeout', 'delivery'],
     true,

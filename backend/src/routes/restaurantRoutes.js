@@ -133,6 +133,63 @@ router.delete(
   restaurantController.deleteRestaurant.bind(restaurantController)
 );
 
+// GET /api/v1/restaurants/:id/locations - Get restaurant locations
+router.get('/:id/locations', async (req, res, next) => {
+  try {
+    await restaurantController.getRestaurantLocations(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/v1/restaurants/:restaurantId/locations/:locationId - Update restaurant location
+router.put(
+  '/:restaurantId/locations/:locationId',
+  authMiddleware,
+  ValidationMiddleware.validateParams(
+    Joi.object({
+      restaurantId: RestaurantValidation.uuidSchema,
+      locationId: RestaurantValidation.uuidSchema,
+    })
+  ),
+  restaurantAuth.requireRestaurantModifyAccess, // Check if user can modify this restaurant
+  ValidationMiddleware.validateBody(RestaurantValidation.locationUpdateSchema),
+  restaurantController.updateRestaurantLocation.bind(restaurantController)
+);
+
+// POST /api/v1/restaurants/:id/media - Upload restaurant media
+router.post(
+  '/:id/media',
+  authMiddleware,
+  ValidationMiddleware.validateParams(
+    Joi.object({
+      id: RestaurantValidation.uuidSchema,
+    })
+  ),
+  restaurantAuth.requireRestaurantModifyAccess, // Check if user can modify this restaurant
+  // Note: File upload middleware would be added here
+  restaurantController.uploadRestaurantMedia.bind(restaurantController)
+);
+
+// DELETE /api/v1/restaurants/:id/media/:mediaId - Delete restaurant media
+router.delete(
+  '/:id/media/:mediaId',
+  authMiddleware,
+  ValidationMiddleware.validateParams(
+    Joi.object({
+      id: RestaurantValidation.uuidSchema,
+      mediaId: RestaurantValidation.uuidSchema,
+    })
+  ),
+  ValidationMiddleware.validateQuery(
+    Joi.object({
+      type: Joi.string().valid('logo', 'favicon', 'images', 'videos').required(),
+    })
+  ),
+  restaurantAuth.requireRestaurantModifyAccess, // Check if user can modify this restaurant
+  restaurantController.deleteRestaurantMedia.bind(restaurantController)
+);
+
 /**
  * Error handling for restaurant routes
  */

@@ -66,9 +66,21 @@ class RestaurantLocationModel extends BaseModel {
    */
   get operatingHoursSchema() {
     const daySchema = Joi.object({
-      open: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
-      close: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
+      // Accept both backend format (open/close/closed) and frontend format (open_time/close_time/is_closed)
+      open: Joi.string()
+        .pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+        .allow(''),
+      close: Joi.string()
+        .pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+        .allow(''),
       closed: Joi.boolean().default(false),
+      open_time: Joi.string()
+        .pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+        .allow(''),
+      close_time: Joi.string()
+        .pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+        .allow(''),
+      is_closed: Joi.boolean(),
     });
 
     return Joi.object({
@@ -202,7 +214,12 @@ class RestaurantLocationModel extends BaseModel {
 
       // Convert operating_hours to JSON string
       const operatingHoursIndex = columns.indexOf('operating_hours');
-      values[operatingHoursIndex] = JSON.stringify(validatedData.operating_hours);
+      if (operatingHoursIndex !== -1) {
+        const transformedHours = this._transformOperatingHoursForStorage(
+          validatedData.operating_hours
+        );
+        values[operatingHoursIndex] = JSON.stringify(transformedHours);
+      }
 
       const query = `
         INSERT INTO ${this.tableName} (${columns.join(', ')})
@@ -217,14 +234,17 @@ class RestaurantLocationModel extends BaseModel {
 
       const result = await this.executeQuery(query, values);
 
+      const createdLocation = result.rows[0];
+      const transformedLocation = this._transformLocationData(createdLocation);
+
       this.logger.info('Restaurant location created successfully', {
-        location_id: result.rows[0].id,
+        location_id: transformedLocation.id,
         restaurant_id: validatedData.restaurant_id,
         name: validatedData.name,
         is_primary: validatedData.is_primary,
       });
 
-      return result.rows[0];
+      return transformedLocation;
     } catch (error) {
       this.logger.error('Failed to create restaurant location', {
         restaurant_id: locationData.restaurant_id,
@@ -297,8 +317,11 @@ class RestaurantLocationModel extends BaseModel {
 
       // Convert operating_hours to JSON string if present
       if (validatedData.operating_hours) {
-        this.logger.debug('Converting operating hours to JSON');
-        validatedData.operating_hours = JSON.stringify(validatedData.operating_hours);
+        this.logger.debug('Converting operating hours from frontend format to database format');
+        const transformedHours = this._transformOperatingHoursForStorage(
+          validatedData.operating_hours
+        );
+        validatedData.operating_hours = JSON.stringify(transformedHours);
       }
 
       const { clause, params } = this.buildSetClause(validatedData);
@@ -326,7 +349,8 @@ class RestaurantLocationModel extends BaseModel {
         this.logger.warn('Location update returned no results', { location_id: id });
       }
 
-      return result.rows[0] || null;
+      const updatedLocation = result.rows[0] || null;
+      return this._transformLocationData(updatedLocation);
     } catch (error) {
       this.logger.error('Failed to update restaurant location', {
         location_id: id,
@@ -372,12 +396,17 @@ class RestaurantLocationModel extends BaseModel {
 
       const locations = await this.find(conditions, queryOptions);
 
+      // Transform location data to frontend-expected format
+      const transformedLocations = locations.map((location) =>
+        this._transformLocationData(location)
+      );
+
       this.logger.info('Successfully retrieved restaurant locations', {
         restaurant_id: sanitizedUuid,
-        location_count: locations.length,
+        location_count: transformedLocations.length,
       });
 
-      return locations;
+      return transformedLocations;
     } catch (error) {
       this.logger.error('Failed to get locations by restaurant ID', {
         restaurant_id: restaurantId,
@@ -418,7 +447,7 @@ class RestaurantLocationModel extends BaseModel {
       };
 
       const result = await this.find(conditions);
-      const location = result.length > 0 ? result[0] : null;
+      const location = result.length > 0 ? this._transformLocationData(result[0]) : null;
 
       this.logger.debug('Location search completed', {
         restaurant_id: sanitizedUuid,
@@ -890,6 +919,112 @@ class RestaurantLocationModel extends BaseModel {
         location: null,
       };
     }
+  }
+
+  /**
+   * Transform location data after retrieval
+   * Parses operating_hours JSON and converts to frontend-expected format
+   * @param {Object} location - Raw location data from database
+   * @returns {Object} Transformed location data
+   * @private
+   */
+  _transformLocationData(location) {
+    if (!location) return location;
+
+    const transformed = { ...location };
+
+    // Parse operating_hours if it's a JSON string
+    if (transformed.operating_hours && typeof transformed.operating_hours === 'string') {
+      try {
+        transformed.operating_hours = JSON.parse(transformed.operating_hours);
+      } catch (error) {
+        this.logger.warn('Failed to parse operating_hours JSON', {
+          location_id: location.id,
+          operating_hours: location.operating_hours,
+        });
+        transformed.operating_hours = {};
+      }
+    }
+
+    // Transform operating hours structure from {open, close, closed} to {open_time, close_time, is_closed}
+    if (transformed.operating_hours && typeof transformed.operating_hours === 'object') {
+      const transformedHours = {};
+
+      Object.keys(transformed.operating_hours).forEach((day) => {
+        const dayHours = transformed.operating_hours[day];
+        if (dayHours && typeof dayHours === 'object') {
+          transformedHours[day] = {
+            open_time: dayHours.open || '',
+            close_time: dayHours.close || '',
+            is_closed: dayHours.closed || false,
+          };
+        }
+      });
+
+      // Ensure holidays are included if missing
+      if (!transformedHours.holidays) {
+        transformedHours.holidays = {
+          open_time: '',
+          close_time: '',
+          is_closed: true,
+        };
+      }
+
+      transformed.operating_hours = transformedHours;
+    }
+
+    // Transform address fields into nested object if they exist as flat fields
+    if (transformed.address_street || transformed.address_city || transformed.address_zip_code) {
+      transformed.address = {
+        address_street: transformed.address_street,
+        address_street_number: transformed.address_street_number,
+        address_complement: transformed.address_complement,
+        address_city: transformed.address_city,
+        address_state: transformed.address_state,
+        address_zip_code: transformed.address_zip_code,
+      };
+    }
+
+    return transformed;
+  }
+
+  /**
+   * Transform operating hours from frontend format to database format
+   * Converts {open_time, close_time, is_closed} to {open, close, closed}
+   * @param {Object} operatingHours - Operating hours in frontend format
+   * @returns {Object} Operating hours in database format
+   * @private
+   */
+  _transformOperatingHoursForStorage(operatingHours) {
+    if (!operatingHours || typeof operatingHours !== 'object') {
+      return operatingHours;
+    }
+
+    const transformedHours = {};
+
+    Object.keys(operatingHours).forEach((day) => {
+      const dayHours = operatingHours[day];
+      if (dayHours && typeof dayHours === 'object') {
+        transformedHours[day] = {
+          open: dayHours.open_time || dayHours.open || '',
+          close: dayHours.close_time || dayHours.close || '',
+          closed: dayHours.is_closed !== undefined ? dayHours.is_closed : dayHours.closed || false,
+        };
+      }
+    });
+
+    return transformedHours;
+  }
+
+  /**
+   * Find location by ID with data transformation
+   * Overrides BaseModel findById to apply operating_hours parsing
+   * @param {String|Number} id - Location ID
+   * @returns {Object|null} Transformed location data
+   */
+  async findById(id) {
+    const location = await super.findById(id);
+    return this._transformLocationData(location);
   }
 }
 

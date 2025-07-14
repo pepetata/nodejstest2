@@ -193,6 +193,11 @@ class ValidationMiddleware {
       const sanitizeObject = (obj) => {
         if (!obj || typeof obj !== 'object') return obj;
 
+        // Handle arrays properly
+        if (Array.isArray(obj)) {
+          return obj.map((item) => sanitizeObject(item));
+        }
+
         const sanitized = {};
         for (const [key, value] of Object.entries(obj)) {
           if (typeof value === 'string') {

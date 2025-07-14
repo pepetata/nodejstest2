@@ -193,9 +193,84 @@ class RestaurantValidation {
    */
   static get updateSchema() {
     return this.createSchema.fork(
-      ['restaurant_name', 'restaurant_url_name', 'terms_accepted'],
+      ['restaurant_name', 'restaurant_url_name', 'terms_accepted', 'locations'],
       (schema) => schema.optional()
     );
+  }
+
+  /**
+   * Validation schema for updating a restaurant location
+   */
+  static get locationUpdateSchema() {
+    const addressSchema = Joi.object({
+      address_zip_code: Joi.string()
+        .pattern(/^\d{5}-?\d{3}$/)
+        .messages({
+          'string.pattern.base': 'CEP deve ter o formato 12345-123',
+        }),
+      address_street: Joi.string().trim().min(2).max(255).messages({
+        'string.min': 'Logradouro deve ter pelo menos 2 caracteres',
+        'string.max': 'Logradouro não pode exceder 255 caracteres',
+      }),
+      address_street_number: Joi.string().trim().min(1).max(20).messages({
+        'string.min': 'Número deve ter pelo menos 1 caractere',
+        'string.max': 'Número não pode exceder 20 caracteres',
+      }),
+      address_complement: Joi.string().trim().max(100).allow('', null).messages({
+        'string.max': 'Complemento não pode exceder 100 caracteres',
+      }),
+      address_city: Joi.string().trim().min(2).max(100).messages({
+        'string.min': 'Cidade deve ter pelo menos 2 caracteres',
+        'string.max': 'Cidade não pode exceder 100 caracteres',
+      }),
+      address_state: Joi.string().trim().min(2).max(50).messages({
+        'string.min': 'Estado deve ter pelo menos 2 caracteres',
+        'string.max': 'Estado não pode exceder 50 caracteres',
+      }),
+    });
+
+    const operatingHoursSchema = Joi.object().pattern(
+      Joi.string(),
+      Joi.object({
+        open_time: Joi.string()
+          .pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+          .allow(''),
+        close_time: Joi.string()
+          .pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
+          .allow(''),
+        is_closed: Joi.boolean(),
+      })
+    );
+
+    return Joi.object({
+      name: Joi.string().trim().min(1).max(100).messages({
+        'string.min': 'Nome da localização deve ter pelo menos 1 caractere',
+        'string.max': 'Nome da localização não pode exceder 100 caracteres',
+      }),
+      url_name: Joi.string()
+        .trim()
+        .lowercase()
+        .pattern(/^[a-z0-9-]+$/)
+        .min(3)
+        .max(50)
+        .messages({
+          'string.pattern.base': 'URL deve conter apenas letras minúsculas, números e hífens',
+          'string.min': 'URL deve ter pelo menos 3 caracteres',
+          'string.max': 'URL não pode exceder 50 caracteres',
+        }),
+      phone: Joi.string().trim().min(10).max(20).messages({
+        'string.min': 'Telefone deve ter pelo menos 10 caracteres',
+        'string.max': 'Telefone não pode exceder 20 caracteres',
+      }),
+      whatsapp: Joi.string().trim().min(10).max(20).messages({
+        'string.min': 'WhatsApp deve ter pelo menos 10 caracteres',
+        'string.max': 'WhatsApp não pode exceder 20 caracteres',
+      }),
+      address: addressSchema,
+      operating_hours: operatingHoursSchema,
+      selected_features: Joi.array().items(Joi.string()).max(20),
+      is_primary: Joi.boolean(),
+    });
   }
 
   /**

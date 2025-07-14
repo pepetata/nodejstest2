@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant Login Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+      }
+      .test-container {
+        max-width: 600px;
+      }
+      .credentials {
+        background: #f5f5f5;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 5px;
+      }
+      .step {
+        margin: 20px 0;
+        padding: 15px;
+        border-left: 4px solid #007bff;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>🔍 Restaurant Profile Loading Debug</h1>
+
+      <div class="step">
+        <h3>📝 Issue Diagnosis</h3>
+        <p>
+          The restaurant profile page shows "Carregando informações do restaurante..." (loading)
+          indefinitely. This typically means:
+        </p>
+        <ul>
+          <li>❌ User is not authenticated</li>
+          <li>❌ No restaurant ID in auth store</li>
+          <li>❌ API call is failing</li>
+          <li>❌ Backend is not responding</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <h3>🧪 Test Credentials</h3>
+        <div class="credentials">
+          <strong>Test Restaurant Admin:</strong><br />
+          Email: admin@pizzariabellavista.com.br<br />
+          Password: plaintext_admin123<br />
+          Restaurant: Pizzaria Bella Vista (ID: 550e8400-e29b-41d4-a716-446655440001)
+        </div>
+      </div>
+
+      <div class="step">
+        <h3>🔧 Resolution Steps</h3>
+        <ol>
+          <li>
+            <strong>Login First:</strong> Navigate to login page and authenticate with test
+            credentials
+          </li>
+          <li><strong>Navigate to Profile:</strong> Go to restaurant admin section</li>
+          <li><strong>Check Console:</strong> Look for debugging messages we added</li>
+          <li><strong>Verify API:</strong> Check if backend APIs are responding</li>
+        </ol>
+      </div>
+
+      <div class="step">
+        <h3>🚀 Quick Actions</h3>
+        <button onclick="openLogin()">🔑 Open Login Page</button>
+        <button onclick="openProfileDirect()">👤 Try Profile Direct</button>
+        <button onclick="checkBackend()">🔧 Test Backend API</button>
+      </div>
+
+      <div class="step">
+        <h3>📊 Debug Information</h3>
+        <p>
+          We added console.log statements to the AdminRestaurantProfilePage component that will
+          show:
+        </p>
+        <ul>
+          <li>Restaurant data from auth store</li>
+          <li>Loading states</li>
+          <li>Profile data</li>
+          <li>API call attempts</li>
+        </ul>
+        <p><strong>Check the browser console for detailed debug output.</strong></p>
+      </div>
+    </div>
+
+    <script>
+      function openLogin() {
+        window.open('http://localhost:3000/login', '_blank');
+      }
+
+      function openProfileDirect() {
+        window.open(
+          'http://localhost:3000/pizzaria-bella-vista/admin/restaurant-profile',
+          '_blank'
+        );
+      }
+
+      function checkBackend() {
+        fetch('http://localhost:5000/api/v1/auth/test')
+          .then((response) => response.json())
+          .then((data) => alert('Backend is responding: ' + JSON.stringify(data)))
+          .catch((error) => alert('Backend error: ' + error.message));
+      }
+    </script>
+  </body>
+</html>

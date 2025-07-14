@@ -59,14 +59,19 @@ class RateLimitMiddleware {
   static getAuthRateLimiterInstance() {
     // Singleton pattern to ensure the same instance is used
     if (!this._authRateLimiter) {
+      // Higher limits for development, stricter for production
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      const maxRequests = isDevelopment ? 100 : 20; // 100 for dev, 20 for prod
+      const windowMs = 15 * 60 * 1000; // 15 minutes
+
       this._authRateLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 20, // limita cada IP a 5 requisições por 15 minutos
+        windowMs,
+        max: maxRequests,
         message: {
           error: 'Muitas tentativas de login',
           message:
             'Você fez muitas tentativas de login. Por favor, aguarde alguns minutos antes de tentar novamente.',
-          retryAfter: 15 * 60 * 1000,
+          retryAfter: windowMs,
           timestamp: new Date().toISOString(),
         },
         standardHeaders: true,
