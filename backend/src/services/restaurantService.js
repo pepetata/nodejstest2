@@ -207,7 +207,17 @@ class RestaurantService {
         //check if user email exists in the database before Creating
         const existingUser = await userService.getUserByEmail(userData.email);
         if (!existingUser) {
-          await userService.createUser(userData);
+          // Create user with restaurant_administrator role
+          await userService.createRestaurantAdministrator(userData, newRestaurant.id);
+        } else {
+          // If user exists, assign restaurant_administrator role for this restaurant
+          await userService.assignRolesToUser(existingUser.id, [
+            {
+              roleName: 'restaurant_administrator',
+              restaurantId: newRestaurant.id,
+              isPrimary: true,
+            },
+          ]);
         }
       } catch (error) {
         serviceLogger.error('Failed to create user', {

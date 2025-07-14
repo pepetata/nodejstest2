@@ -34,7 +34,7 @@ class UserRoleModel extends BaseModel {
           r.scope as role_scope,
           rest.restaurant_name,
           rest.restaurant_url_name,
-          loc.location_name
+          loc.name as location_name
         FROM user_roles ur
         JOIN roles r ON ur.role_id = r.id
         LEFT JOIN restaurants rest ON ur.restaurant_id = rest.id
@@ -77,7 +77,7 @@ class UserRoleModel extends BaseModel {
           r.scope as role_scope,
           rest.restaurant_name,
           rest.restaurant_url_name,
-          loc.location_name
+          loc.name as location_name
         FROM user_roles ur
         JOIN roles r ON ur.role_id = r.id
         LEFT JOIN restaurants rest ON ur.restaurant_id = rest.id
@@ -182,12 +182,12 @@ class UserRoleModel extends BaseModel {
   }
 
   /**
-   * Assign role to user
+   * Create a new user role assignment
    * @param {Object} assignmentData - Role assignment data
    * @returns {Object} Created user role assignment
    */
-  async assignRole(assignmentData) {
-    this.logger.debug('Assigning role to user', { assignmentData });
+  async create(assignmentData) {
+    this.logger.debug('Creating user role assignment', { assignmentData });
     try {
       // Validate input
       const { error, value } = this.createSchema.validate(assignmentData);
@@ -202,12 +202,51 @@ class UserRoleModel extends BaseModel {
         await this.removePrimaryRoleFlag(value.user_id);
       }
 
-      // Create the assignment
-      const assignment = await super.create(value);
-      this.logger.info('Role assigned successfully', {
+      // Build the insert query
+      const columns = Object.keys(value);
+      const placeholders = columns.map((_, index) => `$${index + 1}`);
+      const values = columns.map((col) => value[col]);
+
+      const query = `
+        INSERT INTO ${this.tableName} (${columns.join(', ')})
+        VALUES (${placeholders.join(', ')})
+        RETURNING *
+      `;
+
+      const result = await this.executeQuery(query, values);
+      const assignment = result.rows[0];
+
+      this.logger.info('Role assignment created successfully', {
         assignmentId: assignment.id,
         userId: value.user_id,
         roleId: value.role_id,
+      });
+
+      return assignment;
+    } catch (error) {
+      this.logger.error('Failed to create role assignment', {
+        assignmentData,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Assign role to user
+   * @param {Object} assignmentData - Role assignment data
+   * @returns {Object} Created user role assignment
+   */
+  async assignRole(assignmentData) {
+    this.logger.debug('Assigning role to user', { assignmentData });
+    try {
+      // Use the create method to assign the role
+      const assignment = await this.create(assignmentData);
+
+      this.logger.info('Role assigned successfully', {
+        assignmentId: assignment.id,
+        userId: assignmentData.user_id,
+        roleId: assignmentData.role_id,
       });
 
       return assignment;

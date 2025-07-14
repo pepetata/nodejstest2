@@ -12,6 +12,13 @@ const path = require('path');
 
 // ...existing code...
 class UserService {
+  constructor(userModelInstance = userModel) {
+    this.userModel = userModelInstance;
+    this.roleModel = new RoleModel();
+    this.userRoleModel = new UserRoleModel();
+    this.logger = logger.child({ service: 'UserService' });
+  }
+
   /**
    * Forgot password (send reset link)
    * @param {string} email
@@ -95,12 +102,6 @@ class UserService {
     } catch (mailErr) {
       this.logger.error('Failed to send password reset success email', { error: mailErr.message });
     }
-  }
-  constructor(userModelInstance = userModel) {
-    this.userModel = userModelInstance;
-    this.roleModel = new RoleModel();
-    this.userRoleModel = new UserRoleModel();
-    this.logger = logger.child({ service: 'UserService' });
   }
 
   /**
@@ -840,7 +841,7 @@ class UserService {
 
     try {
       // Create the user first (using existing createUser method)
-      const user = await this.createUser(userData, { id: createdBy });
+      const user = await this.createUser(userData, createdBy ? { id: createdBy } : null);
 
       // Assign roles if provided
       if (roles.length > 0) {
