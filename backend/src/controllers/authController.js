@@ -1,7 +1,12 @@
 const authService = require('../services/authService');
+const UserService = require('../services/userService');
 const { logger } = require('../utils/logger');
 
 class AuthController {
+  constructor() {
+    this.userService = new UserService();
+  }
+
   // Returns the current authenticated user (for session rehydration)
   async me(req, res, next) {
     const controllerLogger = logger.child({ controller: 'AuthController', operation: 'me' });
@@ -11,8 +16,18 @@ class AuthController {
         controllerLogger.warn('No user found in request');
         return res.status(401).json({ error: 'Usuário não autenticado.' });
       }
-      const { password, ...userWithoutPassword } = req.user;
-      controllerLogger.info('Returning current user', { userId: req.user.id });
+
+      // Get user with roles and accessible locations
+      const userWithRolesAndLocations = await this.userService.getUserWithRolesAndLocations(
+        req.user.id
+      );
+      const { password, ...userWithoutPassword } = userWithRolesAndLocations;
+
+      controllerLogger.info('Returning current user with roles and locations', {
+        userId: req.user.id,
+        rolesCount: userWithoutPassword.roles?.length || 0,
+        locationsCount: userWithoutPassword.locations?.length || 0,
+      });
 
       // Structure the response with restaurant data if available
       const response = { user: userWithoutPassword };
@@ -88,4 +103,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController();
+module.exports = AuthController;

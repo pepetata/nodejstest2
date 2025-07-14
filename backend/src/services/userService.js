@@ -983,6 +983,95 @@ class UserService {
   }
 
   /**
+   * Get user with roles and accessible locations
+   * @param {String} userId - User ID
+   * @returns {Object} User with roles and locations information
+   */
+  async getUserWithRolesAndLocations(userId) {
+    this.logger.debug('Getting user with roles and locations', { userId });
+
+    try {
+      // Get user with roles
+      const userWithRoles = await this.getUserWithRoles(userId);
+
+      // Get accessible locations based on user roles
+      const locations = await this.getUserAccessibleLocations(userId);
+
+      return {
+        ...userWithRoles,
+        locations: locations || [],
+      };
+    } catch (error) {
+      this.logger.error('Failed to get user with roles and locations', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get locations accessible by user based on their roles
+   * @param {String} userId - User ID
+   * @returns {Array} Array of accessible locations
+   */
+  async getUserAccessibleLocations(userId) {
+    this.logger.debug('Getting user accessible locations', { userId });
+
+    try {
+      // Get user roles to determine accessible locations
+      const userRoles = await this.userRoleModel.getUserRoles(userId);
+
+      if (!userRoles || userRoles.length === 0) {
+        return [];
+      }
+
+      const locationModel = require('../models/RestaurantLocationModel');
+      const locations = [];
+
+      // For each role, determine accessible locations
+      for (const role of userRoles) {
+        if (role.restaurant_id) {
+          // If role is restaurant-wide (restaurant_administrator), get all locations for that restaurant
+          if (role.role_name === 'restaurant_administrator') {
+            const restaurantLocations = await locationModel.getByRestaurantId(role.restaurant_id);
+
+            // Add locations that aren't already in the list
+            for (const location of restaurantLocations) {
+              if (!locations.find((loc) => loc.id === location.id)) {
+                locations.push({
+                  ...location,
+                  access_level: 'full', // Restaurant admin has full access
+                  via_role: role.role_name,
+                });
+              }
+            }
+          }
+          // If role is location-specific, add that specific location
+          else if (role.location_id) {
+            const location = await locationModel.findById(role.location_id);
+            if (location && !locations.find((loc) => loc.id === location.id)) {
+              locations.push({
+                ...location,
+                access_level: role.role_name === 'location_administrator' ? 'admin' : 'worker',
+                via_role: role.role_name,
+              });
+            }
+          }
+        }
+      }
+
+      return locations;
+    } catch (error) {
+      this.logger.error('Failed to get user accessible locations', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Check if user has a specific role
    * @param {String} userId - User ID
    * @param {String} roleName - Role name

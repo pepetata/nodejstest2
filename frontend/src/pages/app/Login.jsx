@@ -105,7 +105,7 @@ const LoginPage = ({ subdomain: _subdomain }) => {
       // If login was successful, redirect to admin page
       if (login.fulfilled.match(resultAction)) {
         // Get the user's restaurant subdomain from the login response
-        const userRestaurantSubdomain = resultAction.payload?.user?.restaurant_subdomain;
+        const userRestaurantSubdomain = resultAction.payload?.restaurant?.url;
 
         console.log('Login successful, payload:', resultAction.payload); // Debug
         console.log('User restaurant subdomain:', userRestaurantSubdomain); // Debug

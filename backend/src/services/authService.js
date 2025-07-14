@@ -1,4 +1,5 @@
 const UserModel = require('../models/userModel');
+const UserService = require('./userService');
 const userModel = new UserModel();
 const bcrypt = require('bcrypt');
 const { generateToken } = require('../utils/jwtUtils');
@@ -6,6 +7,9 @@ const { logger } = require('../utils/logger');
 
 class AuthService {
   constructor() {
+    // Initialize UserService
+    this.userService = new UserService();
+
     // Defensive logger initialization
     try {
       if (logger && typeof logger.child === 'function') {
@@ -127,8 +131,13 @@ class AuthService {
       const token = generateToken(user.id);
       serviceLogger.info('User logged in successfully', { userId: user.id });
 
+      // Get user with roles and accessible locations
+      const userWithRolesAndLocations = await this.userService.getUserWithRolesAndLocations(
+        user.id
+      );
+
       // Sanitize user before returning (remove password)
-      const { password: _pw, ...userSafe } = user;
+      const { password: _pw, ...userSafe } = userWithRolesAndLocations;
 
       // Structure the response with restaurant data if available
       const response = {
@@ -144,6 +153,12 @@ class AuthService {
           restaurantName: user.restaurant.name,
         });
       }
+
+      serviceLogger.info('Login response prepared with roles and locations', {
+        userId: user.id,
+        rolesCount: userSafe.roles?.length || 0,
+        locationsCount: userSafe.locations?.length || 0,
+      });
 
       return response;
     } catch (error) {
