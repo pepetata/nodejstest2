@@ -7,8 +7,35 @@ const AdminDashboard = () => {
   const { restaurantSlug } = useParams();
   const user = useSelector((state) => state.auth.user);
 
+  // Helper function to check if user has admin access
+  const checkAdminAccess = (user) => {
+    if (!user) return false;
+
+    // Admin roles that can access admin features
+    const adminRoles = ['restaurant_administrator', 'location_administrator'];
+
+    // Check primary role (backward compatibility)
+    if (user.role && adminRoles.includes(user.role)) {
+      return true;
+    }
+
+    // Check all roles if available (future enhancement)
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.some(
+        (roleObj) => roleObj.role_name && adminRoles.includes(roleObj.role_name)
+      );
+    }
+
+    // Check is_admin flag as fallback
+    if (user.is_admin === true) {
+      return true;
+    }
+
+    return false;
+  };
+
   // Check if user is restaurant administrator
-  const isRestaurantAdmin = user?.role === 'restaurant_admin' || user?.role === 'admin';
+  const isRestaurantAdmin = checkAdminAccess(user);
 
   const adminCards = [
     {

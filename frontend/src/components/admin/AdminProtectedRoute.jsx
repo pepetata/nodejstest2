@@ -29,6 +29,33 @@ const AdminProtectedRoute = ({ children }) => {
 
   console.log('AdminProtectedRoute - isSubdomain:', isSubdomain);
 
+  // Helper function to check if user has admin access
+  const checkAdminAccess = (user) => {
+    if (!user) return false;
+
+    // Admin roles that can access the admin interface
+    const adminRoles = ['restaurant_administrator', 'location_administrator'];
+
+    // Check primary role (backward compatibility)
+    if (user.role && adminRoles.includes(user.role)) {
+      return true;
+    }
+
+    // Check all roles if available (future enhancement)
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.some(
+        (roleObj) => roleObj.role_name && adminRoles.includes(roleObj.role_name)
+      );
+    }
+
+    // Check is_admin flag as fallback
+    if (user.is_admin === true) {
+      return true;
+    }
+
+    return false;
+  };
+
   // Handle initial rehydration state - simple timeout approach
   useEffect(() => {
     const hasToken = storage.get('token');
@@ -164,28 +191,81 @@ const AdminProtectedRoute = ({ children }) => {
   }
 
   // Check if user has admin permissions
-  // For now, we'll allow any authenticated user to access admin
-  // In a real app, you'd check specific roles like 'admin', 'restaurant_admin', etc.
-  const hasAdminAccess =
-    user &&
-    (user.role === 'admin' ||
-      user.role === 'restaurant_admin' ||
-      user.role === 'restaurant_administrator' || // Added this role
-      user.role === 'manager' ||
-      user.role === 'staff'); // For now, allow staff to test the interface
+  // Allow users with administrator-level roles to access admin interface
+  const hasAdminAccess = checkAdminAccess(user);
 
   console.log('AdminProtectedRoute - hasAdminAccess:', hasAdminAccess);
   console.log('AdminProtectedRoute - user.role:', user?.role);
+  console.log('AdminProtectedRoute - user.roles:', user?.roles);
+  console.log('AdminProtectedRoute - user.is_admin:', user?.is_admin);
 
   if (!hasAdminAccess) {
-    console.log('AdminProtectedRoute - User lacks admin access, redirecting');
-    if (isSubdomain) {
-      // On subdomain, redirect to home page
-      return <Navigate to="/" replace />;
-    } else {
-      // On main app, redirect to restaurant home page
-      return <Navigate to={`/${restaurantSlug}`} replace />;
-    }
+    console.log('AdminProtectedRoute - User lacks admin access, showing access denied message');
+
+    // Show access denied message with option to return to app
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          padding: '20px',
+          textAlign: 'center',
+          backgroundColor: '#f8f9fa',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '500px',
+            backgroundColor: 'white',
+            padding: '40px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          }}
+        >
+          <h2 style={{ color: '#dc3545', marginBottom: '20px' }}>Acesso Negado</h2>
+          <p style={{ color: '#6c757d', marginBottom: '30px', lineHeight: '1.5' }}>
+            Você não tem permissão para acessar o painel administrativo. Apenas administradores de
+            restaurante e administradores de localização podem acessar esta área.
+          </p>
+          <button
+            onClick={() => {
+              if (isSubdomain) {
+                window.location.href = '/';
+              } else {
+                window.location.href = `/${restaurantSlug}`;
+              }
+            }}
+            onFocus={(e) => {
+              e.target.style.backgroundColor = '#0056b3';
+            }}
+            onBlur={(e) => {
+              e.target.style.backgroundColor = '#007bff';
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = '#0056b3';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = '#007bff';
+            }}
+            style={{
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '5px',
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+            }}
+          >
+            Voltar ao Aplicativo
+          </button>
+        </div>
+      </div>
+    );
   }
 
   console.log('AdminProtectedRoute - All checks passed, rendering children');
