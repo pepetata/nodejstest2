@@ -35,9 +35,9 @@ class RateLimitMiddleware {
         res.status(429).json({
           success: false,
           error: {
-            message: options.message.message || 'Too many requests, please try again later.',
+            message: 'Too many requests, please try again later.',
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter: 15 * 60 * 1000,
             timestamp: new Date().toISOString(),
           },
         });
@@ -85,10 +85,8 @@ class RateLimitMiddleware {
           });
           // Mensagem amigável em português para o usuário final
           const msg =
-            (options && options.message && options.message.message) ||
             'Você fez muitas tentativas de login. Por favor, aguarde alguns minutos antes de tentar novamente.';
-          const retryAfter =
-            (options && options.message && options.message.retryAfter) || 15 * 60 * 1000;
+          const retryAfter = 15 * 60 * 1000;
           res.status(429).json({
             sucesso: false,
             erro: {

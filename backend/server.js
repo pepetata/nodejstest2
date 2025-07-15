@@ -9,6 +9,7 @@ const XSSMiddleware = require('./src/middleware/xssMiddleware');
 const ApiVersioningMiddleware = require('./src/middleware/apiVersioningMiddleware');
 const RateLimitMiddleware = require('./src/middleware/rateLimitMiddleware');
 const path = require('path');
+const mediaCleanupService = require('./src/services/mediaCleanupService');
 
 // Import versioned routes
 const v1Routes = require('./src/routes/v1');
@@ -43,6 +44,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 app.use(requestLogger);
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'public')));
 
 // Versioned API Routes
 app.use('/api/v1', v1Routes);
@@ -122,6 +126,24 @@ if (process.env.NODE_ENV !== 'production') {
       urlParams: req.params,
     });
   });
+
+  // Manual media cleanup endpoint (development only)
+  app.post('/api/admin/cleanup-media', async (req, res) => {
+    try {
+      const result = await mediaCleanupService.runCleanup();
+      res.status(200).json({
+        success: true,
+        message: 'Media cleanup completed',
+        result,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Media cleanup failed',
+        error: error.message,
+      });
+    }
+  });
 }
 
 // Handle 404 - Route not found
@@ -146,6 +168,13 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
+      // Start media cleanup service (runs every 24 hours)
+      if (process.env.NODE_ENV === 'production') {
+        mediaCleanupService.start(24); // Clean up every 24 hours in production
+      } else {
+        mediaCleanupService.start(1); // Clean up every hour in development
+      }
     });
   } catch (error) {
     console.error('Failed to start server:', error);

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Debug Test</title>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <h1>Media Debug Test</h1>
+    <div id="output"></div>
+
+    <script>
+      const output = document.getElementById('output');
+
+      function log(message) {
+        console.log(message);
+        output.innerHTML += '<p>' + JSON.stringify(message) + '</p>';
+      }
+
+      async function testMediaEndpoint() {
+        try {
+          log('Testing media endpoint...');
+
+          // Test direct API call
+          const response = await axios.get('http://localhost:3000/api/v1/restaurants/1/media', {
+            headers: {
+              Authorization: 'Bearer ' + localStorage.getItem('token'),
+              'Content-Type': 'application/json',
+            },
+          });
+
+          log('API Response:');
+          log(response.data);
+        } catch (error) {
+          log('Error:');
+          log(error.response?.data || error.message);
+        }
+      }
+
+      // Test when page loads
+      window.onload = () => {
+        testMediaEndpoint();
+      };
+    </script>
+  </body>
+</html>

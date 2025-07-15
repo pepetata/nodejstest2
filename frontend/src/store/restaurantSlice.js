@@ -75,6 +75,29 @@ export const updateRestaurantLocation = createAsyncThunk(
   }
 );
 
+export const fetchRestaurantMedia = createAsyncThunk(
+  'restaurant/fetchMedia',
+  async ({ restaurantId, locationId }, { rejectWithValue }) => {
+    try {
+      console.log('🔍 fetchRestaurantMedia called with:', { restaurantId, locationId });
+      const response = await restaurantService.getMedia(restaurantId, locationId);
+      console.log('📡 fetchRestaurantMedia full response:', response);
+      console.log('📡 fetchRestaurantMedia response.data:', response.data);
+      console.log('📡 fetchRestaurantMedia response.data type:', typeof response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ fetchRestaurantMedia error:', error);
+      console.error('❌ fetchRestaurantMedia error.response:', error.response);
+      console.error('❌ fetchRestaurantMedia error.response.data:', error.response?.data);
+      return rejectWithValue(
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          'Erro ao carregar mídia do restaurante'
+      );
+    }
+  }
+);
+
 export const uploadRestaurantMedia = createAsyncThunk(
   'restaurant/uploadMedia',
   async ({ restaurantId, files, mediaType, locationId }, { rejectWithValue }) => {
@@ -140,6 +163,7 @@ const initialState = {
   loading: {
     profile: false,
     locations: false,
+    media: false,
     updating: false,
     uploading: false,
   },
@@ -147,6 +171,7 @@ const initialState = {
   error: {
     profile: null,
     locations: null,
+    media: null,
     updating: null,
     uploading: null,
   },
@@ -433,6 +458,34 @@ const restaurantSlice = createSlice({
       .addCase(updateRestaurantLocation.rejected, (state, action) => {
         state.loading.updating = false;
         state.error.updating = action.payload;
+      })
+
+      // Fetch restaurant media
+      .addCase(fetchRestaurantMedia.pending, (state) => {
+        state.loading.media = true;
+        state.error.media = null;
+      })
+      .addCase(fetchRestaurantMedia.fulfilled, (state, action) => {
+        state.loading.media = false;
+        console.log('✅ fetchRestaurantMedia.fulfilled payload:', action.payload);
+        console.log('✅ fetchRestaurantMedia.fulfilled payload type:', typeof action.payload);
+        console.log(
+          '✅ fetchRestaurantMedia.fulfilled payload keys:',
+          Object.keys(action.payload || {})
+        );
+
+        // Update media in state
+        state.media = {
+          logo: action.payload.data.logo,
+          favicon: action.payload.data.favicon,
+          images: action.payload.data.images || [],
+          videos: action.payload.data.videos || [],
+        };
+        console.log('📊 Updated media state:', state.media);
+      })
+      .addCase(fetchRestaurantMedia.rejected, (state, action) => {
+        state.loading.media = false;
+        state.error.media = action.payload;
       })
 
       // Upload restaurant media

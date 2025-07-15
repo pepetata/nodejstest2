@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  fetchRestaurantMedia,
   uploadRestaurantMedia,
   deleteRestaurantMedia,
   startTabEditing,
@@ -11,18 +12,41 @@ import '../../../styles/admin/restaurantMediaTab.scss';
 const RestaurantMediaTab = () => {
   const dispatch = useDispatch();
   const { restaurant } = useSelector((state) => state.auth);
-  const { restaurantData, editingTabs, uploadProgress, loading, locations } = useSelector(
+  const { restaurantData, editingTabs, uploadProgress, loading, locations, media } = useSelector(
     (state) => state.restaurant
   );
 
   const tabId = 'media';
   const isEditing = editingTabs?.[tabId] || false;
   const isUploading = loading?.uploading || false;
+  const isLoadingMedia = loading?.media || false;
 
   const [dragActive, setDragActive] = useState(false);
   const [selectedMediaType, setSelectedMediaType] = useState('logo');
   const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null); // For modal view
   const fileInputRef = useRef(null);
+
+  // Load media when component mounts or restaurant changes
+  useEffect(() => {
+    if (restaurant?.id) {
+      console.log('🔍 Fetching media for restaurant:', restaurant.id);
+      console.log('🔍 Restaurant object:', restaurant);
+      dispatch(fetchRestaurantMedia({ restaurantId: restaurant.id }));
+    }
+  }, [dispatch, restaurant]);
+
+  // Refetch media when location changes for location-specific media
+  useEffect(() => {
+    if (restaurant?.id && selectedLocationId && ['images', 'videos'].includes(selectedMediaType)) {
+      dispatch(
+        fetchRestaurantMedia({ restaurantId: restaurant.id, locationId: selectedLocationId })
+      );
+    } else if (restaurant?.id && ['logo', 'favicon'].includes(selectedMediaType)) {
+      // For logo and favicon, always fetch without location filter
+      dispatch(fetchRestaurantMedia({ restaurantId: restaurant.id }));
+    }
+  }, [dispatch, restaurant?.id, selectedLocationId, selectedMediaType]);
 
   const mediaTypes = useMemo(
     () => ({
@@ -66,12 +90,28 @@ const RestaurantMediaTab = () => {
     []
   );
 
-  const currentMedia = restaurantData?.media || {
-    logo: null,
-    favicon: null,
-    images: [],
-    videos: [],
-  };
+  const currentMedia = useMemo(
+    () =>
+      media || {
+        logo: null,
+        favicon: null,
+        images: [],
+        videos: [],
+      },
+    [media]
+  );
+
+  // Debug logging for current media state
+  useEffect(() => {
+    console.log('🎯 Current Media State:', {
+      media,
+      currentMedia,
+      loading,
+      isLoadingMedia,
+      restaurant: restaurant?.id,
+      editingTabs,
+    });
+  }, [media, currentMedia, loading, isLoadingMedia, restaurant?.id, editingTabs]);
 
   // Set default location when switching to location-required media types
   useEffect(() => {
@@ -174,7 +214,12 @@ const RestaurantMediaTab = () => {
         locationId: mediaConfig.requiresLocation ? selectedLocationId : null,
       };
 
-      dispatch(uploadRestaurantMedia(uploadParams));
+      dispatch(uploadRestaurantMedia(uploadParams)).then((result) => {
+        if (result.meta.requestStatus === 'fulfilled') {
+          // Refetch media after successful upload
+          dispatch(fetchRestaurantMedia({ restaurantId: restaurant.id }));
+        }
+      });
     });
   };
 
@@ -212,7 +257,12 @@ const RestaurantMediaTab = () => {
           mediaId,
           restaurantId: restaurant.id,
         })
-      );
+      ).then((result) => {
+        if (result.meta.requestStatus === 'fulfilled') {
+          // Refetch media after successful deletion
+          dispatch(fetchRestaurantMedia({ restaurantId: restaurant.id }));
+        }
+      });
     }
   };
 
@@ -245,18 +295,49 @@ const RestaurantMediaTab = () => {
           <div key={item.id || index} className="media-item">
             <div className="media-content">
               {mediaType === 'videos' ? (
-                <video src={item.url} controls className="media-video" preload="metadata" />
-              ) : (
-                <img
+                <video
                   src={item.url}
-                  alt={item.alt || `${mediaType} ${index + 1}`}
-                  className="media-image"
-                />
+                  controls
+                  className="media-video"
+                  preload="metadata"
+                  style={{ maxWidth: '200px', maxHeight: '150px' }}
+                >
+                  <track kind="captions" />
+                </video>
+              ) : (
+                <div className="media-image-container">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImage(item)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                    }}
+                    title="Clique para ver em tamanho original"
+                  >
+                    <img
+                      src={item.url}
+                      alt={item.alt || `${mediaType} ${index + 1}`}
+                      className="media-image"
+                      style={{
+                        maxWidth: '200px',
+                        maxHeight: '150px',
+                        objectFit: 'cover',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                      }}
+                    />
+                  </button>
+                </div>
               )}
             </div>
 
             <div className="media-info">
-              <p className="media-name">{item.name}</p>
+              <p className="media-name" title={item.name}>
+                {item.name}
+              </p>
               <p className="media-size">{formatFileSize(item.size)}</p>
               <p className="media-date">{new Date(item.uploadedAt).toLocaleDateString('pt-BR')}</p>
             </div>
@@ -267,6 +348,18 @@ const RestaurantMediaTab = () => {
                 className="delete-media-btn"
                 onClick={() => handleDeleteMedia(mediaType, item.id)}
                 title="Excluir arquivo"
+                style={{
+                  position: 'absolute',
+                  top: '5px',
+                  right: '5px',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
               >
                 ❌
               </button>
@@ -438,10 +531,18 @@ const RestaurantMediaTab = () => {
         </h3>
 
         {/* Current Media Preview */}
-        {currentMedia[selectedMediaType] && (
+        {isLoadingMedia ? (
+          <div className="loading-media">
+            <p>Carregando mídia...</p>
+          </div>
+        ) : currentMedia[selectedMediaType] ? (
           <div className="current-media-section">
             <h4>Arquivos Atuais</h4>
             {renderMediaPreview(selectedMediaType, currentMedia[selectedMediaType])}
+          </div>
+        ) : (
+          <div className="no-media-message">
+            <p>Nenhum arquivo {mediaTypes[selectedMediaType].title.toLowerCase()} encontrado.</p>
           </div>
         )}
 
@@ -514,6 +615,80 @@ const RestaurantMediaTab = () => {
             Clique em &quot;Editar&quot; para fazer upload ou gerenciar arquivos de mídia.
           </p>
         </div>
+      )}
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <button
+          type="button"
+          className="image-modal"
+          aria-label="Fechar visualização da imagem"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          onClick={() => setSelectedImage(null)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '90%',
+              maxHeight: '90%',
+            }}
+          >
+            <img
+              src={selectedImage.url}
+              alt={selectedImage.name}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedImage(null)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '30px',
+                height: '30px',
+                cursor: 'pointer',
+                fontSize: '16px',
+              }}
+            >
+              ✕
+            </button>
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '10px',
+                left: '10px',
+                background: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                fontSize: '14px',
+              }}
+            >
+              {selectedImage.name}
+            </div>
+          </div>
+        </button>
       )}
     </div>
   );

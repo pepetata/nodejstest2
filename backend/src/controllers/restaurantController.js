@@ -539,6 +539,62 @@ class RestaurantController {
   });
 
   /**
+   * Get restaurant media
+   * GET /api/v1/restaurants/:id/media
+   */
+  getRestaurantMedia = asyncHandler(async (req, res, next) => {
+    const controllerLogger = this.logger.child({ method: 'getRestaurantMedia' });
+
+    try {
+      controllerLogger.info('Fetching restaurant media', {
+        restaurantId: req.params.id,
+        userId: req.user?.id,
+        locationId: req.query.locationId,
+        headers: req.headers.authorization
+          ? 'Authorization header present'
+          : 'No authorization header',
+      });
+
+      console.log('🔍 getRestaurantMedia called with:', {
+        restaurantId: req.params.id,
+        userId: req.user?.id,
+        locationId: req.query.locationId,
+        userRole: req.user?.role,
+        hasAuthHeader: !!req.headers.authorization,
+      });
+
+      const mediaData = await this.restaurantService.getRestaurantMedia(
+        req.params.id,
+        req.user,
+        req.query.locationId
+      );
+
+      console.log('📡 getRestaurantMedia result:', {
+        logoPresent: !!mediaData.logo,
+        faviconPresent: !!mediaData.favicon,
+        imagesCount: mediaData.images?.length || 0,
+        videosCount: mediaData.videos?.length || 0,
+        fullResult: mediaData,
+      });
+
+      controllerLogger.info('Restaurant media retrieved successfully', {
+        restaurantId: req.params.id,
+        mediaCount: Object.keys(mediaData).length,
+      });
+
+      res.json(ResponseFormatter.success(mediaData, 'Restaurant media retrieved successfully'));
+    } catch (error) {
+      console.error('❌ getRestaurantMedia error:', error);
+      controllerLogger.error('Error fetching restaurant media', {
+        restaurantId: req.params.id,
+        error: error.message,
+        stack: error.stack,
+      });
+      next(error);
+    }
+  });
+
+  /**
    * Upload restaurant media
    * POST /api/v1/restaurants/:id/media
    */

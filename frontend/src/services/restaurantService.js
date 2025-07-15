@@ -57,6 +57,12 @@ const restaurantService = {
     });
   },
 
+  // Get restaurant media
+  getMedia: (restaurantId, locationId = null) => {
+    const params = locationId ? `?locationId=${locationId}` : '';
+    return api.get(`${API_BASE}/${restaurantId}/media${params}`);
+  },
+
   // Delete restaurant media
   deleteMedia: (restaurantId, mediaId, mediaType) =>
     api.delete(`${API_BASE}/${restaurantId}/media/${mediaId}?type=${mediaType}`),

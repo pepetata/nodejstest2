@@ -28,6 +28,10 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      '/uploads': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
     },
     fs: {
       // Allow serving files from one level up to the project root and handle mapped drives

@@ -1021,6 +1021,137 @@ class RestaurantService {
   }
 
   /**
+   * Get restaurant media
+   * @param {String} restaurantId - Restaurant ID
+   * @param {Object} user - User object
+   * @param {String} locationId - Location ID (optional)
+   * @returns {Object} Media data organized by type
+   */
+  async getRestaurantMedia(restaurantId, user, locationId = null) {
+    const serviceLogger = this.logger.child({ method: 'getRestaurantMedia' });
+
+    try {
+      serviceLogger.debug('Fetching restaurant media', {
+        restaurantId,
+        locationId,
+        userId: user?.id,
+      });
+
+      // Check if restaurant exists
+      const restaurant = await this.restaurantModel.findById(restaurantId);
+      if (!restaurant) {
+        const error = new Error('Restaurant not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Fetch media from database
+      const mediaRecords = await RestaurantMediaModel.getByRestaurant(restaurantId, locationId);
+
+      serviceLogger.debug('Raw media records from database:', {
+        restaurantId,
+        locationId,
+        recordCount: mediaRecords.length,
+        records: mediaRecords.map((r) => ({
+          id: r.id,
+          media_type: r.media_type,
+          filename: r.filename,
+          original_filename: r.original_filename,
+          file_url: r.file_url,
+          file_size: r.file_size,
+          location_id: r.location_id,
+        })),
+      });
+
+      console.log('🔍 Raw media records from database:', {
+        restaurantId,
+        locationId,
+        recordCount: mediaRecords.length,
+        records: mediaRecords.map((r) => ({
+          id: r.id,
+          media_type: r.media_type,
+          filename: r.filename,
+          original_filename: r.original_filename,
+          file_url: r.file_url,
+          file_size: r.file_size,
+          location_id: r.location_id,
+        })),
+      });
+
+      // Organize media by type
+      const organizedMedia = {
+        logo: null,
+        favicon: null,
+        images: [],
+        videos: [],
+      };
+
+      mediaRecords.forEach((record) => {
+        const mediaItem = {
+          id: record.id,
+          name: record.original_filename,
+          filename: record.filename,
+          url: record.file_url,
+          size: record.file_size,
+          mimeType: record.mime_type,
+          uploadedAt: record.created_at,
+          locationId: record.location_id,
+        };
+
+        serviceLogger.debug('Processing media record:', {
+          recordId: record.id,
+          mediaType: record.media_type,
+          filename: record.filename,
+          originalFilename: record.original_filename,
+          fileUrl: record.file_url,
+          mediaItem,
+        });
+
+        if (record.media_type === 'logo' || record.media_type === 'favicon') {
+          // Single file types
+          organizedMedia[record.media_type] = mediaItem;
+        } else if (record.media_type === 'images' || record.media_type === 'videos') {
+          // Multiple file types (plural)
+          organizedMedia[record.media_type].push(mediaItem);
+        } else if (record.media_type === 'image') {
+          // Handle singular 'image' -> 'images'
+          organizedMedia.images.push(mediaItem);
+          serviceLogger.debug('Mapped singular "image" to "images" array');
+        } else if (record.media_type === 'video') {
+          // Handle singular 'video' -> 'videos'
+          organizedMedia.videos.push(mediaItem);
+          serviceLogger.debug('Mapped singular "video" to "videos" array');
+        } else {
+          serviceLogger.warn('Unknown media type encountered', {
+            mediaType: record.media_type,
+            recordId: record.id,
+          });
+        }
+      });
+
+      serviceLogger.debug('Organized media result:', {
+        restaurantId,
+        locationId,
+        organizedMedia,
+        logoCount: organizedMedia.logo ? 1 : 0,
+        faviconCount: organizedMedia.favicon ? 1 : 0,
+        imagesCount: organizedMedia.images.length,
+        videosCount: organizedMedia.videos.length,
+      });
+
+      return organizedMedia;
+    } catch (error) {
+      serviceLogger.error('Error fetching restaurant media', {
+        error: error.message,
+        restaurantId,
+        locationId,
+        userId: user?.id,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Upload restaurant media
    * @param {String} restaurantId - Restaurant ID
    * @param {Array} files - Array of files to upload
@@ -1229,8 +1360,62 @@ class RestaurantService {
         throw error;
       }
 
-      // For now, return success - actual file deletion implementation would go here
-      serviceLogger.debug('Restaurant media deleted successfully');
+      // Get media record from database
+      const mediaRecord = await RestaurantMediaModel.getById(mediaId);
+      if (!mediaRecord) {
+        const error = new Error('Media not found');
+        error.statusCode = 404;
+        throw error;
+      }
+
+      // Verify the media belongs to the restaurant
+      if (mediaRecord.restaurant_id !== restaurantId) {
+        const error = new Error('Media does not belong to this restaurant');
+        error.statusCode = 403;
+        throw error;
+      }
+
+      // Delete physical file
+      const publicDir = path.join(__dirname, '../../public');
+      const filePath = path.join(publicDir, mediaRecord.file_path);
+
+      serviceLogger.debug('Attempting to delete physical file', {
+        mediaId,
+        filePath: mediaRecord.file_path,
+        fullPath: filePath,
+      });
+
+      try {
+        // Check if file exists before trying to delete
+        await fs.access(filePath);
+        await fs.unlink(filePath);
+        serviceLogger.info('Physical file deleted successfully', {
+          mediaId,
+          filePath: mediaRecord.file_path,
+        });
+      } catch (fileError) {
+        if (fileError.code === 'ENOENT') {
+          serviceLogger.warn('Physical file already deleted or not found', {
+            mediaId,
+            filePath: mediaRecord.file_path,
+          });
+        } else {
+          serviceLogger.error('Failed to delete physical file', {
+            mediaId,
+            filePath: mediaRecord.file_path,
+            error: fileError.message,
+          });
+        }
+        // Continue with database deletion even if file deletion fails
+      }
+
+      // Delete database record
+      await RestaurantMediaModel.delete(mediaId);
+
+      serviceLogger.debug('Restaurant media deleted successfully', {
+        mediaId,
+        fileName: mediaRecord.filename,
+      });
 
       return true;
     } catch (error) {

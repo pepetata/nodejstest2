@@ -63,6 +63,56 @@ class RestaurantMedia extends BaseModel {
   }
 
   /**
+   * Get all media by restaurant ID
+   * @param {string} restaurantId - Restaurant ID
+   * @param {string} locationId - Location ID (optional filter)
+   * @returns {Promise<Array>} Media records
+   */
+  async getByRestaurant(restaurantId, locationId = null) {
+    const logger = this.logger.child({ method: 'getByRestaurant' });
+
+    try {
+      logger.debug('Getting all media by restaurant', {
+        restaurantId,
+        locationId,
+      });
+
+      let query = `
+        SELECT * FROM ${this.tableName}
+        WHERE restaurant_id = $1 AND is_active = true
+      `;
+      const values = [restaurantId];
+
+      if (locationId) {
+        // When locationId is provided, return:
+        // 1. Restaurant-wide media (logo, favicon) with location_id = null
+        // 2. Location-specific media (images, videos) with matching location_id
+        query += ' AND (location_id IS NULL OR location_id = $2)';
+        values.push(locationId);
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      const result = await this.executeQuery(query, values);
+
+      logger.debug('Media retrieved successfully', {
+        restaurantId,
+        locationId,
+        count: result.rows.length,
+      });
+
+      return result.rows;
+    } catch (error) {
+      logger.error('Error getting media by restaurant', {
+        error: error.message,
+        restaurantId,
+        locationId,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Get media by restaurant ID and type
    * @param {string} restaurantId - Restaurant ID
    * @param {string} mediaType - Media type (logo, favicon, images, videos)

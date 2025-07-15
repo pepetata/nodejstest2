@@ -158,6 +158,19 @@ router.put(
   restaurantController.updateRestaurantLocation.bind(restaurantController)
 );
 
+// GET /api/v1/restaurants/:id/media - Get restaurant media
+router.get(
+  '/:id/media',
+  authMiddleware,
+  ValidationMiddleware.validateParams(
+    Joi.object({
+      id: RestaurantValidation.uuidSchema,
+    })
+  ),
+  restaurantAuth.requireRestaurantReadAccess, // Check if user can read this restaurant
+  restaurantController.getRestaurantMedia.bind(restaurantController)
+);
+
 // POST /api/v1/restaurants/:id/media - Upload restaurant media
 router.post(
   '/:id/media',
