@@ -1,0 +1,2 @@
+// Test file for media upload - will be used for testing
+console.log('Test file for media upload functionality');

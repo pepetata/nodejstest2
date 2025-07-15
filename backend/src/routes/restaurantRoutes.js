@@ -4,6 +4,7 @@ const ValidationMiddleware = require('../middleware/validationMiddleware');
 const authMiddleware = require('../middleware/authMiddleware');
 const restaurantAuth = require('../middleware/restaurantAuth');
 const RestaurantValidation = require('../validations/restaurantValidation');
+const uploadMiddleware = require('../middleware/uploadMiddleware');
 const { logger } = require('../utils/logger');
 
 const Joi = require('joi');
@@ -167,7 +168,7 @@ router.post(
     })
   ),
   restaurantAuth.requireRestaurantModifyAccess, // Check if user can modify this restaurant
-  // Note: File upload middleware would be added here
+  uploadMiddleware.uploadRestaurantMedia, // Handle file upload
   restaurantController.uploadRestaurantMedia.bind(restaurantController)
 );
 

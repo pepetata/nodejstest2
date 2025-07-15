@@ -548,6 +548,7 @@ class RestaurantController {
     try {
       controllerLogger.info('Uploading restaurant media', {
         restaurantId: req.params.id,
+        locationId: req.body.locationId,
         mediaType: req.body.mediaType,
         fileCount: req.files?.length || 0,
         userId: req.user?.id,
@@ -557,21 +558,25 @@ class RestaurantController {
         req.params.id,
         req.files,
         req.body.mediaType,
-        req.user
+        req.user,
+        req.body.locationId
       );
 
       controllerLogger.debug('Restaurant media uploaded successfully', {
         uploadedFiles: mediaData.files?.length || 0,
+        folderPath: mediaData.folderPath,
       });
 
-      res
-        .status(201)
-        .json(
-          ResponseFormatter.success(
-            { mediaType: req.body.mediaType, files: mediaData.files },
-            'Media uploaded successfully'
-          )
-        );
+      res.status(201).json(
+        ResponseFormatter.success(
+          {
+            mediaType: req.body.mediaType,
+            files: mediaData.files,
+            folderPath: mediaData.folderPath,
+          },
+          'Media uploaded successfully'
+        )
+      );
     } catch (error) {
       controllerLogger.error('Error uploading restaurant media', {
         error: error.message,

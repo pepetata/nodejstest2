@@ -31,7 +31,7 @@ const restaurantService = {
     api.put(`${API_BASE}/${restaurantId}/locations/${locationId}`, data),
 
   // Upload restaurant media (logo, favicon, images, videos)
-  uploadMedia: (restaurantId, files, mediaType) => {
+  uploadMedia: (restaurantId, files, mediaType, locationId = null) => {
     const formData = new FormData();
 
     // Add files to form data
@@ -44,6 +44,11 @@ const restaurantService = {
     }
 
     formData.append('mediaType', mediaType);
+
+    // Add locationId for location-specific media (images/videos)
+    if (locationId) {
+      formData.append('locationId', locationId);
+    }
 
     return api.post(`${API_BASE}/${restaurantId}/media`, formData, {
       headers: {

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Upload Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .test-container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      select,
+      input[type='file'] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .result {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+      .success {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Media Upload Test</h1>
+
+    <div class="test-container">
+      <h2>Test Parameters</h2>
+      <div class="form-group">
+        <label for="restaurantId">Restaurant ID:</label>
+        <input type="text" id="restaurantId" value="9b454ff7-eb18-4f3b-9e83-1b5bb017b59c" />
+      </div>
+
+      <div class="form-group">
+        <label for="mediaType">Media Type:</label>
+        <select id="mediaType">
+          <option value="logo">Logo</option>
+          <option value="favicon">Favicon</option>
+          <option value="images">Images</option>
+          <option value="videos">Videos</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="locationId">Location ID (for images/videos):</label>
+        <input type="text" id="locationId" value="some-location-id" />
+      </div>
+
+      <div class="form-group">
+        <label for="fileInput">Select File:</label>
+        <input type="file" id="fileInput" />
+      </div>
+
+      <button onclick="testUpload()">Test Upload</button>
+      <button onclick="testFolderStructure()">Test Folder Structure</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+      function showResult(content, type = 'info') {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `<div class="result ${type}">${content}</div>`;
+      }
+
+      async function testUpload() {
+        const restaurantId = document.getElementById('restaurantId').value;
+        const mediaType = document.getElementById('mediaType').value;
+        const locationId = document.getElementById('locationId').value;
+        const fileInput = document.getElementById('fileInput');
+
+        if (!fileInput.files[0]) {
+          showResult('Please select a file first', 'error');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('files', fileInput.files[0]);
+        formData.append('mediaType', mediaType);
+
+        if (mediaType === 'images' || mediaType === 'videos') {
+          formData.append('locationId', locationId);
+        }
+
+        showResult('Testing upload...', 'info');
+
+        try {
+          const response = await fetch(
+            `http://localhost:3001/api/v1/restaurants/${restaurantId}/media`,
+            {
+              method: 'POST',
+              body: formData,
+            }
+          );
+
+          const result = await response.json();
+
+          if (response.ok) {
+            showResult(
+              `✅ SUCCESS!
+
+Response: ${JSON.stringify(result, null, 2)}
+
+Parameters sent:
+- mediaType: ${mediaType}
+- restaurantId: ${restaurantId}
+- locationId: ${mediaType === 'images' || mediaType === 'videos' ? locationId : 'null'}
+- file: ${fileInput.files[0].name}`,
+              'success'
+            );
+          } else {
+            showResult(
+              `❌ ERROR!
+
+Response: ${JSON.stringify(result, null, 2)}
+
+Status: ${response.status}`,
+              'error'
+            );
+          }
+        } catch (error) {
+          showResult(
+            `❌ REQUEST FAILED!
+
+Error: ${error.message}`,
+            'error'
+          );
+        }
+      }
+
+      function testFolderStructure() {
+        const mediaType = document.getElementById('mediaType').value;
+        const restaurantUrlName = 'pizzaria-do-joao';
+        const locationUrlName = 'sede-centro';
+
+        let folderPath;
+
+        switch (mediaType) {
+          case 'logo':
+            folderPath = `logo/${restaurantUrlName}`;
+            break;
+          case 'favicon':
+            folderPath = `favicons/${restaurantUrlName}`;
+            break;
+          case 'images':
+            folderPath = `restaurant_images/${restaurantUrlName}/${locationUrlName}`;
+            break;
+          case 'videos':
+            folderPath = `restaurant_videos/${restaurantUrlName}/${locationUrlName}`;
+            break;
+          default:
+            folderPath = `ERROR: Unsupported media type: ${mediaType}`;
+        }
+
+        showResult(
+          `📁 FOLDER PATH TEST
+
+Media Type: ${mediaType}
+Restaurant URL: ${restaurantUrlName}
+Location URL: ${locationUrlName}
+Expected Path: ${folderPath}
+Full URL: /uploads/${folderPath}/filename.ext`,
+          'info'
+        );
+      }
+    </script>
+  </body>
+</html>

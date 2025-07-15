@@ -77,9 +77,14 @@ export const updateRestaurantLocation = createAsyncThunk(
 
 export const uploadRestaurantMedia = createAsyncThunk(
   'restaurant/uploadMedia',
-  async ({ restaurantId, files, mediaType }, { rejectWithValue }) => {
+  async ({ restaurantId, files, mediaType, locationId }, { rejectWithValue }) => {
     try {
-      const response = await restaurantService.uploadMedia(restaurantId, files, mediaType);
+      const response = await restaurantService.uploadMedia(
+        restaurantId,
+        files,
+        mediaType,
+        locationId
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -439,10 +444,18 @@ const restaurantSlice = createSlice({
         state.loading.uploading = false;
         // Update media in state
         const { mediaType, files } = action.payload;
+
+        // Ensure files is an array
+        const filesArray = Array.isArray(files) ? files : files ? [files] : [];
+
         if (mediaType === 'logo' || mediaType === 'favicon') {
-          state.media[mediaType] = files[0];
+          state.media[mediaType] = filesArray[0];
         } else {
-          state.media[mediaType] = [...state.media[mediaType], ...files];
+          // Ensure the media array exists before spreading
+          if (!state.media[mediaType]) {
+            state.media[mediaType] = [];
+          }
+          state.media[mediaType] = [...state.media[mediaType], ...filesArray];
         }
       })
       .addCase(uploadRestaurantMedia.rejected, (state, action) => {
@@ -462,6 +475,10 @@ const restaurantSlice = createSlice({
         if (mediaType === 'logo' || mediaType === 'favicon') {
           state.media[mediaType] = null;
         } else {
+          // Ensure the media array exists before filtering
+          if (!state.media[mediaType]) {
+            state.media[mediaType] = [];
+          }
           state.media[mediaType] = state.media[mediaType].filter((file) => file.id !== mediaId);
         }
       })

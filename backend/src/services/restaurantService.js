@@ -1,9 +1,12 @@
 const restaurantModel = require('../models/RestaurantModel');
 const RestaurantLocationModel = require('../models/RestaurantLocationModel');
+const RestaurantMediaModel = require('../models/restaurantMediaModel');
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
 const UserService = require('./userService');
 const userService = new UserService();
+const fs = require('fs').promises;
+const path = require('path');
 
 /**
  * Restaurant Service
@@ -1025,18 +1028,19 @@ class RestaurantService {
    * @param {Object} user - User object
    * @returns {Object} Upload result
    */
-  async uploadRestaurantMedia(restaurantId, files, mediaType, user) {
+  async uploadRestaurantMedia(restaurantId, files, mediaType, user, locationId = null) {
     const serviceLogger = this.logger.child({ method: 'uploadRestaurantMedia' });
 
     try {
       serviceLogger.debug('Uploading restaurant media', {
         restaurantId,
+        locationId,
         mediaType,
         fileCount: files?.length || 0,
         userId: user?.id,
       });
 
-      // Check if restaurant exists
+      // Check if restaurant exists and get its URL name
       const restaurant = await this.restaurantModel.findById(restaurantId);
       if (!restaurant) {
         const error = new Error('Restaurant not found');
@@ -1044,27 +1048,156 @@ class RestaurantService {
         throw error;
       }
 
-      // For now, return mock data - actual file upload implementation would go here
-      const uploadedFiles =
-        files?.map((file, index) => ({
-          id: `file_${Date.now()}_${index}`,
-          name: file.originalname || `file_${index}`,
-          url: `/uploads/${mediaType}/${restaurantId}/${file.filename || file.originalname}`,
-          size: file.size || 0,
-          uploadedAt: new Date(),
-        })) || [];
+      const restaurantUrlName = restaurant.restaurant_url_name;
+      if (!restaurantUrlName) {
+        const error = new Error('Restaurant URL name is required for media upload');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // For location-specific media (images/videos), get location URL name
+      let locationUrlName = null;
+      if (['images', 'videos'].includes(mediaType)) {
+        if (!locationId) {
+          const error = new Error('Location ID is required for images and videos upload');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const location = await RestaurantLocationModel.findById(locationId);
+        if (!location || location.restaurant_id !== restaurantId) {
+          const error = new Error('Location not found or does not belong to this restaurant');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        locationUrlName = location.url_name;
+        if (!locationUrlName) {
+          const error = new Error('Location URL name is required for media upload');
+          error.statusCode = 400;
+          throw error;
+        }
+      }
+
+      // Determine folder path based on media type
+      let folderPath;
+      switch (mediaType) {
+        case 'logo':
+          folderPath = `logo/${restaurantUrlName}`;
+          break;
+        case 'favicon':
+          folderPath = `favicons/${restaurantUrlName}`;
+          break;
+        case 'images':
+          folderPath = `restaurant_images/${restaurantUrlName}/${locationUrlName}`;
+          break;
+        case 'videos':
+          folderPath = `restaurant_videos/${restaurantUrlName}/${locationUrlName}`;
+          break;
+        default:
+          const error = new Error(`Unsupported media type: ${mediaType}`);
+          error.statusCode = 400;
+          throw error;
+      }
+
+      // Create organized folder structure
+      const publicDir = path.join(__dirname, '../../public');
+      const fullFolderPath = path.join(publicDir, folderPath);
+
+      try {
+        await fs.mkdir(fullFolderPath, { recursive: true });
+      } catch (mkdirError) {
+        serviceLogger.error('Error creating folder structure', {
+          error: mkdirError.message,
+          folderPath: fullFolderPath,
+        });
+        throw mkdirError;
+      }
+
+      // Process and move files from temp to organized folders
+      const uploadedFiles = [];
+
+      for (const file of files || []) {
+        try {
+          // Generate unique filename to avoid conflicts
+          const timestamp = Date.now();
+          const random = Math.random().toString(36).substring(2, 15);
+          const ext = path.extname(file.originalname || '');
+          const uniqueFilename = `${timestamp}_${random}${ext}`;
+
+          const finalPath = path.join(fullFolderPath, uniqueFilename);
+
+          // Move file from temp location to organized folder
+          await fs.rename(file.path, finalPath);
+
+          // Create database record
+          const mediaRecord = await RestaurantMediaModel.create({
+            restaurant_id: restaurantId,
+            location_id: locationId,
+            media_type: mediaType,
+            filename: uniqueFilename,
+            original_filename: file.originalname,
+            file_path: path.join(folderPath, uniqueFilename).replace(/\\/g, '/'),
+            file_url: `/uploads/${path.join(folderPath, uniqueFilename).replace(/\\/g, '/')}`,
+            file_size: file.size,
+            mime_type: file.mimetype,
+            uploaded_by: user?.id,
+          });
+
+          uploadedFiles.push({
+            id: mediaRecord.id,
+            name: file.originalname,
+            filename: uniqueFilename,
+            url: `/uploads/${folderPath}/${uniqueFilename}`.replace(/\\/g, '/'),
+            size: file.size,
+            mimeType: file.mimetype,
+            uploadedAt: mediaRecord.created_at,
+            mediaType,
+            restaurantId,
+            locationId,
+          });
+        } catch (fileError) {
+          serviceLogger.error('Error processing file', {
+            error: fileError.message,
+            filename: file.originalname,
+          });
+
+          // Clean up temp file if it still exists
+          try {
+            await fs.unlink(file.path);
+          } catch (unlinkError) {
+            // Ignore cleanup errors
+          }
+
+          throw fileError;
+        }
+      }
 
       serviceLogger.debug('Restaurant media uploaded successfully', {
         uploadedCount: uploadedFiles.length,
+        folderPath,
       });
 
-      return { files: uploadedFiles };
+      return { files: uploadedFiles, folderPath };
     } catch (error) {
       serviceLogger.error('Error uploading restaurant media', {
         error: error.message,
         restaurantId,
         mediaType,
+        userId: user?.id,
       });
+
+      // Clean up any temp files on error
+      if (files) {
+        for (const file of files) {
+          try {
+            await fs.unlink(file.path);
+          } catch (unlinkError) {
+            // Ignore cleanup errors
+          }
+        }
+      }
+
       throw error;
     }
   }
