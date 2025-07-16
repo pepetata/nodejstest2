@@ -28,7 +28,8 @@ import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
 const restaurantValidationCache = new Map();
 
 function App({ getSubdomain }) {
-  const isAuthenticated = useSelector((state) => !!state.auth.user);
+  const { user, token, restaurant } = useSelector((state) => state.auth);
+  const isAuthenticated = !!user && !!token;
   const dispatch = useDispatch();
 
   // Memoize the subdomain to prevent unnecessary re-renders
@@ -40,6 +41,46 @@ function App({ getSubdomain }) {
 
   console.log(`Subdomain detected: ${subdomain}`);
   console.log(`Restaurant exists state: ${restaurantExists}`);
+
+  // Check if authenticated user's restaurant matches current subdomain
+  useEffect(() => {
+    if (isAuthenticated && restaurant) {
+      if (subdomain) {
+        // If user is authenticated and we're on a subdomain, check if it matches their restaurant
+        if (restaurant.url !== subdomain) {
+          console.log(
+            `Restaurant mismatch detected. User restaurant: ${restaurant.url}, Current subdomain: ${subdomain}. Logging out...`
+          );
+
+          // Clear all authentication data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('persist:auth');
+          localStorage.removeItem('persist:root');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+
+          // Dispatch logout action
+          dispatch(logout());
+        }
+      } else {
+        // If user is authenticated with a restaurant but on main domain, they should be logged out
+        // This prevents restaurant admin from accessing main domain while logged in
+        console.log(`Restaurant admin on main domain detected. Logging out...`);
+
+        // Clear all authentication data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('persist:auth');
+        localStorage.removeItem('persist:root');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+
+        // Dispatch logout action
+        dispatch(logout());
+      }
+    }
+  }, [isAuthenticated, subdomain, restaurant, dispatch]);
 
   // Validate restaurant existence for subdomains
   useEffect(() => {

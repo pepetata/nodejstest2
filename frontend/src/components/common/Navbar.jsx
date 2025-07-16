@@ -157,10 +157,17 @@ const AppNavbar = () => {
                   {!(location.pathname === '/login' && !isSubdomain) && (
                     <Button
                       variant="outline-primary"
-                      as={Link}
-                      to="/login"
                       size="sm"
                       className="menu-btn"
+                      onClick={() => {
+                        if (isSubdomain) {
+                          // If on subdomain, redirect to main domain login
+                          window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}/login`;
+                        } else {
+                          // If on main domain, use React Router navigation
+                          window.location.pathname = '/login';
+                        }
+                      }}
                     >
                       Entrar
                     </Button>
@@ -169,10 +176,17 @@ const AppNavbar = () => {
                   {!location.pathname.includes('/register') && (
                     <Button
                       variant="primary"
-                      as={Link}
-                      to="/register"
                       size="sm"
                       className="menu-btn"
+                      onClick={() => {
+                        if (isSubdomain) {
+                          // If on subdomain, redirect to main domain register
+                          window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}/register`;
+                        } else {
+                          // If on main domain, use React Router navigation
+                          window.location.pathname = '/register';
+                        }
+                      }}
                     >
                       Registrar
                     </Button>
