@@ -1,27 +1,70 @@
-import React from 'react';
-import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/authSlice';
+import LogoutConfirmationModal from '../admin/LogoutConfirmationModal';
 import '../../styles/Menu.scss';
 
 const AppNavbar = () => {
-  const user = useSelector((state) => state.auth.user);
-  const isAuthenticated = !!user;
+  const { user, token, restaurant } = useSelector((state) => state.auth);
+  const isAuthenticated = !!user && !!token;
+  const isAdmin =
+    user?.role === 'restaurant_administrator' || user?.role === 'location_administrator';
+  const hasRestaurant = !!restaurant;
   const dispatch = useDispatch();
-  const { restaurantSlug } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Check if we're on a subdomain
+  const subdomain = window.location.hostname.split('.')[0];
+  const isSubdomain = subdomain && subdomain !== 'localhost' && subdomain !== 'www';
 
   // Navbar is always visible
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
     try {
-      dispatch(logout());
+      // Clear authentication data from localStorage first
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:root');
+
+      // Then dispatch logout action
+      await dispatch(logout()).unwrap();
+
+      // Redirect to main app with logout parameter to force clear auth state
+      window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Logout error:', error);
+
+      // Even if logout fails, clear local auth data and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:root');
+      window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
     }
-    navigate(restaurantSlug ? `/${restaurantSlug}/login` : '/login');
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
+  };
+
+  const handleAccessPanel = () => {
+    if (isAdmin && hasRestaurant) {
+      const restaurantUrl = restaurant.url;
+      const redirectUrl = `http://${restaurantUrl}.localhost:3000/admin`;
+      window.location.href = redirectUrl;
+    } else {
+      // TODO: Handle non-admin user navigation
+      console.log('TODO: Navigate non-admin user to appropriate area');
+      alert('Área em desenvolvimento para seu tipo de usuário.');
+    }
   };
 
   return (
@@ -85,31 +128,68 @@ const AppNavbar = () => {
               </div>
 
               {/* Authentication buttons */}
-
-              <>
-                {/* Hide Entrar button on /login page */}
-                {location.pathname !== '/login' && (
+              {isAuthenticated ? (
+                // Authenticated user buttons
+                <>
+                  {isAdmin && hasRestaurant && (
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      className="menu-btn"
+                      onClick={handleAccessPanel}
+                    >
+                      Meu Painel
+                    </Button>
+                  )}
                   <Button
-                    variant="outline-primary"
-                    as={Link}
-                    to="/login"
+                    variant="outline-danger"
                     size="sm"
                     className="menu-btn"
+                    onClick={handleLogoutClick}
                   >
-                    Entrar
+                    Sair do Sistema
                   </Button>
-                )}
-                {/* Hide Registrar button on register page */}
-                {!location.pathname.includes('/register') && (
-                  <Button variant="primary" as={Link} to="/register" size="sm" className="menu-btn">
-                    Registrar
-                  </Button>
-                )}
-              </>
+                </>
+              ) : (
+                // Unauthenticated user buttons
+                <>
+                  {/* Hide Entrar button on /login page ONLY on main domain */}
+                  {!(location.pathname === '/login' && !isSubdomain) && (
+                    <Button
+                      variant="outline-primary"
+                      as={Link}
+                      to="/login"
+                      size="sm"
+                      className="menu-btn"
+                    >
+                      Entrar
+                    </Button>
+                  )}
+                  {/* Hide Registrar button on register page */}
+                  {!location.pathname.includes('/register') && (
+                    <Button
+                      variant="primary"
+                      as={Link}
+                      to="/register"
+                      size="sm"
+                      className="menu-btn"
+                    >
+                      Registrar
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </Nav>
         </Navbar.Collapse>
       </Container>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmationModal
+        show={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+      />
     </Navbar>
   );
 };

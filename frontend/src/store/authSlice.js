@@ -99,6 +99,14 @@ const authSlice = createSlice({
     setUser(state, action) {
       state.user = action.payload;
     },
+    simulateAuth(state, action) {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.restaurant = action.payload.restaurant;
+      state.status = 'succeeded';
+      state.error = null;
+      state.rememberMe = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -132,6 +140,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, setUser } = authSlice.actions;
+export const { logout, setUser, simulateAuth } = authSlice.actions;
 export { storage };
 export default authSlice.reducer;

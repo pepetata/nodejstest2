@@ -10,11 +10,20 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
   animation: fadeIn 0.3s ease-out;
+  padding-top: 80px; // Add top padding to account for navbar
+
+  @media (max-width: 768px) {
+    padding-top: 70px; // Slightly less padding on mobile
+  }
+
+  @media (max-width: 480px) {
+    padding-top: 60px; // Even less padding on small mobile
+  }
 }
 
 @keyframes fadeIn {

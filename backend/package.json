@@ -18,7 +18,6 @@
     "db:setup": "node scripts/setup-database.js --migrations-only",
     "db:setup:dev": "node scripts/setup-database.js --env development --migrations-only",
     "db:setup:test": "node scripts/setup-database.js --env test --migrations-only",
-    "cleanup:media": "node scripts/cleanup-media.js",
     "db:setup:prod": "node scripts/setup-database.js --env production --migrations-only",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

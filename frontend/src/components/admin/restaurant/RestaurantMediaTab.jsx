@@ -25,6 +25,7 @@ const RestaurantMediaTab = () => {
   const [selectedMediaType, setSelectedMediaType] = useState('logo');
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null); // For modal view
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(null); // For delete confirmation
   const fileInputRef = useRef(null);
 
   // Load media when component mounts or restaurant changes
@@ -250,20 +251,38 @@ const RestaurantMediaTab = () => {
       return;
     }
 
-    if (window.confirm('Tem certeza que deseja excluir este arquivo?')) {
-      dispatch(
-        deleteRestaurantMedia({
-          mediaType,
-          mediaId,
-          restaurantId: restaurant.id,
-        })
-      ).then((result) => {
-        if (result.meta.requestStatus === 'fulfilled') {
-          // Refetch media after successful deletion
-          dispatch(fetchRestaurantMedia({ restaurantId: restaurant.id }));
-        }
-      });
-    }
+    // Show confirmation modal instead of browser confirm
+    setDeleteConfirmModal({
+      mediaType,
+      mediaId,
+      restaurantId: restaurant.id,
+    });
+  };
+
+  const confirmDeleteMedia = () => {
+    if (!deleteConfirmModal) return;
+
+    const { mediaType, mediaId, restaurantId } = deleteConfirmModal;
+
+    dispatch(
+      deleteRestaurantMedia({
+        mediaType,
+        mediaId,
+        restaurantId,
+      })
+    ).then((result) => {
+      if (result.meta.requestStatus === 'fulfilled') {
+        // Refetch media after successful deletion
+        dispatch(fetchRestaurantMedia({ restaurantId }));
+      }
+    });
+
+    // Close modal
+    setDeleteConfirmModal(null);
+  };
+
+  const cancelDeleteMedia = () => {
+    setDeleteConfirmModal(null);
   };
 
   const formatFileSize = (bytes) => {
@@ -689,6 +708,49 @@ const RestaurantMediaTab = () => {
             </div>
           </div>
         </button>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal && (
+        <div
+          className="delete-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              cancelDeleteMedia();
+            }
+          }}
+          onKeyDown={(e) => e.key === 'Escape' && cancelDeleteMedia()}
+          role="button"
+          tabIndex={0}
+          aria-label="Fechar modal de confirmação"
+        >
+          <div
+            className="delete-modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-modal-title"
+          >
+            <div id="delete-modal-title" className="delete-modal-header">
+              <span>⚠️</span>
+              Confirmar Exclusão
+            </div>
+
+            <div className="delete-modal-message">
+              Tem certeza que deseja excluir este arquivo de mídia?
+              <br />
+              <strong>Esta ação não pode ser desfeita.</strong>
+            </div>
+
+            <div className="delete-modal-actions">
+              <button type="button" onClick={cancelDeleteMedia}>
+                Cancelar
+              </button>
+              <button type="button" onClick={confirmDeleteMedia}>
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

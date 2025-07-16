@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import '../../styles/login.scss';
 import RememberMeTooltip from '../../components/common/RememberMeTooltip';
 import userService from '../../services/userService';
+import RouteGuard from '../../components/auth/RouteGuard';
 
 const LoginPage = ({ subdomain: _subdomain }) => {
   const { restaurantSlug } = useParams();
@@ -147,7 +148,7 @@ const LoginPage = ({ subdomain: _subdomain }) => {
   };
 
   return (
-    <>
+    <RouteGuard>
       <div className="auth-container">
         <div className="auth-card">
           <h1 className="auth-title">Login</h1>
@@ -370,7 +371,7 @@ const LoginPage = ({ subdomain: _subdomain }) => {
           </div>
         </div>
       )}
-    </>
+    </RouteGuard>
   );
 };
 

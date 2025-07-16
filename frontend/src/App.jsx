@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 import { logout } from './store/authSlice';
 import Layout from './components/common/Layout';
+import RouteGuard from './components/auth/RouteGuard';
 
 // Pages
 import Home from './pages/app/Home.jsx';
@@ -129,9 +130,11 @@ function App({ getSubdomain }) {
           <Route
             path="/login"
             element={
-              <Layout>
-                <Login subdomain={subdomain} />
-              </Layout>
+              <RouteGuard>
+                <Layout>
+                  <Login subdomain={subdomain} />
+                </Layout>
+              </RouteGuard>
             }
           />
 
@@ -157,8 +160,17 @@ function App({ getSubdomain }) {
             }
           />
 
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/menu" replace />} />
+          {/* Root redirect - handled by RouteGuard */}
+          <Route
+            path="/"
+            element={
+              <RouteGuard>
+                <Layout>
+                  <Home source="/" />
+                </Layout>
+              </RouteGuard>
+            }
+          />
 
           {/* 404 for restaurant subdomain */}
           <Route path="*" element={<NotFound />} />

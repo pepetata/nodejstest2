@@ -1,0 +1,76 @@
+// Test authentication state without API calls
+<!doctype html>
+<html>
+  <head>
+    <title>Authentication Test</title>
+  </head>
+  <body>
+    <h1>Authentication Test</h1>
+    <div id="results"></div>
+
+    <script>
+      function checkAuthState() {
+        const results = document.getElementById('results');
+
+        // Check localStorage
+        const localToken = localStorage.getItem('token');
+        const localUser = localStorage.getItem('user');
+        const localRememberMe = localStorage.getItem('rememberMe');
+
+        // Check sessionStorage
+        const sessionToken = sessionStorage.getItem('token');
+        const sessionUser = sessionStorage.getItem('user');
+
+        results.innerHTML = `
+                <h2>Local Storage:</h2>
+                <p>Token: ${localToken ? 'Present' : 'Not found'}</p>
+                <p>User: ${localUser ? 'Present' : 'Not found'}</p>
+                <p>Remember Me: ${localRememberMe || 'Not set'}</p>
+
+                <h2>Session Storage:</h2>
+                <p>Token: ${sessionToken ? 'Present' : 'Not found'}</p>
+                <p>User: ${sessionUser ? 'Present' : 'Not found'}</p>
+
+                <h2>Redux State (if available):</h2>
+                <p>Check browser console for Redux state</p>
+            `;
+
+        // Log to console for debugging
+        console.log('Authentication State Check:', {
+          localStorage: {
+            token: localToken,
+            user: localUser,
+            rememberMe: localRememberMe,
+          },
+          sessionStorage: {
+            token: sessionToken,
+            user: sessionUser,
+          },
+        });
+      }
+
+      // Run check on page load
+      checkAuthState();
+
+      // Add button to clear auth state
+      document.body.innerHTML += `
+            <button onclick="clearAuthState()">Clear Auth State</button>
+            <button onclick="checkAuthState()">Refresh Check</button>
+        `;
+
+      function clearAuthState() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('rememberMe');
+        localStorage.removeItem('persist:auth');
+        localStorage.removeItem('persist:root');
+
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+
+        console.log('Auth state cleared');
+        checkAuthState();
+      }
+    </script>
+  </body>
+</html>

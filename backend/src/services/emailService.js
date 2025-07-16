@@ -34,7 +34,7 @@ async function sendPostConfirmationEmail({ to, userName, restaurantUrlName }) {
   const apphost = process.env.APP_HOST || 'alacarteapp.com';
   const appUrl = process.env.APP_URL || 'alacarteapp.com';
   const templatePath = path.join(__dirname, '../templates/postConfirmationEmail.ejs');
-  const loginUrl = `https://${restaurantUrlName}.${apphost}/login`;
+  const loginUrl = `http://${restaurantUrlName}.${apphost}/login`;
   const loginUrl2 = `${appUrl}/login`;
   const loginUrl3 = `${appUrl}`;
   const logoUrl = `${appUrl}/images/logo.png`;

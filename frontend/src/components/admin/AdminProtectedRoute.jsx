@@ -180,10 +180,9 @@ const AdminProtectedRoute = ({ children }) => {
     }
 
     if (isSubdomain) {
-      // On subdomain, redirect to main app login page
-      const mainAppUrl = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
-      window.location.href = `${mainAppUrl}/login`;
-      return null;
+      // On subdomain, redirect to subdomain login page (not main app)
+      console.log('AdminProtectedRoute - Redirecting to subdomain login page');
+      return <Navigate to="/login" replace />;
     } else {
       // On main app, redirect to /:restaurantSlug/login
       return <Navigate to={`/${restaurantSlug}/login`} replace />;
