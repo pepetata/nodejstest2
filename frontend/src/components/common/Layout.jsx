@@ -1,10 +1,11 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
+import PropTypes from 'prop-types';
 import AppNavbar from './Navbar';
 import Footer from './Footer';
 
-const Layout = () => {
+const Layout = ({ children }) => {
   return (
     <div className="d-flex flex-column min-vh-100">
       <AppNavbar />
@@ -13,12 +14,15 @@ const Layout = () => {
         className="flex-grow-1"
         style={{ paddingTop: '100px', paddingBottom: '20px' }}
       >
-        <Outlet />
+        {children ? children : <Outlet />}
       </Container>
       <Footer />
     </div>
   );
 };
 
-// Layout doesn't need prop-types as it doesn't receive any props
+Layout.propTypes = {
+  children: PropTypes.node,
+};
+
 export default Layout;

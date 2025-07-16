@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { logout } from './store/authSlice';
 import Layout from './components/common/Layout';
 import RouteGuard from './components/auth/RouteGuard';
+import restaurantService from './services/restaurantService';
 
 // Pages
 import Home from './pages/app/Home.jsx';
@@ -23,11 +24,55 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminRestaurantProfilePage from './pages/admin/AdminRestaurantProfilePage';
 import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
 
+// Cache for restaurant validation to avoid repeated API calls
+const restaurantValidationCache = new Map();
+
 function App({ getSubdomain }) {
   const isAuthenticated = useSelector((state) => !!state.auth.user);
   const dispatch = useDispatch();
-  const subdomain = getSubdomain ? getSubdomain() : null;
+
+  // Memoize the subdomain to prevent unnecessary re-renders
+  const subdomain = useMemo(() => {
+    return getSubdomain ? getSubdomain() : null;
+  }, [getSubdomain]);
+
+  const [restaurantExists, setRestaurantExists] = useState(null); // null = loading, true = exists, false = not exists
+
   console.log(`Subdomain detected: ${subdomain}`);
+  console.log(`Restaurant exists state: ${restaurantExists}`);
+
+  // Validate restaurant existence for subdomains
+  useEffect(() => {
+    if (subdomain) {
+      // Check cache first
+      if (restaurantValidationCache.has(subdomain)) {
+        const cachedResult = restaurantValidationCache.get(subdomain);
+        setRestaurantExists(cachedResult);
+        return;
+      }
+
+      const validateRestaurant = async () => {
+        try {
+          await restaurantService.getByUrlName(subdomain);
+          setRestaurantExists(true);
+          restaurantValidationCache.set(subdomain, true);
+        } catch (error) {
+          if (error.response?.status === 404 || error.response?.status === 400) {
+            // Both 404 and 400 mean restaurant doesn't exist
+            setRestaurantExists(false);
+            restaurantValidationCache.set(subdomain, false);
+          } else {
+            console.error('Error validating restaurant:', error);
+            setRestaurantExists(false);
+            restaurantValidationCache.set(subdomain, false);
+          }
+        }
+      };
+      validateRestaurant();
+    } else {
+      setRestaurantExists(null); // No subdomain = no validation needed
+    }
+  }, [subdomain]);
 
   // Check for logout parameter and force clear authentication
   useEffect(() => {
@@ -71,97 +116,124 @@ function App({ getSubdomain }) {
   return (
     <Routes>
       {subdomain ? (
-        // Routes for when we're on a restaurant subdomain (e.g., restaurant.localhost:3000)
-        <>
-          {console.log('Rendering subdomain routes for:', subdomain)}
+        restaurantExists === null ? (
+          // Loading state while validating restaurant
+          <>
+            {console.log(`Rendering loading state for subdomain: ${subdomain}`)}
+            <Route
+              path="*"
+              element={
+                <Layout>
+                  <div>Loading...</div>
+                </Layout>
+              }
+            />
+          </>
+        ) : restaurantExists === false ? (
+          // Restaurant doesn't exist - show 404 for all routes with Layout
+          <>
+            {console.log(`Rendering 404 for non-existent subdomain: ${subdomain}`)}
+            <Route
+              path="*"
+              element={
+                <Layout>
+                  <NotFound />
+                </Layout>
+              }
+            />
+          </>
+        ) : (
+          // Restaurant exists - show subdomain routes
+          <>
+            {console.log(`Rendering valid subdomain routes for: ${subdomain}`)}
+            {console.log('Rendering subdomain routes for:', subdomain)}
 
-          {/* Admin routes for restaurant subdomain */}
-          <Route
-            path="/admin"
-            element={
-              <>
-                {console.log('Admin route matched!')}
-                <AdminProtectedRoute>
-                  <AdminLayout />
-                </AdminProtectedRoute>
-              </>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
-            <Route path="user-profile" element={<AdminUserProfilePage />} />
-          </Route>
+            {/* Admin routes for restaurant subdomain */}
+            <Route
+              path="/admin"
+              element={
+                <>
+                  {console.log('Admin route matched!')}
+                  <AdminProtectedRoute>
+                    <AdminLayout />
+                  </AdminProtectedRoute>
+                </>
+              }
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
+              <Route path="user-profile" element={<AdminUserProfilePage />} />
+            </Route>
 
-          {/* Waiter portal for subdomain */}
-          <Route
-            path="/waiter"
-            element={
-              <ProtectedRoute>
-                <Home source="/waiter" />
-              </ProtectedRoute>
-            }
-          />
+            {/* Waiter portal for subdomain */}
+            <Route
+              path="/waiter"
+              element={
+                <ProtectedRoute>
+                  <Home source="/waiter" />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* KDS for subdomain */}
-          <Route
-            path="/kds/:area"
-            element={
-              <ProtectedRoute>
-                <Home source="/kds/:area" />
-              </ProtectedRoute>
-            }
-          />
+            {/* KDS for subdomain */}
+            <Route
+              path="/kds/:area"
+              element={
+                <ProtectedRoute>
+                  <Home source="/kds/:area" />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Login page */}
-          <Route
-            path="/login"
-            element={
-              <RouteGuard>
+            {/* Login page */}
+            <Route
+              path="/login"
+              element={
                 <Layout>
                   <Login subdomain={subdomain} />
                 </Layout>
-              </RouteGuard>
-            }
-          />
+              }
+            />
 
-          {/* Register page */}
-          <Route
-            path="/register"
-            element={
-              <Layout>
-                <Register />
-              </Layout>
-            }
-          />
-
-          {/* Order page */}
-          <Route
-            path="/order"
-            element={
-              <ProtectedRoute>
+            {/* Register page */}
+            <Route
+              path="/register"
+              element={
                 <Layout>
-                  <Home source="/order" />
+                  <Register />
                 </Layout>
-              </ProtectedRoute>
-            }
-          />
+              }
+            />
 
-          {/* Root redirect - handled by RouteGuard */}
-          <Route
-            path="/"
-            element={
-              <RouteGuard>
-                <Layout>
-                  <Home source="/" />
-                </Layout>
-              </RouteGuard>
-            }
-          />
+            {/* Order page */}
+            <Route
+              path="/order"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Home source="/order" />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* 404 for restaurant subdomain */}
-          <Route path="*" element={<NotFound />} />
-        </>
+            {/* Root redirect - handled by RouteGuard */}
+            <Route
+              path="/"
+              element={
+                <RouteGuard>
+                  <Layout>
+                    <Home source="/" />
+                  </Layout>
+                </RouteGuard>
+              }
+            />
+
+            {/* 404 for restaurant subdomain */}
+            <Route path="*" element={<NotFound />} />
+          </>
+        )
       ) : (
         // Routes for main app (localhost:3000 without subdomain)
         <>
