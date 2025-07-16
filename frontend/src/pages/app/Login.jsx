@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { login } from '../../store/authSlice';
+import { login, logout } from '../../store/authSlice';
 import PropTypes from 'prop-types';
 import '../../styles/login.scss';
 import RememberMeTooltip from '../../components/common/RememberMeTooltip';
@@ -35,6 +35,28 @@ const LoginPage = ({ subdomain: _subdomain }) => {
   React.useEffect(() => {
     if (authError) setError(authError);
   }, [authError]);
+
+  // Auto-logout any existing user when navigating to login page
+  React.useEffect(() => {
+    const performLogout = async () => {
+      try {
+        // Clear authentication data from localStorage
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('persist:auth');
+        localStorage.removeItem('persist:root');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+
+        // Dispatch logout action to clear Redux state
+        dispatch(logout());
+      } catch (error) {
+        console.error('Error during auto-logout:', error);
+      }
+    };
+
+    performLogout();
+  }, [dispatch]); // Run once when component mounts
 
   const handleChange = (e) => {
     const { name, value } = e.target;
