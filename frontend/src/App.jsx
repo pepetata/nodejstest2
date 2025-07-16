@@ -8,7 +8,6 @@ import RouteGuard from './components/auth/RouteGuard';
 
 // Pages
 import Home from './pages/app/Home.jsx';
-import MenuPage from './pages/app/MenuPage.jsx';
 import Register from './pages/app/Register.jsx';
 import NotFound from './pages/app/NotFound.jsx';
 import Login from './pages/app/Login.jsx';
@@ -20,7 +19,6 @@ import ResetPassword from './pages/app/ResetPassword.jsx';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
-import AdminMenuPage from './pages/admin/AdminMenuPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminRestaurantProfilePage from './pages/admin/AdminRestaurantProfilePage';
 import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
@@ -90,7 +88,6 @@ function App({ getSubdomain }) {
             }
           >
             <Route index element={<AdminDashboard />} />
-            <Route path="menu" element={<AdminMenuPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
             <Route path="user-profile" element={<AdminUserProfilePage />} />
@@ -113,16 +110,6 @@ function App({ getSubdomain }) {
               <ProtectedRoute>
                 <Home source="/kds/:area" />
               </ProtectedRoute>
-            }
-          />
-
-          {/* Menu page */}
-          <Route
-            path="/menu"
-            element={
-              <Layout>
-                <MenuPage />
-              </Layout>
             }
           />
 
@@ -194,8 +181,7 @@ function App({ getSubdomain }) {
           {/* Main restaurant routes with common Layout */}
           <Route path="/:restaurantSlug" element={<Layout />}>
             {/* Public routes */}
-            <Route index element={<Navigate to="menu" replace />} />
-            <Route path="menu" element={<MenuPage />} />
+            <Route index element={<NotFound />} />
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
 
@@ -224,7 +210,6 @@ function App({ getSubdomain }) {
             }
           >
             <Route index element={<AdminDashboard />} />
-            <Route path="menu" element={<AdminMenuPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
             <Route path="user-profile" element={<AdminUserProfilePage />} />
