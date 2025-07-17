@@ -12,7 +12,7 @@ const Layout = ({ children }) => {
       <Container
         as="main"
         className="flex-grow-1"
-        style={{ paddingTop: '100px', paddingBottom: '20px' }}
+        style={{ paddingTop: '40px', paddingBottom: '20px' }}
       >
         {children ? children : <Outlet />}
       </Container>

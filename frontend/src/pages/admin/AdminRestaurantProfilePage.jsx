@@ -358,7 +358,7 @@ const AdminRestaurantProfilePage = () => {
                 <span className="tab-icon">{tab.icon}</span>
                 <div className="tab-content">
                   <span className="tab-name">{tab.name}</span>
-                  <span className="tab-description">{tab.description}</span>
+                  {/* <span className="tab-description">{tab.description}</span> */}
                 </div>
               </button>
             ))}

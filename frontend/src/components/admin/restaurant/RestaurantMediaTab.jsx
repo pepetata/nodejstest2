@@ -53,7 +53,6 @@ const RestaurantMediaTab = () => {
     () => ({
       logo: {
         title: 'Logo do Restaurante',
-        icon: '🏪',
         description: 'Logo principal do restaurante (recomendado: 512x512px)',
         accept: 'image/jpeg,image/png,image/webp',
         maxSize: 5 * 1024 * 1024, // 5MB
@@ -62,7 +61,6 @@ const RestaurantMediaTab = () => {
       },
       favicon: {
         title: 'Favicon',
-        icon: '🔖',
         description: 'Ícone do site (recomendado: 32x32px)',
         accept: '.ico,.png,image/x-icon,image/png',
         maxSize: 1 * 1024 * 1024, // 1MB
@@ -71,7 +69,6 @@ const RestaurantMediaTab = () => {
       },
       images: {
         title: 'Imagens do Restaurante',
-        icon: '🖼️',
         description: 'Fotos do ambiente, pratos e instalações (por localização)',
         accept: 'image/jpeg,image/png,image/webp',
         maxSize: 10 * 1024 * 1024, // 10MB
@@ -80,7 +77,6 @@ const RestaurantMediaTab = () => {
       },
       videos: {
         title: 'Vídeos do Restaurante',
-        icon: '🎥',
         description: 'Vídeos promocionais e do ambiente (por localização)',
         accept: 'video/mp4,video/webm,video/mov',
         maxSize: 50 * 1024 * 1024, // 50MB
@@ -357,8 +353,8 @@ const RestaurantMediaTab = () => {
               <p className="media-name" title={item.name}>
                 {item.name}
               </p>
-              <p className="media-size">{formatFileSize(item.size)}</p>
-              <p className="media-date">{new Date(item.uploadedAt).toLocaleDateString('pt-BR')}</p>
+              {/* <p className="media-size">{formatFileSize(item.size)}</p> */}
+              {/* <p className="media-date">{new Date(item.uploadedAt).toLocaleDateString('pt-BR')}</p> */}
             </div>
 
             {isEditing && (
@@ -399,9 +395,7 @@ const RestaurantMediaTab = () => {
 
     if (currentCount >= config.maxFiles) {
       return (
-        <div className="upload-area-full">
-          <p>Limite de arquivos atingido ({config.maxFiles})</p>
-        </div>
+        <div className="upload-area-full">Limite de arquivos atingido ({config.maxFiles})</div>
       );
     }
 
@@ -470,7 +464,6 @@ const RestaurantMediaTab = () => {
       <div className="tab-section">
         <div className="section-header">
           <h3 className="section-title">
-            <span className="section-icon">🎨</span>
             Imagens e Vídeos
             <div className="tab-edit-controls">
               {!isEditing ? (
@@ -502,43 +495,57 @@ const RestaurantMediaTab = () => {
                 }
               }}
             >
-              <span className="tab-icon">{config.icon}</span>
+              {/* <span className="tab-icon">{config.icon}</span> */}
               <span className="tab-label">{config.title}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Location Selector (for images and videos) */}
-      {mediaTypes[selectedMediaType]?.requiresLocation && (
+      {/* Location Selector (for images and videos) - only show if more than one location */}
+      {mediaTypes[selectedMediaType]?.requiresLocation && locations && locations.length > 1 && (
         <div className="location-selector">
           <h4 className="subsection-title">Selecionar Localização</h4>
           <div className="location-list">
-            {locations && locations.length > 0 ? (
-              locations.map((location) => (
-                <button
-                  key={location.id}
-                  className={`location-item ${selectedLocationId === location.id ? 'active' : ''}`}
-                  onClick={() => setSelectedLocationId(location.id)}
-                  disabled={!isEditing}
-                >
-                  <div className="location-info">
-                    <h5>{location.name || 'Localização'}</h5>
-                    <p>
-                      {location.street_address}, {location.city}
-                    </p>
-                    {location.url_name && (
-                      <span className="location-url-badge">{location.url_name}</span>
-                    )}
-                  </div>
-                </button>
-              ))
-            ) : (
-              <p className="no-locations-message">
-                Nenhuma localização encontrada. Adicione pelo menos uma localização primeiro.
-              </p>
-            )}
+            {locations.map((location) => (
+              <button
+                key={location.id}
+                className={`location-item ${selectedLocationId === location.id ? 'active' : ''}`}
+                onClick={() => setSelectedLocationId(location.id)}
+                disabled={!isEditing}
+              >
+                <div className="location-info">
+                  <h5>{location.name || 'Localização'}</h5>
+                  <p>
+                    {location.street_address}, {location.city}
+                  </p>
+                  {location.url_name && (
+                    <span className="location-url-badge">{location.url_name}</span>
+                  )}
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
+      )}
+
+      {/* Show message when only one location exists */}
+      {mediaTypes[selectedMediaType]?.requiresLocation && locations && locations.length === 1 && (
+        <div className="single-location-info">
+          <p className="info-text">
+            <span className="info-icon">📍</span>
+            Mídia será associada à localização:{' '}
+            <strong>{locations[0].name || 'Localização Principal'}</strong>
+          </p>
+        </div>
+      )}
+
+      {/* Show message when no locations exist */}
+      {mediaTypes[selectedMediaType]?.requiresLocation && locations && locations.length === 0 && (
+        <div className="no-locations-info">
+          <p className="no-locations-message">
+            Nenhuma localização encontrada. Adicione pelo menos uma localização primeiro.
+          </p>
         </div>
       )}
 
@@ -556,7 +563,7 @@ const RestaurantMediaTab = () => {
           </div>
         ) : currentMedia[selectedMediaType] ? (
           <div className="current-media-section">
-            <h4>Arquivos Atuais</h4>
+            {/* <p>Arquivos Atuais</p> */}
             {renderMediaPreview(selectedMediaType, currentMedia[selectedMediaType])}
           </div>
         ) : (
@@ -566,8 +573,20 @@ const RestaurantMediaTab = () => {
         )}
 
         {/* Upload Area */}
-        {renderUploadArea(selectedMediaType)}
+        {isEditing &&
+          (!mediaTypes[selectedMediaType]?.requiresLocation ||
+            (locations && locations.length > 0)) &&
+          renderUploadArea(selectedMediaType)}
       </div>
+
+      {!isEditing && (
+        <div className="view-mode-info">
+          <p className="info-text">
+            <span className="info-icon">ℹ️</span>
+            Clique em &quot;Editar&quot; para fazer upload ou gerenciar arquivos de mídia.
+          </p>
+        </div>
+      )}
 
       {/* Media Management Tips */}
       <div className="tab-section">
@@ -596,7 +615,7 @@ const RestaurantMediaTab = () => {
       </div>
 
       {/* Media Statistics */}
-      <div className="tab-section">
+      {/* <div className="tab-section">
         <h3 className="section-title">
           <span className="section-icon">📊</span>
           Resumo da Mídia
@@ -625,16 +644,7 @@ const RestaurantMediaTab = () => {
             );
           })}
         </div>
-      </div>
-
-      {!isEditing && (
-        <div className="view-mode-info">
-          <p className="info-text">
-            <span className="info-icon">ℹ️</span>
-            Clique em &quot;Editar&quot; para fazer upload ou gerenciar arquivos de mídia.
-          </p>
-        </div>
-      )}
+      </div> */}
 
       {/* Image Modal */}
       {selectedImage && (

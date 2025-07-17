@@ -1,4 +1,5 @@
 // Restaurant Media Tab Styles
+@use '../variables.scss' as vars;
 .restaurant-media-tab {
   .location-selector {
     margin-bottom: 1.5rem;
@@ -84,7 +85,7 @@
   }
 
   .media-type-selector {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
 
     .subsection-title {
       font-size: 14px;
@@ -94,24 +95,29 @@
     }
 
     .media-type-tabs {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       gap: 0.75rem;
 
       .media-type-tab {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
-        padding: 0.75rem;
+        padding: 0.75rem 1rem;
         border: 1px solid #dee2e6;
         border-radius: 6px;
         background-color: #fff;
         cursor: pointer;
         transition: all 0.2s ease;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        min-width: fit-content;
+        background-color: vars.$primary-lighter;
 
         &:hover {
-          border-color: #007bff;
-          background-color: #f8f9fa;
+          border-color: vars.$primary-dark;
+          background-color: vars.$primary-light;
         }
 
         &.active {
@@ -127,21 +133,22 @@
         .tab-label {
           font-weight: 500;
           font-size: 14px;
+          text-align: center;
         }
       }
     }
   }
 
   .tab-section {
-    margin-bottom: 1.5rem;
+    // margin-bottom: 1.5rem;
 
     .section-header {
-      margin-bottom: 1rem;
+      // margin-bottom: 1rem;
 
       .section-title {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        // justify-content: space-between;
         font-size: 18px;
         font-weight: 600;
         color: #343a40;
@@ -194,7 +201,7 @@
     text-align: center;
     transition: all 0.3s ease;
     background-color: #fafafa;
-    margin: 1rem 0;
+    // margin: 1rem 0;
 
     &:hover:not(.disabled) {
       border-color: #007bff;
@@ -252,19 +259,19 @@
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 6px;
-    padding: 1rem;
+    padding: 0.5rem;
     text-align: center;
     color: #6c757d;
-    margin: 1rem 0;
+    // margin: 1rem 0;
   }
 
   .view-mode-info {
     background-color: #e3f2fd;
     border: 1px solid #bbdefb;
     border-radius: 6px;
-    padding: 1rem;
+    padding: 0.5rem 1rem;
     text-align: center;
-    margin-top: 1.5rem;
+    // margin-top: 1.5rem;
 
     .info-text {
       margin: 0;
