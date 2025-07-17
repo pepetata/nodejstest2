@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { setUser } from '../../store/authSlice';
+import { simulateAuth } from '../../store/authSlice';
 import { storage } from '../../store/authSlice';
 import authService from '../../services/authService';
 import PropTypes from 'prop-types';
@@ -104,8 +104,23 @@ const AdminProtectedRoute = ({ children }) => {
         .then((response) => {
           console.log('AdminProtectedRoute - API Response:', response); // Debug full response
           const userData = response.data?.user || response.user; // Handle different response structures
+          const restaurantData = response.data?.restaurant || response.restaurant; // Extract restaurant data
+          const token = storage.get('token');
+
           console.log('AdminProtectedRoute - Successfully fetched user data:', userData);
-          dispatch(setUser(userData));
+          console.log(
+            'AdminProtectedRoute - Successfully fetched restaurant data:',
+            restaurantData
+          );
+
+          // Use simulateAuth to set both user and restaurant data
+          dispatch(
+            simulateAuth({
+              user: userData,
+              token: token,
+              restaurant: restaurantData || null,
+            })
+          );
 
           // Clean up URL parameters after a small delay to prevent flickering
           setTimeout(() => {

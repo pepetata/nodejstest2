@@ -11,12 +11,13 @@ const rateLimitLogger = logger.child({ middleware: 'rateLimit' });
 class RateLimitMiddleware {
   /**
    * General API rate limiting
-   * 100 requests per 15 minutes
+   * 100 requests per 15 minutes (production) / 1000 requests per 15 minutes (development)
    */
   static general() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
     return rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
+      max: isDevelopment ? 1000 : 100, // Higher limit for development
       message: {
         error: 'Too many requests',
         message: 'Too many requests from this IP, please try again later.',
