@@ -4,19 +4,24 @@ import { useSelector, useDispatch } from 'react-redux';
 import { simulateAuth } from '../../store/authSlice';
 import { storage } from '../../store/authSlice';
 import authService from '../../services/authService';
+import InactiveRestaurantModal from './InactiveRestaurantModal';
 import PropTypes from 'prop-types';
 
 const AdminProtectedRoute = ({ children }) => {
   const { restaurantSlug } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isRehydrating, setIsRehydrating] = useState(true);
+  const [showInactiveModal, setShowInactiveModal] = useState(false);
+  const [inactiveRestaurantName, setInactiveRestaurantName] = useState('');
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => !!state.auth.user);
   const user = useSelector((state) => state.auth.user);
+  const restaurant = useSelector((state) => state.auth.restaurant);
   const authStatus = useSelector((state) => state.auth.status);
 
   console.log('AdminProtectedRoute - isAuthenticated:', isAuthenticated);
   console.log('AdminProtectedRoute - user:', user);
+  console.log('AdminProtectedRoute - restaurant:', restaurant);
   console.log('AdminProtectedRoute - restaurantSlug:', restaurantSlug);
   console.log('AdminProtectedRoute - authStatus:', authStatus);
 
@@ -87,6 +92,22 @@ const AdminProtectedRoute = ({ children }) => {
     }
   }, [isAuthenticated]); // Only depend on isAuthenticated to avoid loops
 
+  // Check restaurant status for already authenticated users
+  useEffect(() => {
+    if (isAuthenticated && user && restaurant) {
+      console.log('AdminProtectedRoute - Checking restaurant status for authenticated user');
+      console.log('AdminProtectedRoute - Restaurant from Redux:', restaurant);
+      console.log('AdminProtectedRoute - Restaurant status:', restaurant?.status);
+      console.log('AdminProtectedRoute - User is_admin:', user?.is_admin);
+
+      if (restaurant.status === 'inactive' && user?.is_admin) {
+        console.log('AdminProtectedRoute - Restaurant is inactive, showing modal');
+        setInactiveRestaurantName(restaurant.name || 'Restaurante');
+        setShowInactiveModal(true);
+      }
+    }
+  }, [isAuthenticated, user, restaurant]);
+
   // Handle cross-domain authentication
   useEffect(() => {
     const token = searchParams.get('token');
@@ -112,6 +133,15 @@ const AdminProtectedRoute = ({ children }) => {
             'AdminProtectedRoute - Successfully fetched restaurant data:',
             restaurantData
           );
+          console.log('AdminProtectedRoute - Restaurant status:', restaurantData?.status);
+          console.log('AdminProtectedRoute - User is_admin:', userData?.is_admin);
+
+          // Check if restaurant is inactive and user is admin
+          if (restaurantData && restaurantData.status === 'inactive' && userData?.is_admin) {
+            console.log('AdminProtectedRoute - Restaurant is inactive, showing modal');
+            setInactiveRestaurantName(restaurantData.name || 'Restaurante');
+            setShowInactiveModal(true);
+          }
 
           // Use simulateAuth to set both user and restaurant data
           dispatch(
@@ -283,7 +313,26 @@ const AdminProtectedRoute = ({ children }) => {
   }
 
   console.log('AdminProtectedRoute - All checks passed, rendering children');
-  return children;
+  console.log('AdminProtectedRoute - showInactiveModal:', showInactiveModal);
+  console.log('AdminProtectedRoute - inactiveRestaurantName:', inactiveRestaurantName);
+
+  const handleCloseModal = () => {
+    setShowInactiveModal(false);
+    // Optionally redirect to a safe page or logout after closing modal
+    // For now, just close the modal and let user see the admin interface
+    // They can access payment settings to reactivate
+  };
+
+  return (
+    <>
+      {children}
+      <InactiveRestaurantModal
+        show={showInactiveModal}
+        restaurantName={inactiveRestaurantName}
+        onClose={handleCloseModal}
+      />
+    </>
+  );
 };
 
 AdminProtectedRoute.propTypes = {
