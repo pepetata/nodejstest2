@@ -1,10 +1,9 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import '../../styles/admin/adminDashboard.scss';
 
 const AdminDashboard = () => {
-  const { restaurantSlug } = useParams();
   const user = useSelector((state) => state.auth.user);
 
   // Helper function to check if user has admin access
@@ -43,7 +42,7 @@ const AdminDashboard = () => {
       description:
         'Adicione, edite ou remova itens do cardápio do restaurante. Configure preços, descrições e disponibilidade.',
       icon: '🍽️',
-      link: `/${restaurantSlug}/admin/menu`,
+      link: `/admin/menu`,
       color: 'primary',
     },
     {
@@ -51,14 +50,14 @@ const AdminDashboard = () => {
       description:
         'Visualize e gerencie usuários do sistema. Controle permissões e status de contas.',
       icon: '👥',
-      link: `/${restaurantSlug}/admin/users`,
+      link: `/admin/users`,
       color: 'secondary',
     },
     {
       title: 'Meu Perfil',
       description: 'Atualize suas informações pessoais, altere sua senha e configure preferências.',
       icon: '👤',
-      link: `/${restaurantSlug}/admin/user-profile`,
+      link: `/admin/user-profile`,
       color: 'tertiary',
     },
   ];
@@ -70,7 +69,7 @@ const AdminDashboard = () => {
       description:
         'Configure informações do restaurante, horários de funcionamento, dados de contato e configurações.',
       icon: '🏪',
-      link: `/${restaurantSlug}/admin/restaurant-profile`,
+      link: `/admin/restaurant-profile`,
       color: 'accent',
     });
   }
