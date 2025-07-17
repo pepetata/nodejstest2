@@ -8,18 +8,18 @@ import {
   updateRestaurantProfile,
   updateRestaurantLocation,
   clearAllErrors,
-} from '../../store/restaurantSlice';
-import RestaurantGeneralTab from '../../components/admin/restaurant/RestaurantGeneralTab';
-import RestaurantLocationsTab from '../../components/admin/restaurant/RestaurantLocationsTab';
-import RestaurantFeaturesTab from '../../components/admin/restaurant/RestaurantFeaturesTab';
-import RestaurantMediaTab from '../../components/admin/restaurant/RestaurantMediaTab';
-import RestaurantPaymentTab from '../../components/admin/restaurant/RestaurantPaymentTab';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import ErrorMessage from '../../components/common/ErrorMessage';
-import SuccessMessage from '../../components/common/SuccessMessage';
-import UnsavedChangesModal from '../../components/common/UnsavedChangesModal';
-import '../../styles/AdminRestaurantProfile.css';
-import '../../styles/admin/adminPage.scss';
+} from '../../../store/restaurantSlice';
+import RestaurantGeneralTab from '../../../components/admin/restaurant/RestaurantGeneralTab';
+import RestaurantLocationsTab from '../../../components/admin/restaurant/RestaurantLocationsTab';
+import RestaurantFeaturesTab from '../../../components/admin/restaurant/RestaurantFeaturesTab';
+import RestaurantMediaTab from '../../../components/admin/restaurant/RestaurantMediaTab';
+import RestaurantPaymentTab from '../../../components/admin/restaurant/RestaurantPaymentTab';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import ErrorMessage from '../../../components/common/ErrorMessage';
+import SuccessMessage from '../../../components/common/SuccessMessage';
+import UnsavedChangesModal from '../../../components/common/UnsavedChangesModal';
+import '../../../styles/AdminRestaurantProfile.css';
+import '../../../styles/admin/adminPage.scss';
 
 const AdminRestaurantProfilePage = () => {
   const dispatch = useDispatch();

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import '../../styles/admin/adminPage.scss';
+import '../../../styles/admin/adminPage.scss';
 
 const AdminUserProfilePage = () => {
   const user = useSelector((state) => state.auth.user);

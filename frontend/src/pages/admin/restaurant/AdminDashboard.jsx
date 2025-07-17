@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import '../../styles/admin/adminDashboard.scss';
+import '../../../styles/admin/adminDashboard.scss';
 
 const AdminDashboard = () => {
   const user = useSelector((state) => state.auth.user);

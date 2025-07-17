@@ -1,5 +1,5 @@
 import React from 'react';
-import '../../styles/admin/adminPage.scss';
+import '../../../styles/admin/adminPage.scss';
 
 const AdminUsersPage = () => {
   return (

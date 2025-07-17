@@ -18,11 +18,11 @@ import ResetPassword from './pages/app/ResetPassword.jsx';
 
 // Admin Components
 import AdminLayout from './components/admin/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminDashboard from './pages/admin/restaurant/AdminDashboard';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminRestaurantProfilePage from './pages/admin/AdminRestaurantProfilePage';
-import AdminUserProfilePage from './pages/admin/AdminUserProfilePage';
+import AdminUsersPage from './pages/admin/restaurant/AdminUsersPage';
+import AdminRestaurantProfilePage from './pages/admin/restaurant/AdminRestaurantProfilePage';
+import AdminUserProfilePage from './pages/admin/restaurant/AdminUserProfilePage';
 
 // Cache for restaurant validation to avoid repeated API calls
 const restaurantValidationCache = new Map();
