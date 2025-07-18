@@ -59,62 +59,25 @@ router.get('/docs', (req, res) => {
   res.json({
     version: '1.0.0',
     title: 'Restaurant API v1',
-    description: 'REST API for restaurant ordering system',
-    endpoints: {
-      auth: {
-        '/auth/login': {
-          method: 'POST',
-          description: 'User authentication',
-          rateLimit: '5 requests per 15 minutes',
-        },
-        '/auth/register': {
-          method: 'POST',
-          description: 'User registration',
-          rateLimit: '5 requests per 15 minutes',
-        },
-      },
-      restaurants: {
-        '/restaurants': {
-          methods: ['GET', 'POST'],
-          description: 'Restaurant management',
-          rateLimit: {
-            GET: '100 requests per 15 minutes',
-            POST: '3 requests per hour',
-          },
-        },
-        '/restaurants/:id': {
-          methods: ['GET', 'PUT', 'DELETE'],
-          description: 'Individual restaurant operations',
-          rateLimit: '100 requests per 15 minutes',
-        },
-      },
-      locations: {
-        '/locations': {
-          methods: ['GET', 'POST'],
-          description: 'Location management',
-          rateLimit: '100 requests per 15 minutes',
-        },
-      },
-      menu: {
-        '/menu': {
-          methods: ['GET', 'POST'],
-          description: 'Menu management',
-          rateLimit: '100 requests per 15 minutes',
-        },
-      },
-      orders: {
-        '/orders': {
-          methods: ['GET', 'POST'],
-          description: 'Order management',
-          rateLimit: '100 requests per 15 minutes',
-        },
-      },
-    },
-    rateLimit: {
-      general: '100 requests per 15 minutes',
-      auth: '5 requests per 15 minutes',
-      restaurantCreation: '3 requests per hour',
-      search: '200 requests per 15 minutes',
+    endpoints: [
+      'POST /auth/login',
+      'POST /auth/register',
+      'GET /restaurants',
+      'POST /restaurants',
+      'GET /restaurants/:id',
+      'PUT /restaurants/:id',
+      'DELETE /restaurants/:id',
+      'GET /locations',
+      'POST /locations',
+      'GET /menu',
+      'POST /menu',
+      'GET /orders',
+      'POST /orders',
+    ],
+    limits: {
+      general: '100/15min',
+      auth: '5/15min',
+      creation: '3/hour',
     },
     timestamp: new Date().toISOString(),
   });

@@ -11,6 +11,7 @@ import {
   FaPause,
   FaPlay,
   FaTrash,
+  FaEye,
 } from 'react-icons/fa';
 
 const UserTable = ({
@@ -22,6 +23,7 @@ const UserTable = ({
   totalPages,
   totalCount,
   onEdit,
+  onView,
   onToggleStatus,
   onDelete,
   onPageChange,
@@ -29,13 +31,64 @@ const UserTable = ({
   // Helper function to get role name by ID
   const getRoleName = (roleId) => {
     const role = roles.find((r) => String(r.id) === String(roleId));
-    return role ? role.name : 'N/A';
+    return role ? role.display_name || role.name : 'N/A';
+  };
+
+  // Helper function to get role description by ID
+  const getRoleDescription = (roleId) => {
+    const role = roles.find((r) => String(r.id) === String(roleId));
+    return role ? role.description || 'Sem descrição disponível' : 'Sem descrição disponível';
+  };
+
+  // Helper function to get role name from user data directly (when available)
+  const getUserRoleName = (user) => {
+    if (user.role_display_name) {
+      return user.role_display_name;
+    }
+    return getRoleName(user.role_id);
+  };
+
+  // Helper function to get role description from user data directly (when available)
+  const getUserRoleDescription = (user) => {
+    if (user.role_description) {
+      return user.role_description;
+    }
+    return getRoleDescription(user.role_id);
   };
 
   // Helper function to get location name by ID
   const getLocationName = (locationId) => {
     const location = locations.find((l) => String(l.id) === String(locationId));
-    return location ? location.name : 'N/A';
+    return location ? location.name : 'Matriz';
+  };
+
+  // Helper function to check if user is restaurant administrator
+  const isRestaurantAdmin = (user) => {
+    return (
+      user.role_display_name === 'Administrador do Restaurante' ||
+      user.role_name === 'restaurant_administrator'
+    );
+  };
+
+  // Helper function to check if user is the only restaurant administrator
+  const isOnlyRestaurantAdmin = (user) => {
+    if (!isRestaurantAdmin(user)) {
+      return false;
+    }
+
+    const activeRestaurantAdmins = users.filter(
+      (u) =>
+        u.id !== user.id && // Exclude current user
+        u.is_active && // Only active users
+        isRestaurantAdmin(u)
+    );
+
+    return activeRestaurantAdmins.length === 0;
+  };
+
+  // Helper function to determine if actions should be disabled
+  const shouldDisableActions = (user) => {
+    return isOnlyRestaurantAdmin(user);
   };
 
   // Pagination component
@@ -138,31 +191,16 @@ const UserTable = ({
               <tr key={user.id} className={user.status !== 'active' ? 'user-inactive' : ''}>
                 <td>
                   <div className="user-info">
-                    <div className="user-avatar">
-                      {user.profile_picture ? (
-                        <img src={user.profile_picture} alt={user.full_name} />
-                      ) : (
-                        <div className="avatar-placeholder">
-                          {user.full_name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                      )}
-                    </div>
                     <div className="user-details">
                       <div className="user-name">{user.full_name}</div>
-                      <div className="user-meta">
-                        {user.is_admin && (
-                          <span className="admin-badge">
-                            <FaShieldAlt />
-                            Admin
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 </td>
                 <td>{user.email}</td>
                 <td>
-                  <span className="role-badge">{getRoleName(user.role_id)}</span>
+                  <span className="role-badge" title={getUserRoleDescription(user)}>
+                    {getUserRoleName(user)}
+                  </span>
                 </td>
                 <td>
                   <span className="location-badge">{getLocationName(user.location_id)}</span>
@@ -178,6 +216,13 @@ const UserTable = ({
                 <td>
                   <div className="action-buttons">
                     <button
+                      className="btn btn-sm btn-outline-info"
+                      onClick={() => onView(user)}
+                      title="Ver detalhes completos do usuário"
+                    >
+                      <FaEye />
+                    </button>
+                    <button
                       className="btn btn-sm btn-outline-primary"
                       onClick={() => onEdit(user)}
                       title="Editar usuário"
@@ -189,14 +234,26 @@ const UserTable = ({
                         user.is_active ? 'btn-outline-warning' : 'btn-outline-success'
                       }`}
                       onClick={() => onToggleStatus(user.id, user.is_active)}
-                      title={user.is_active ? 'Desativar usuário' : 'Ativar usuário'}
+                      title={
+                        shouldDisableActions(user)
+                          ? 'Não é possível desativar o único administrador do restaurante'
+                          : user.is_active
+                            ? 'Desativar usuário'
+                            : 'Ativar usuário'
+                      }
+                      disabled={shouldDisableActions(user)}
                     >
                       {user.is_active ? <FaPause /> : <FaPlay />}
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => onDelete(user)}
-                      title="Excluir usuário"
+                      title={
+                        shouldDisableActions(user)
+                          ? 'Não é possível excluir o único administrador do restaurante'
+                          : 'Excluir usuário'
+                      }
+                      disabled={shouldDisableActions(user)}
                     >
                       <FaTrash />
                     </button>
@@ -243,6 +300,7 @@ UserTable.propTypes = {
   totalPages: PropTypes.number.isRequired,
   totalCount: PropTypes.number.isRequired,
   onEdit: PropTypes.func.isRequired,
+  onView: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onPageChange: PropTypes.func.isRequired,

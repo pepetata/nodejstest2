@@ -291,6 +291,44 @@ class UserService {
   }
 
   /**
+   * Get role-location pairs for a user (for frontend compatibility)
+   * @param {String} userId - User ID
+   * @returns {Array} Array of role-location pairs
+   */
+  async getUserRoleLocationPairs(userId) {
+    try {
+      const query = `
+        SELECT DISTINCT
+          ur.role_id,
+          ula.location_id,
+          r.name as role_name,
+          rl.name as location_name
+        FROM user_roles ur
+        JOIN user_location_assignments ula ON ur.user_id = ula.user_id
+        JOIN roles r ON ur.role_id = r.id
+        JOIN restaurant_locations rl ON ula.location_id = rl.id
+        WHERE ur.user_id = $1 AND ur.is_active = true
+        ORDER BY r.name, rl.name
+      `;
+
+      const result = await this.db.query(query, [userId]);
+
+      return result.rows.map((row) => ({
+        role_id: row.role_id,
+        location_id: row.location_id,
+        role_name: row.role_name,
+        location_name: row.location_name,
+      }));
+    } catch (error) {
+      this.logger.error('Failed to get user role-location pairs', {
+        userId,
+        error: error.message,
+      });
+      return [];
+    }
+  }
+
+  /**
    * Get users with filtering and pagination
    * @param {Object} options - Query options
    * @param {Object} currentUser - Current authenticated user
@@ -339,6 +377,29 @@ class UserService {
 
       const result = await this.userModel.findWithPagination(filters, queryOptions);
 
+      // Add role_location_pairs to each user
+      const usersWithRolePairs = await Promise.all(
+        result.users.map(async (user) => {
+          try {
+            // Get user's role-location pairs
+            const roleLocationPairs = await this.getUserRoleLocationPairs(user.id);
+            return {
+              ...user,
+              role_location_pairs: roleLocationPairs,
+            };
+          } catch (error) {
+            this.logger.warn('Failed to get role-location pairs for user', {
+              userId: user.id,
+              error: error.message,
+            });
+            return {
+              ...user,
+              role_location_pairs: [],
+            };
+          }
+        })
+      );
+
       const totalPages = Math.ceil(result.total / limit);
 
       this.logger.info('Users retrieved successfully', {
@@ -346,11 +407,11 @@ class UserService {
         total: result.total,
         page,
         totalPages,
-        returned: result.users.length,
+        returned: usersWithRolePairs.length,
       });
 
       return {
-        users: result.users,
+        users: usersWithRolePairs,
         pagination: {
           page,
           limit,

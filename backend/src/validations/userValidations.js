@@ -108,6 +108,32 @@ const userValidationSchemas = {
       'string.max': 'Full name cannot exceed 255 characters',
     }),
 
+    // Support for new role_location_pairs format
+    role_location_pairs: Joi.array()
+      .items(
+        Joi.object({
+          role_id: Joi.string()
+            .guid({ version: ['uuidv4'] })
+            .required()
+            .messages({
+              'string.guid': 'Role ID must be a valid UUID',
+              'any.required': 'Role ID is required',
+            }),
+          location_id: Joi.string()
+            .guid({ version: ['uuidv4'] })
+            .required()
+            .messages({
+              'string.guid': 'Location ID must be a valid UUID',
+              'any.required': 'Location ID is required',
+            }),
+        })
+      )
+      .min(1)
+      .messages({
+        'array.min': 'At least one role-location pair is required',
+      }),
+
+    // Legacy role field for backward compatibility
     role: Joi.string()
       .valid(
         'restaurant_administrator',
@@ -135,6 +161,27 @@ const userValidationSchemas = {
 
     email_confirmed: Joi.boolean().messages({
       'boolean.base': 'Email confirmed must be a boolean value',
+    }),
+
+    phone: Joi.string().allow('', null).messages({
+      'string.base': 'Phone must be a string',
+    }),
+
+    whatsapp: Joi.string().allow('', null).messages({
+      'string.base': 'WhatsApp must be a string',
+    }),
+
+    password: Joi.string().min(8).max(255).messages({
+      'string.min': 'Password must be at least 8 characters long',
+      'string.max': 'Password cannot exceed 255 characters',
+    }),
+
+    is_active: Joi.boolean().messages({
+      'boolean.base': 'Is active must be a boolean value',
+    }),
+
+    is_admin: Joi.boolean().messages({
+      'boolean.base': 'Is admin must be a boolean value',
     }),
   })
     .min(1)

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   FaPlus,
   FaUsers,
@@ -24,11 +25,12 @@ import {
 } from '../../../store/usersSlice';
 import UserTable from './UserTable';
 import UserFilters from './UserFilters';
-import UserForm from './UserForm';
+import UserDetailsModal from './UserDetailsModal';
 import '../../../styles/admin/users/usersPage.scss';
 
 const AdminUsersPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const users = useSelector(selectUsers);
   const loading = useSelector(selectUsersLoading);
   const error = useSelector(selectUsersError);
@@ -37,10 +39,10 @@ const AdminUsersPage = () => {
   const locations = useSelector(selectLocations);
 
   // State for modals and forms
-  const [showUserForm, setShowUserForm] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+  const [userToView, setUserToView] = useState(null);
 
   // State for filters
   const [filters, setFilters] = useState({
@@ -116,13 +118,16 @@ const AdminUsersPage = () => {
   };
 
   const handleCreateUser = () => {
-    setSelectedUser(null);
-    setShowUserForm(true);
+    navigate('/admin/users/new');
   };
 
   const handleEditUser = (user) => {
-    setSelectedUser(user);
-    setShowUserForm(true);
+    navigate(`/admin/users/${user.id}/edit`);
+  };
+
+  const handleViewUser = (user) => {
+    setUserToView(user);
+    setShowUserDetails(true);
   };
 
   const handleDeleteUser = (user) => {
@@ -155,13 +160,6 @@ const AdminUsersPage = () => {
     }
   };
 
-  const handleFormSuccess = () => {
-    setShowUserForm(false);
-    setSelectedUser(null);
-    // Refresh users list
-    dispatch(fetchUsers(filters));
-  };
-
   if (error) {
     return (
       <div className="admin-users-page">
@@ -179,10 +177,7 @@ const AdminUsersPage = () => {
       {/* Page Header */}
       <div className="page-header">
         <div className="header-content">
-          <h1 className="page-title">
-            <FaUsers className="me-3" />
-            Gerenciamento de Usuários
-          </h1>
+          <h1 className="page-title">Gerenciamento de Usuários</h1>
           <button className="btn btn-primary" onClick={handleCreateUser} disabled={loading}>
             <FaPlus className="me-2" />
             Novo Usuário
@@ -252,24 +247,11 @@ const AdminUsersPage = () => {
         totalPages={pagination?.totalPages || 1}
         totalCount={pagination?.total || 0}
         onEdit={handleEditUser}
+        onView={handleViewUser}
         onDelete={handleDeleteUser}
         onToggleStatus={handleToggleStatus}
         onPageChange={handlePageChange}
       />
-
-      {/* User Form Modal */}
-      {showUserForm && (
-        <UserForm
-          user={selectedUser}
-          roles={roles}
-          locations={locations}
-          onClose={() => {
-            setShowUserForm(false);
-            setSelectedUser(null);
-          }}
-          onSuccess={handleFormSuccess}
-        />
-      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
@@ -317,8 +299,20 @@ const AdminUsersPage = () => {
         </div>
       )}
 
+      {/* User Details Modal */}
+      <UserDetailsModal
+        user={userToView}
+        roles={roles || []}
+        locations={locations || []}
+        show={showUserDetails}
+        onClose={() => {
+          setShowUserDetails(false);
+          setUserToView(null);
+        }}
+      />
+
       {/* Modal Backdrop */}
-      {(showUserForm || showDeleteConfirm) && <div className="modal-backdrop fade show"></div>}
+      {showDeleteConfirm && <div className="modal-backdrop fade show"></div>}
     </div>
   );
 };

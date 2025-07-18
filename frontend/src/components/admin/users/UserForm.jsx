@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { FaTimes, FaExclamationTriangle, FaEye, FaEyeSlash, FaSave } from 'react-icons/fa';
 import { createUser, updateUser } from '../../../store/usersSlice';
 
-const UserForm = ({ user, roles, locations, onClose, onSuccess }) => {
+const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     name: '',
@@ -493,10 +493,6 @@ UserForm.propTypes = {
   ).isRequired,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func.isRequired,
-};
-
-UserForm.defaultProps = {
-  user: null,
 };
 
 export default UserForm;

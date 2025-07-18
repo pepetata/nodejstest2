@@ -139,10 +139,8 @@ class RateLimitMiddleware {
           method: req.method,
         });
         const msg =
-          (options && options.message && options.message.message) ||
           'Muitas tentativas de criação de restaurante deste IP. Por favor, tente novamente mais tarde.';
-        const retryAfter =
-          (options && options.message && options.message.retryAfter) || 60 * 60 * 1000;
+        const retryAfter = 60 * 60 * 1000;
         res.status(429).json({
           success: false,
           error: {
@@ -177,9 +175,9 @@ class RateLimitMiddleware {
           res.status(429).json({
             success: false,
             error: {
-              message: options.message.message || 'Too many requests, please try again later.',
+              message: 'Too many requests, please try again later.',
               code: 429,
-              retryAfter: options.message.retryAfter,
+              retryAfter: 15 * 60 * 1000,
               timestamp: new Date().toISOString(),
             },
           });
@@ -206,9 +204,9 @@ class RateLimitMiddleware {
           res.status(429).json({
             success: false,
             error: {
-              message: options.message.message || 'Too many requests, please try again later.',
+              message: 'Too many requests, please try again later.',
               code: 429,
-              retryAfter: options.message.retryAfter,
+              retryAfter: 15 * 60 * 1000,
               timestamp: new Date().toISOString(),
             },
           });
@@ -243,9 +241,9 @@ class RateLimitMiddleware {
         res.status(429).json({
           success: false,
           error: {
-            message: options.message.message || 'Too many upload attempts, please try again later.',
+            message: 'Too many upload attempts, please try again later.',
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter: 60 * 60 * 1000,
             timestamp: new Date().toISOString(),
           },
         });
@@ -255,12 +253,12 @@ class RateLimitMiddleware {
 
   /**
    * Search endpoints rate limiting
-   * 200 requests per 15 minutes - higher limit for search
+   * 1000 requests per 15 minutes - higher limit for search
    */
   static search() {
     return rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 200, // limit each IP to 200 requests per windowMs
+      max: 1000, // limit each IP to 1000 requests per windowMs
       message: {
         error: 'Too many search requests',
         message: 'Too many search requests from this IP, please try again later.',
@@ -279,9 +277,9 @@ class RateLimitMiddleware {
         res.status(429).json({
           success: false,
           error: {
-            message: options.message.message || 'Too many search requests, please try again later.',
+            message: 'Too many search requests, please try again later.',
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter: 15 * 60 * 1000,
             timestamp: new Date().toISOString(),
           },
         });
@@ -315,11 +313,9 @@ class RateLimitMiddleware {
         res.status(429).json({
           success: false,
           error: {
-            message:
-              options.message.message ||
-              'Too many user management requests, please try again later.',
+            message: 'Too many user management requests, please try again later.',
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter: 15 * 60 * 1000,
             timestamp: new Date().toISOString(),
           },
         });
@@ -353,10 +349,9 @@ class RateLimitMiddleware {
         res.status(429).json({
           success: false,
           error: {
-            message:
-              options.message.message || 'Too many user creation attempts, please try again later.',
+            message: 'Too many user creation attempts, please try again later.',
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter: 60 * 60 * 1000,
             timestamp: new Date().toISOString(),
           },
         });
@@ -390,11 +385,9 @@ class RateLimitMiddleware {
         res.status(429).json({
           success: false,
           error: {
-            message:
-              options.message.message ||
-              'Too many password change attempts, please try again later.',
+            message: 'Too many password change attempts, please try again later.',
             code: 429,
-            retryAfter: options.message.retryAfter,
+            retryAfter: 60 * 60 * 1000,
             timestamp: new Date().toISOString(),
           },
         });

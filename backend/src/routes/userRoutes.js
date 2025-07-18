@@ -108,7 +108,8 @@ router.get('/locations', authMiddleware, userController.getRestaurantLocations);
 router.get(
   '/:id',
   authMiddleware,
-  ValidationMiddleware.validate(userValidationSchemas.getUserById, 'params'),
+  userSearchLimiter,
+  ValidationMiddleware.validate(userValidationSchemas.userIdParam, 'params'),
   userController.getUserById
 );
 
@@ -123,7 +124,7 @@ router.put(
   '/:id',
   authMiddleware,
   userManagementLimiter,
-  ValidationMiddleware.validate(userValidationSchemas.getUserById, 'params'),
+  ValidationMiddleware.validate(userValidationSchemas.userIdParam, 'params'),
   ValidationMiddleware.validate(userValidationSchemas.updateUser, 'body'),
   userController.updateUser
 );
@@ -139,8 +140,8 @@ router.patch(
   '/:id',
   authMiddleware,
   userManagementLimiter,
-  ValidationMiddleware.validate(userValidationSchemas.getUserById, 'params'),
-  ValidationMiddleware.validate(userValidationSchemas.partialUpdateUser, 'body'),
+  ValidationMiddleware.validate(userValidationSchemas.userIdParam, 'params'),
+  ValidationMiddleware.validate(userValidationSchemas.updateUser, 'body'),
   userController.updateUser
 );
 
@@ -155,7 +156,7 @@ router.delete(
   '/:id',
   authMiddleware,
   userManagementLimiter,
-  ValidationMiddleware.validate(userValidationSchemas.getUserById, 'params'),
+  ValidationMiddleware.validate(userValidationSchemas.userIdParam, 'params'),
   userController.deleteUser
 );
 
@@ -169,7 +170,7 @@ router.post(
   '/:id/change-password',
   authMiddleware,
   passwordChangeLimiter,
-  ValidationMiddleware.validate(userValidationSchemas.getUserById, 'params'),
+  ValidationMiddleware.validate(userValidationSchemas.userIdParam, 'params'),
   ValidationMiddleware.validate(userValidationSchemas.changePassword, 'body'),
   userController.changePassword
 );

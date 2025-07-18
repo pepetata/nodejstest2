@@ -809,7 +809,8 @@ class UserModel extends BaseModel {
           r.restaurant_url_name,
           ur.role_id,
           ro.name as role_name,
-          ro.display_name as role_display_name
+          ro.display_name as role_display_name,
+          ro.description as role_description
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
         LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_primary_role = true AND ur.is_active = true
