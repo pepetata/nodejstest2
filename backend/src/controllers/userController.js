@@ -4,6 +4,7 @@ const ResponseFormatter = require('../utils/responseFormatter');
 const ValidationMiddleware = require('../middleware/validationMiddleware');
 const userValidationSchemas = require('../validations/userValidations');
 const asyncHandler = require('../utils/asyncHandler');
+const db = require('../config/db');
 
 /**
  * Reset password (with token)
@@ -254,15 +255,16 @@ class UserController {
    */
   getUsers = asyncHandler(async (req, res) => {
     const requestId = req.requestId || `req_${Date.now()}`;
-
-    const controllerLogger = this.logger.child({
+    const logMeta = {
       operation: 'getUsers',
       requestId,
       userId: req.user?.id,
       method: req.method,
       path: req.path,
       query: req.query,
-    });
+    };
+
+    const controllerLogger = this.logger.child(logMeta);
 
     controllerLogger.debug('Fetching users list');
 
@@ -792,6 +794,143 @@ class UserController {
   isAuthorizedToManageUsers(user) {
     return ['restaurant_administrator', 'location_administrator'].includes(user.role);
   }
+
+  /**
+   * Get available roles
+   * GET /api/v1/users/roles
+   * @access Private - Admin only
+   */
+  getRoles = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const controllerLogger = this.logger.child({
+      operation: 'getRoles',
+      requestId,
+      userId: req.user?.id,
+    });
+
+    try {
+      controllerLogger.info('Getting available roles');
+
+      // Check authorization
+      if (!this.isAuthorizedToManageUsers(req.user)) {
+        controllerLogger.warn('Unauthorized access to roles endpoint');
+        return res.status(403).json(
+          ResponseFormatter.error(
+            'Acesso negado. Apenas administradores podem visualizar roles.',
+            403,
+            {
+              requestId,
+            }
+          )
+        );
+      }
+
+      const userService = new UserService();
+      const roles = await userService.getAvailableRoles();
+
+      controllerLogger.info('Successfully retrieved roles', { count: roles.length });
+
+      return res.status(200).json(
+        ResponseFormatter.success(roles, 'Roles recuperados com sucesso', {
+          requestId,
+          total: roles.length,
+        })
+      );
+    } catch (error) {
+      controllerLogger.error('Failed to get roles', { error: error.message });
+
+      const errorResponse = ResponseFormatter.error(
+        'Erro interno do servidor ao buscar roles',
+        500,
+        {
+          requestId,
+          timestamp: new Date().toISOString(),
+        }
+      );
+
+      return res.status(500).json(errorResponse);
+    }
+  });
+
+  /**
+   * Get restaurant locations
+   * GET /api/v1/users/locations
+   * @access Private - Admin only
+   */
+  getRestaurantLocations = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const controllerLogger = this.logger.child({
+      operation: 'getRestaurantLocations',
+      requestId,
+      userId: req.user?.id,
+      restaurantId: req.user?.restaurant_id,
+    });
+
+    try {
+      controllerLogger.info('Getting restaurant locations');
+
+      // Check authorization
+      if (!this.isAuthorizedToManageUsers(req.user)) {
+        controllerLogger.warn('Unauthorized access to locations endpoint');
+        return res.status(403).json(
+          ResponseFormatter.error(
+            'Acesso negado. Apenas administradores podem visualizar localizações.',
+            403,
+            {
+              requestId,
+            }
+          )
+        );
+      }
+
+      const userService = new UserService();
+
+      // Get locations for current user's restaurant
+      const restaurantId = req.user.restaurant_id;
+      if (!restaurantId) {
+        controllerLogger.warn('User has no restaurant_id');
+        return res.status(400).json(
+          ResponseFormatter.error('Usuário não está associado a um restaurante.', 400, {
+            requestId,
+          })
+        );
+      }
+
+      // Get actual restaurant locations from database
+      const query = `
+        SELECT id, name, restaurant_id, created_at
+        FROM restaurant_locations
+        WHERE restaurant_id = $1
+        ORDER BY name ASC
+      `;
+
+      const result = await db.query(query, [restaurantId]);
+      const locations = result.rows;
+
+      controllerLogger.info('Successfully retrieved locations', { count: locations.length });
+
+      return res.status(200).json(
+        ResponseFormatter.success(locations, 'Localizações recuperadas com sucesso', {
+          requestId,
+          total: locations.length,
+          restaurantId,
+        })
+      );
+    } catch (error) {
+      controllerLogger.error('Failed to get restaurant locations', { error: error.message });
+
+      const errorResponse = ResponseFormatter.error(
+        'Erro interno do servidor ao buscar localizações',
+        500,
+        {
+          requestId,
+          timestamp: new Date().toISOString(),
+        }
+      );
+
+      return res.status(500).json(errorResponse);
+    }
+  });
 
   /**
    * Get validation middleware for specific operation

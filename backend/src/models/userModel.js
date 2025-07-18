@@ -785,6 +785,126 @@ class UserModel extends BaseModel {
     const result = await this.executeQuery(query, [restaurantId]);
     return result.rows.length > 0;
   }
+
+  /**
+   * Find users with pagination and filtering
+   * @param {Object} filters - Filter conditions
+   * @param {Object} queryOptions - Query options (page, limit, search, orderBy)
+   * @returns {Object} { users: Array, total: Number }
+   */
+  async findWithPagination(filters = {}, queryOptions = {}) {
+    this.logger.debug('Finding users with pagination', { filters, queryOptions });
+
+    try {
+      const { page = 1, limit = 10, search, orderBy = 'created_at DESC' } = queryOptions;
+
+      // Calculate offset
+      const offset = (page - 1) * limit;
+
+      // Build base query with joins for restaurant and role information
+      let query = `
+        SELECT DISTINCT
+          u.*,
+          r.restaurant_name,
+          r.restaurant_url_name,
+          ur.role_id,
+          ro.name as role_name,
+          ro.display_name as role_display_name
+        FROM users u
+        LEFT JOIN restaurants r ON u.restaurant_id = r.id
+        LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_primary_role = true AND ur.is_active = true
+        LEFT JOIN roles ro ON ur.role_id = ro.id
+      `;
+
+      // Build count query
+      let countQuery = `
+        SELECT COUNT(DISTINCT u.id) as total
+        FROM users u
+        LEFT JOIN restaurants r ON u.restaurant_id = r.id
+        LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_primary_role = true AND ur.is_active = true
+        LEFT JOIN roles ro ON ur.role_id = ro.id
+      `;
+
+      const params = [];
+      const whereConditions = [];
+      let paramCount = 0;
+
+      // Add restaurant filter for multi-tenant security
+      if (filters.restaurant_id) {
+        paramCount++;
+        whereConditions.push(`u.restaurant_id = $${paramCount}`);
+        params.push(filters.restaurant_id);
+      }
+
+      // Add role filter
+      if (filters.role_id) {
+        paramCount++;
+        whereConditions.push(`ur.role_id = $${paramCount}`);
+        params.push(filters.role_id);
+      }
+
+      // Add status filter
+      if (filters.is_active !== undefined) {
+        paramCount++;
+        whereConditions.push(`u.is_active = $${paramCount}`);
+        params.push(filters.is_active);
+      }
+
+      // Add search functionality
+      if (search && search.fields && search.term) {
+        paramCount++;
+        const searchConditions = search.fields
+          .map((field) => {
+            if (field === 'full_name') {
+              return `u.name ILIKE $${paramCount}`;
+            } else {
+              return `u.${field} ILIKE $${paramCount}`;
+            }
+          })
+          .join(' OR ');
+        whereConditions.push(`(${searchConditions})`);
+        params.push(`%${search.term}%`);
+      }
+
+      // Add WHERE clause if conditions exist
+      if (whereConditions.length > 0) {
+        const whereClause = ` WHERE ${whereConditions.join(' AND ')}`;
+        query += whereClause;
+        countQuery += whereClause;
+      }
+
+      // Add ORDER BY, LIMIT, and OFFSET to main query
+      query += ` ORDER BY u.${orderBy.replace(/[^a-zA-Z0-9_\s]/g, '')} LIMIT ${limit} OFFSET ${offset}`;
+
+      // Execute queries
+      const [usersResult, countResult] = await Promise.all([
+        this.executeQuery(query, params),
+        this.executeQuery(countQuery, params),
+      ]);
+
+      const users = usersResult.rows.map((user) => this.sanitizeOutput(user, this.sensitiveFields));
+      const total = parseInt(countResult.rows[0].total);
+
+      this.logger.info('Users retrieved with pagination', {
+        total,
+        page,
+        limit,
+        returned: users.length,
+      });
+
+      return {
+        users,
+        total,
+      };
+    } catch (error) {
+      this.logger.error('Failed to find users with pagination', {
+        filters,
+        queryOptions,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
 }
 
 module.exports = UserModel;

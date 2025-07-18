@@ -79,9 +79,25 @@ router.get(
   '/',
   authMiddleware,
   userSearchLimiter,
-  ValidationMiddleware.validate(userValidationSchemas.getUsers, 'query'),
+  ValidationMiddleware.validate(userValidationSchemas.getUsersQuery, 'query'),
   userController.getUsers
 );
+
+/**
+ * @route GET /api/v1/users/roles
+ * @desc Get available roles
+ * @access Private - Admin only
+ * @middleware authMiddleware
+ */
+router.get('/roles', authMiddleware, userController.getRoles);
+
+/**
+ * @route GET /api/v1/users/locations
+ * @desc Get restaurant locations
+ * @access Private - Admin only
+ * @middleware authMiddleware
+ */
+router.get('/locations', authMiddleware, userController.getRestaurantLocations);
 
 /**
  * @route GET /api/v1/users/:id

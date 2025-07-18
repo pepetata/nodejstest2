@@ -20,7 +20,7 @@ import ResetPassword from './pages/app/ResetPassword.jsx';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminDashboard from './pages/admin/restaurant/AdminDashboard';
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
-import AdminUsersPage from './pages/admin/restaurant/AdminUsersPage';
+import AdminUsersPage from './components/admin/users/AdminUsersPage';
 import AdminRestaurantProfilePage from './pages/admin/restaurant/AdminRestaurantProfilePage';
 import AdminUserProfilePage from './pages/admin/restaurant/AdminUserProfilePage';
 

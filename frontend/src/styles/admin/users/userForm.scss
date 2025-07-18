@@ -1,0 +1,446 @@
+// User form styles (create/edit)
+.user-form {
+  padding: 24px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+
+  &-header {
+    margin-bottom: 32px;
+
+    &-title {
+      color: #2c3e50;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    &-subtitle {
+      color: #6c757d;
+      font-size: 16px;
+      margin-bottom: 0;
+    }
+  }
+
+  &-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  &-content {
+    padding: 32px;
+  }
+
+  &-section {
+    margin-bottom: 32px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &-title {
+      color: #2c3e50;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e9ecef;
+    }
+  }
+
+  &-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+
+    &.single {
+      grid-template-columns: 1fr;
+    }
+
+    &.triple {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+  }
+
+  &-group {
+    margin-bottom: 24px;
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #495057;
+      font-size: 14px;
+
+      .required {
+        color: #dc3545;
+        margin-left: 4px;
+      }
+    }
+
+    .form-control,
+    .form-select {
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      padding: 12px 16px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+
+      &.is-invalid {
+        border-color: #dc3545;
+
+        &:focus {
+          border-color: #dc3545;
+          box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+      }
+    }
+
+    .invalid-feedback {
+      display: block;
+      width: 100%;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #dc3545;
+    }
+
+    .form-text {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #6c757d;
+    }
+  }
+
+  &-password-requirements {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 8px;
+
+    &-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: #495057;
+      margin-bottom: 6px;
+    }
+
+    &-list {
+      margin: 0;
+      padding-left: 16px;
+
+      li {
+        font-size: 11px;
+        color: #6c757d;
+        margin-bottom: 2px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  // Role assignment styles
+  &-roles {
+    &-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    &-list {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    &-item {
+      padding: 16px;
+      border-bottom: 1px solid #dee2e6;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &.primary {
+        background-color: #e3f2fd;
+        border-left: 4px solid #2196f3;
+      }
+    }
+
+    &-add {
+      padding: 16px;
+      background-color: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      text-align: center;
+
+      .btn {
+        background-color: transparent;
+        border: 2px dashed #dee2e6;
+        color: #6c757d;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: #007bff;
+          color: #007bff;
+          background-color: rgba(0, 123, 255, 0.05);
+        }
+      }
+    }
+  }
+}
+
+// Role assignment component
+.role-assignment {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr auto;
+  gap: 16px;
+  align-items: end;
+
+  &-role,
+  &-locations {
+    .form-select {
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+  }
+
+  &-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .form-check {
+      margin-bottom: 0;
+
+      .form-check-input {
+        margin-top: 0;
+      }
+
+      .form-check-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-left: 6px;
+      }
+    }
+  }
+
+  &-actions {
+    display: flex;
+    gap: 8px;
+
+    .btn {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+
+      &.btn-remove {
+        background-color: #ffebee;
+        color: #d32f2f;
+        border: 1px solid transparent;
+
+        &:hover {
+          background-color: #ffcdd2;
+          color: #b71c1c;
+        }
+      }
+    }
+  }
+}
+
+// Form actions
+.user-form-actions {
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &-left {
+    .btn-cancel {
+      background-color: transparent;
+      border: 1px solid #6c757d;
+      color: #6c757d;
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #6c757d;
+        color: white;
+      }
+    }
+  }
+
+  &-right {
+    display: flex;
+    gap: 12px;
+
+    .btn {
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &.btn-save {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+
+        &:hover {
+          background: linear-gradient(135deg, #218838 0%, #1ea080 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+      }
+
+      &.btn-save-add {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        color: white;
+
+        &:hover {
+          background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+      }
+    }
+  }
+}
+
+// Loading state
+.user-form-loading {
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 11;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+// Success/Error messages
+.user-form-alert {
+  margin-bottom: 24px;
+  border-radius: 8px;
+  padding: 16px;
+
+  &.alert-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+  }
+
+  &.alert-danger {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .user-form {
+    padding: 16px;
+
+    &-content {
+      padding: 24px 16px;
+    }
+
+    &-row {
+      grid-template-columns: 1fr;
+      gap: 16px;
+
+      &.triple {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &-actions {
+      padding: 16px;
+      flex-direction: column;
+      gap: 16px;
+
+      &-left,
+      &-right {
+        width: 100%;
+        justify-content: center;
+      }
+
+      &-right {
+        flex-direction: column-reverse;
+
+        .btn {
+          width: 100%;
+        }
+      }
+    }
+  }
+
+  .role-assignment {
+    grid-template-columns: 1fr;
+    gap: 12px;
+
+    &-actions {
+      justify-content: center;
+    }
+  }
+}

@@ -8,6 +8,7 @@ const menuRoutes = require('../menuRoutes');
 const orderRoutes = require('../orderRoutes');
 const restaurantRoutes = require('../restaurantRoutes');
 const userRoutes = require('../userRoutes');
+const testRoutes = require('../testRoutes');
 
 const restaurantCreationLimiter = RateLimitMiddleware.restaurantCreation();
 const router = express.Router();
@@ -47,6 +48,11 @@ router.use(
 
 // User routes with user-specific rate limiting
 router.use('/users', userRoutes);
+
+// Test routes for debugging (development only)
+if (process.env.NODE_ENV !== 'production') {
+  router.use('/test', testRoutes);
+}
 
 // v1 API documentation endpoint
 router.get('/docs', (req, res) => {

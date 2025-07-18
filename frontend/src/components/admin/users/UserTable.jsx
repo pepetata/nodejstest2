@@ -1,0 +1,251 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaUsers,
+  FaShieldAlt,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaEdit,
+  FaPause,
+  FaPlay,
+  FaTrash,
+} from 'react-icons/fa';
+
+const UserTable = ({
+  users,
+  roles,
+  locations,
+  loading,
+  currentPage,
+  totalPages,
+  totalCount,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+  onPageChange,
+}) => {
+  // Helper function to get role name by ID
+  const getRoleName = (roleId) => {
+    const role = roles.find((r) => String(r.id) === String(roleId));
+    return role ? role.name : 'N/A';
+  };
+
+  // Helper function to get location name by ID
+  const getLocationName = (locationId) => {
+    const location = locations.find((l) => String(l.id) === String(locationId));
+    return location ? location.name : 'N/A';
+  };
+
+  // Pagination component
+  const Pagination = () => {
+    if (totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    pages.push(
+      <button
+        key="prev"
+        className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+        onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        <FaChevronLeft />
+      </button>
+    );
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          className={`pagination-btn ${i === currentPage ? 'active' : ''}`}
+          onClick={() => onPageChange(i)}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Next button
+    pages.push(
+      <button
+        key="next"
+        className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+        onClick={() => currentPage < totalPages && onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        <FaChevronRight />
+      </button>
+    );
+
+    return (
+      <div className="table-pagination">
+        <div className="pagination-info">
+          Página {currentPage} de {totalPages} ({totalCount} usuários)
+        </div>
+        <div className="pagination-controls">{pages}</div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="table-loading">
+        <div className="loading-spinner"></div>
+        <p>Carregando usuários...</p>
+      </div>
+    );
+  }
+
+  if (!users || users.length === 0) {
+    return (
+      <div className="table-empty">
+        <div className="empty-icon">
+          <FaUsers />
+        </div>
+        <h3>Nenhum usuário encontrado</h3>
+        <p>Não há usuários cadastrados que correspondam aos filtros aplicados.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="users-table">
+      <div className="table-responsive">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Perfil</th>
+              <th>Localização</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id} className={user.status !== 'active' ? 'user-inactive' : ''}>
+                <td>
+                  <div className="user-info">
+                    <div className="user-avatar">
+                      {user.profile_picture ? (
+                        <img src={user.profile_picture} alt={user.full_name} />
+                      ) : (
+                        <div className="avatar-placeholder">
+                          {user.full_name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="user-details">
+                      <div className="user-name">{user.full_name}</div>
+                      <div className="user-meta">
+                        {user.is_admin && (
+                          <span className="admin-badge">
+                            <FaShieldAlt />
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>{user.email}</td>
+                <td>
+                  <span className="role-badge">{getRoleName(user.role_id)}</span>
+                </td>
+                <td>
+                  <span className="location-badge">{getLocationName(user.location_id)}</span>
+                </td>
+                <td>
+                  <span
+                    className={`status-badge ${user.status === 'active' ? 'active' : 'inactive'}`}
+                  >
+                    {user.status === 'active' ? <FaCheckCircle /> : <FaTimesCircle />}
+                    {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                  </span>
+                </td>
+                <td>
+                  <div className="action-buttons">
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => onEdit(user)}
+                      title="Editar usuário"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      className={`btn btn-sm ${
+                        user.is_active ? 'btn-outline-warning' : 'btn-outline-success'
+                      }`}
+                      onClick={() => onToggleStatus(user.id, user.is_active)}
+                      title={user.is_active ? 'Desativar usuário' : 'Ativar usuário'}
+                    >
+                      {user.is_active ? <FaPause /> : <FaPlay />}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => onDelete(user)}
+                      title="Excluir usuário"
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Pagination />
+    </div>
+  );
+};
+
+UserTable.propTypes = {
+  users: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired, // UUIDs are strings
+      full_name: PropTypes.string.isRequired,
+      email: PropTypes.string.isRequired,
+      username: PropTypes.string,
+      role_id: PropTypes.string, // Role IDs are also UUIDs (strings)
+      location_id: PropTypes.string, // Location IDs are also UUIDs (strings)
+      status: PropTypes.string.isRequired, // active, inactive, pending, suspended
+      is_admin: PropTypes.bool,
+      profile_picture: PropTypes.string,
+    })
+  ).isRequired,
+  roles: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired, // Support both string and number IDs
+      name: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  locations: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired, // Support both string and number IDs
+      name: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  loading: PropTypes.bool.isRequired,
+  currentPage: PropTypes.number.isRequired,
+  totalPages: PropTypes.number.isRequired,
+  totalCount: PropTypes.number.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onToggleStatus: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+};
+
+export default UserTable;
