@@ -233,11 +233,19 @@ const userValidationSchemas = {
       }),
 
     sort_by: Joi.string()
-      .valid('created_at', 'updated_at', 'full_name', 'email', 'username', 'status')
+      .valid(
+        'created_at',
+        'updated_at',
+        'full_name',
+        'email',
+        'username',
+        'status',
+        'last_login_at'
+      )
       .default('full_name')
       .messages({
         'any.only':
-          'Sort by must be one of: created_at, updated_at, full_name, email, username, status',
+          'Sort by must be one of: created_at, updated_at, full_name, email, username, status, last_login_at',
       }),
 
     sort_order: Joi.string().valid('asc', 'desc').default('asc').messages({
@@ -246,11 +254,19 @@ const userValidationSchemas = {
 
     // Frontend parameter names (for compatibility)
     sortBy: Joi.string()
-      .valid('created_at', 'updated_at', 'full_name', 'email', 'username', 'status')
+      .valid(
+        'created_at',
+        'updated_at',
+        'full_name',
+        'email',
+        'username',
+        'status',
+        'last_login_at'
+      )
       .optional()
       .messages({
         'any.only':
-          'Sort by must be one of: created_at, updated_at, full_name, email, username, status',
+          'Sort by must be one of: created_at, updated_at, full_name, email, username, status, last_login_at',
       }),
 
     sortOrder: Joi.string().valid('asc', 'desc').optional().messages({

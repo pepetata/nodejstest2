@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { FaSearch, FaTimes, FaSlidersH } from 'react-icons/fa';
+import { FaSearch, FaTimes } from 'react-icons/fa';
 
 const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => {
   const [localFilters, setLocalFilters] = useState({
@@ -12,8 +12,6 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
     sortOrder: 'asc',
     ...filters,
   });
-
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Update local filters when props change
   useEffect(() => {
@@ -93,8 +91,8 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
           </div>
         </div>
 
-        {/* Quick Filters */}
-        <div className="filter-group quick-filters">
+        {/* Filters Row */}
+        <div className="filter-group filters-row">
           <select
             className="form-control"
             value={localFilters.status}
@@ -122,19 +120,24 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
                 </option>
               ))}
           </select>
-        </div>
 
-        {/* Advanced Filters Toggle */}
-        <div className="filter-group filter-actions">
-          <button
-            className={`btn btn-outline-secondary ${showAdvanced ? 'active' : ''}`}
-            onClick={() => setShowAdvanced(!showAdvanced)}
+          <select
+            className="form-control"
+            value={localFilters.location}
+            onChange={(e) => handleFilterChange('location', e.target.value)}
             disabled={loading}
           >
-            <FaSlidersH />
-            Filtros Avançados
-          </button>
+            <option value="">Todas as Localizações</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
+        {/* Clear Filters */}
+        <div className="filter-group filter-actions">
           {hasActiveFilters() && (
             <button
               className="btn btn-outline-danger"
@@ -149,60 +152,38 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
         </div>
       </div>
 
-      {/* Advanced Filters */}
-      {showAdvanced && (
-        <div className="advanced-filters">
-          <div className="advanced-filters-container">
-            <div className="filter-group">
-              <label htmlFor="location-filter">Localização:</label>
-              <select
-                id="location-filter"
-                className="form-control"
-                value={localFilters.location}
-                onChange={(e) => handleFilterChange('location', e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Todas as Localizações</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="sort-by">Ordenar por:</label>
-              <select
-                id="sort-by"
-                className="form-control"
-                value={localFilters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                disabled={loading}
-              >
-                <option value="full_name">Nome</option>
-                <option value="email">Email</option>
-                <option value="created_at">Data de Criação</option>
-                <option value="last_login">Último Acesso</option>
-              </select>
-            </div>
-
-            <div className="filter-group">
-              <label htmlFor="sort-order">Ordem:</label>
-              <select
-                id="sort-order"
-                className="form-control"
-                value={localFilters.sortOrder}
-                onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-                disabled={loading}
-              >
-                <option value="asc">Crescente</option>
-                <option value="desc">Decrescente</option>
-              </select>
-            </div>
-          </div>
+      {/* Sort Options Row */}
+      <div className="sort-container">
+        <div className="sort-group">
+          <label htmlFor="sort-by">Ordenar por:</label>
+          <select
+            id="sort-by"
+            className="form-control"
+            value={localFilters.sortBy}
+            onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+            disabled={loading}
+          >
+            <option value="full_name">Nome</option>
+            <option value="email">Email</option>
+            <option value="created_at">Data de Criação</option>
+            <option value="last_login_at">Último Acesso</option>
+          </select>
         </div>
-      )}
+
+        <div className="sort-group">
+          <label htmlFor="sort-order">Ordem:</label>
+          <select
+            id="sort-order"
+            className="form-control"
+            value={localFilters.sortOrder}
+            onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
+            disabled={loading}
+          >
+            <option value="asc">Crescente</option>
+            <option value="desc">Decrescente</option>
+          </select>
+        </div>
+      </div>
 
       {/* Active Filters Display */}
       {hasActiveFilters() && (
@@ -248,7 +229,9 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             )}
             {localFilters.location && (
               <span className="filter-tag">
-                Localização: {locations.find((l) => l.id === parseInt(localFilters.location))?.name}
+                Localização:{' '}
+                {locations.find((l) => String(l.id) === String(localFilters.location))?.name ||
+                  'Desconhecida'}
                 <button onClick={() => handleFilterChange('location', '')}>
                   <FaTimes />
                 </button>
