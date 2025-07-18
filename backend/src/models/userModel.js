@@ -146,6 +146,8 @@ class UserModel extends BaseModel {
         .optional()
         .allow(null),
       first_login_password_change: Joi.boolean().default(true),
+      phone: Joi.string().allow(null, ''),
+      whatsapp: Joi.string().allow(null, ''),
     });
   }
 
@@ -164,6 +166,8 @@ class UserModel extends BaseModel {
       last_login_at: Joi.date(),
       password_reset_token: Joi.string().allow(null),
       password_reset_expires: Joi.date().allow(null),
+      phone: Joi.string().allow(null, ''),
+      whatsapp: Joi.string().allow(null, ''),
     }).min(1);
   }
 

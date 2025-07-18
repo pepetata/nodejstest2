@@ -478,12 +478,50 @@ class UserService {
         throw error;
       }
 
-      const updatedUser = await this.userModel.update(userId, updateData);
+      // Extract role_location_pairs from updateData before updating basic user fields
+      const roleLocationPairs = updateData.role_location_pairs;
+      const userFieldsToUpdate = { ...updateData };
+      delete userFieldsToUpdate.role_location_pairs;
+
+      // Update basic user fields
+      const updatedUser = await this.userModel.update(userId, userFieldsToUpdate);
+
+      // Handle role_location_pairs if provided
+      if (roleLocationPairs && Array.isArray(roleLocationPairs)) {
+        this.logger.info('Updating role location pairs', {
+          ...logMeta,
+          pairsCount: roleLocationPairs.length,
+        });
+
+        // First, delete all existing role assignments for this user
+        const deleteQuery = `
+          DELETE FROM user_roles
+          WHERE user_id = $1
+        `;
+        await this.userRoleModel.executeQuery(deleteQuery, [userId]);
+
+        // Create new role assignments
+        for (let i = 0; i < roleLocationPairs.length; i++) {
+          const pair = roleLocationPairs[i];
+          const roleAssignment = {
+            user_id: userId,
+            role_id: pair.role_id,
+            restaurant_id: updatedUser.restaurant_id,
+            location_id: pair.location_id,
+            assigned_by: currentUser?.id,
+            is_primary_role: i === 0, // Set first role as primary
+            is_active: true,
+          };
+
+          await this.userRoleModel.create(roleAssignment);
+        }
+      }
 
       this.logger.info('User updated successfully', {
         ...logMeta,
         userId: updatedUser.id,
-        updatedFields: Object.keys(updateData),
+        updatedFields: Object.keys(userFieldsToUpdate),
+        roleLocationPairsUpdated: !!roleLocationPairs,
       });
 
       return updatedUser;
