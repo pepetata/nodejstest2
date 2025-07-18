@@ -211,7 +211,14 @@ class RestaurantService {
         const existingUser = await userService.getUserByEmail(userData.email);
         if (!existingUser) {
           // Create user with restaurant_administrator role
-          await userService.createRestaurantAdministrator(userData, newRestaurant.id);
+          // Pass role_assignments from frontend if available
+          const roleAssignments = data.role_assignments || null;
+          await userService.createRestaurantAdministrator(
+            userData,
+            newRestaurant.id,
+            null,
+            roleAssignments
+          );
         } else {
           // If user exists, assign restaurant_administrator role for this restaurant
           await userService.assignRolesToUser(existingUser.id, [

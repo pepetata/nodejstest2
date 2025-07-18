@@ -1,6 +1,7 @@
 const UserModel = require('../models/userModel');
 const RoleModel = require('../models/RoleModel');
 const UserRoleModel = require('../models/UserRoleModel');
+const UserLocationAssignmentModel = require('../models/UserLocationAssignmentModel');
 const userModel = new UserModel();
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
@@ -9,6 +10,7 @@ const { sendConfirmationEmail, sendPostConfirmationEmail } = require('./emailSer
 const crypto = require('crypto');
 const ejs = require('ejs');
 const path = require('path');
+const db = require('../config/db');
 
 // ...existing code...
 class UserService {
@@ -16,7 +18,9 @@ class UserService {
     this.userModel = userModelInstance;
     this.roleModel = new RoleModel();
     this.userRoleModel = new UserRoleModel();
+    this.userLocationAssignmentModel = new UserLocationAssignmentModel();
     this.logger = logger.child({ service: 'UserService' });
+    this.db = db;
   }
 
   /**
@@ -872,12 +876,19 @@ class UserService {
    * @param {Object} userData - User data
    * @param {String} restaurantId - Restaurant ID
    * @param {String} createdBy - ID of user creating this user
+   * @param {Array} roleAssignments - Role assignments from frontend (optional)
    * @returns {Object} Created restaurant administrator
    */
-  async createRestaurantAdministrator(userData, restaurantId, createdBy = null) {
+  async createRestaurantAdministrator(
+    userData,
+    restaurantId,
+    createdBy = null,
+    roleAssignments = null
+  ) {
     this.logger.info('Creating restaurant administrator', {
       email: userData.email,
       restaurantId,
+      hasRoleAssignments: !!roleAssignments,
     });
 
     // Ensure email is required for restaurant administrators
@@ -885,19 +896,118 @@ class UserService {
       throw new Error('Email é obrigatório para administradores de restaurante');
     }
 
-    const roles = [
-      {
-        roleName: 'restaurant_administrator',
-        restaurantId: restaurantId,
-        isPrimary: true,
-      },
-    ];
+    try {
+      // First, get all locations for this restaurant
+      const query = `
+        SELECT id, name, is_primary
+        FROM restaurant_locations
+        WHERE restaurant_id = $1
+        ORDER BY is_primary DESC, created_at ASC
+      `;
+      const locationResult = await this.db.query(query, [restaurantId]);
+      const locations = locationResult.rows;
 
-    return await this.createUserWithRoles(
-      { ...userData, restaurant_id: restaurantId },
-      roles,
-      createdBy
-    );
+      // Prepare role assignments for all locations
+      const roles = [];
+      const locationAssignments = [];
+
+      if (roleAssignments && roleAssignments.length > 0) {
+        // Use role assignments from frontend
+        for (const roleAssignment of roleAssignments) {
+          const { role_name, is_primary_role, location_assignments } = roleAssignment;
+
+          for (const locationAssignment of location_assignments) {
+            const { location_index, is_primary_location } = locationAssignment;
+            const location = locations[location_index];
+
+            if (location) {
+              // Create role assignment (restaurant-level)
+              roles.push({
+                roleName: role_name,
+                restaurantId: restaurantId,
+                locationId: location.id,
+                isPrimary: is_primary_role && is_primary_location, // Only first location gets primary role
+              });
+
+              // Create location assignment
+              locationAssignments.push({
+                user_id: null, // Will be set after user creation
+                location_id: location.id,
+                is_primary_location: is_primary_location,
+                assigned_by: createdBy,
+              });
+            }
+          }
+        }
+      } else {
+        // Fallback: legacy behavior for backward compatibility
+        if (locations.length > 0) {
+          // For each location, assign restaurant_administrator role and location access
+          locations.forEach((location, index) => {
+            const isPrimary = index === 0;
+
+            roles.push({
+              roleName: 'restaurant_administrator',
+              restaurantId: restaurantId,
+              locationId: location.id,
+              isPrimary: isPrimary, // First location (primary) gets primary role
+            });
+
+            locationAssignments.push({
+              user_id: null, // Will be set after user creation
+              location_id: location.id,
+              is_primary_location: isPrimary,
+              assigned_by: createdBy,
+            });
+          });
+        } else {
+          // Fallback: if no locations found, assign at restaurant level only
+          roles.push({
+            roleName: 'restaurant_administrator',
+            restaurantId: restaurantId,
+            isPrimary: true,
+          });
+        }
+      }
+
+      this.logger.info('Role and location assignments prepared', {
+        restaurantId,
+        locationCount: locations.length,
+        rolesCount: roles.length,
+        locationAssignmentsCount: locationAssignments.length,
+        source: roleAssignments ? 'frontend' : 'legacy',
+      });
+
+      // Create user with roles
+      const userWithRoles = await this.createUserWithRoles(
+        { ...userData, restaurant_id: restaurantId },
+        roles,
+        createdBy
+      );
+
+      // Create location assignments
+      if (locationAssignments.length > 0) {
+        for (const locationAssignment of locationAssignments) {
+          locationAssignment.user_id = userWithRoles.id;
+          await this.userLocationAssignmentModel.create(locationAssignment);
+        }
+      }
+
+      this.logger.info('Restaurant administrator created with location assignments', {
+        userId: userWithRoles.id,
+        restaurantId,
+        rolesAssigned: roles.length,
+        locationsAssigned: locationAssignments.length,
+      });
+
+      return userWithRoles;
+    } catch (error) {
+      this.logger.error('Failed to create restaurant administrator', {
+        restaurantId,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**
@@ -1019,47 +1129,23 @@ class UserService {
     this.logger.debug('Getting user accessible locations', { userId });
 
     try {
-      // Get user roles to determine accessible locations
-      const userRoles = await this.userRoleModel.getUserRoles(userId);
+      // Get locations from user_location_assignments table
+      const locationAssignments =
+        await this.userLocationAssignmentModel.getUserLocationAssignments(userId);
 
-      if (!userRoles || userRoles.length === 0) {
-        return [];
-      }
-
-      const locationModel = require('../models/RestaurantLocationModel');
-      const locations = [];
-
-      // For each role, determine accessible locations
-      for (const role of userRoles) {
-        if (role.restaurant_id) {
-          // If role is restaurant-wide (restaurant_administrator), get all locations for that restaurant
-          if (role.role_name === 'restaurant_administrator') {
-            const restaurantLocations = await locationModel.getByRestaurantId(role.restaurant_id);
-
-            // Add locations that aren't already in the list
-            for (const location of restaurantLocations) {
-              if (!locations.find((loc) => loc.id === location.id)) {
-                locations.push({
-                  ...location,
-                  access_level: 'full', // Restaurant admin has full access
-                  via_role: role.role_name,
-                });
-              }
-            }
-          }
-          // If role is location-specific, add that specific location
-          else if (role.location_id) {
-            const location = await locationModel.findById(role.location_id);
-            if (location && !locations.find((loc) => loc.id === location.id)) {
-              locations.push({
-                ...location,
-                access_level: role.role_name === 'location_administrator' ? 'admin' : 'worker',
-                via_role: role.role_name,
-              });
-            }
-          }
-        }
-      }
+      // Transform the data to match the expected format
+      const locations = locationAssignments.map((assignment) => ({
+        id: assignment.location_id,
+        name: assignment.location_name,
+        address_street: assignment.address_street,
+        address_city: assignment.address_city,
+        address_state: assignment.address_state,
+        restaurant_id: assignment.restaurant_id,
+        is_primary_location: assignment.is_primary_location,
+        access_level: 'full', // Restaurant admins have full access
+        via_assignment: 'location_assignment',
+        assigned_at: assignment.created_at,
+      }));
 
       return locations;
     } catch (error) {
@@ -1202,6 +1288,114 @@ class UserService {
       return await this.roleModel.getRolesByScope(scope);
     } catch (error) {
       this.logger.error('Failed to get roles by scope', { scope, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get user location assignments
+   * @param {String} userId - User ID
+   * @returns {Array} Array of location assignments
+   */
+  async getUserLocationAssignments(userId) {
+    this.logger.debug('Getting user location assignments', { userId });
+
+    try {
+      return await this.userLocationAssignmentModel.getUserLocationAssignments(userId);
+    } catch (error) {
+      this.logger.error('Failed to get user location assignments', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get user's primary location
+   * @param {String} userId - User ID
+   * @returns {Object|null} Primary location assignment
+   */
+  async getUserPrimaryLocation(userId) {
+    this.logger.debug('Getting user primary location', { userId });
+
+    try {
+      return await this.userLocationAssignmentModel.getUserPrimaryLocation(userId);
+    } catch (error) {
+      this.logger.error('Failed to get user primary location', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Assign user to location
+   * @param {String} userId - User ID
+   * @param {String} locationId - Location ID
+   * @param {Boolean} isPrimary - Whether this is the primary location
+   * @param {String} assignedBy - ID of user making the assignment
+   * @returns {Object} Created assignment
+   */
+  async assignUserToLocation(userId, locationId, isPrimary = false, assignedBy = null) {
+    this.logger.info('Assigning user to location', { userId, locationId, isPrimary });
+
+    try {
+      return await this.userLocationAssignmentModel.assignUserToLocation({
+        user_id: userId,
+        location_id: locationId,
+        is_primary_location: isPrimary,
+        assigned_by: assignedBy,
+      });
+    } catch (error) {
+      this.logger.error('Failed to assign user to location', {
+        userId,
+        locationId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Remove user from location
+   * @param {String} userId - User ID
+   * @param {String} locationId - Location ID
+   * @returns {Boolean} True if successful
+   */
+  async removeUserFromLocation(userId, locationId) {
+    this.logger.info('Removing user from location', { userId, locationId });
+
+    try {
+      return await this.userLocationAssignmentModel.removeUserFromLocation(userId, locationId);
+    } catch (error) {
+      this.logger.error('Failed to remove user from location', {
+        userId,
+        locationId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Set user's primary location
+   * @param {String} userId - User ID
+   * @param {String} locationId - Location ID
+   * @returns {Boolean} True if successful
+   */
+  async setUserPrimaryLocation(userId, locationId) {
+    this.logger.info('Setting user primary location', { userId, locationId });
+
+    try {
+      return await this.userLocationAssignmentModel.setPrimaryLocation(userId, locationId);
+    } catch (error) {
+      this.logger.error('Failed to set user primary location', {
+        userId,
+        locationId,
+        error: error.message,
+      });
       throw error;
     }
   }

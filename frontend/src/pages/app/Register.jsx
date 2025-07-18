@@ -365,6 +365,7 @@ function RegisterPage() {
         holidays: { open: '10:00', close: '20:00', closed: false },
       },
       selectedFeatures: ['digital_menu'], // Core feature always included
+      is_primary: false, // Only the first location is primary
     };
 
     setFormData((prev) => ({
@@ -1368,15 +1369,52 @@ function RegisterPage() {
     setIsSubmitting(true);
 
     try {
+      // Prepare role and location assignments for the restaurant administrator
+      const roleAssignments = [];
+
+      // For restaurant administrators, they get assigned to all locations
+      if (formData.businessType === 'single') {
+        // Single location: assign restaurant admin to the only location
+        roleAssignments.push({
+          role_name: 'restaurant_administrator',
+          is_primary_role: true, // First role is primary
+          location_assignments: [
+            {
+              location_index: 0, // Index in the locations array
+              is_primary_location: true, // Single location is always primary
+            },
+          ],
+        });
+      } else {
+        // Multi-location: assign restaurant admin to all locations
+        const locationAssignments = formData.locations.map((location, index) => ({
+          location_index: index,
+          is_primary_location: index === 0, // First location is primary
+        }));
+
+        roleAssignments.push({
+          role_name: 'restaurant_administrator',
+          is_primary_role: true, // Restaurant admin is always primary role
+          location_assignments: locationAssignments,
+        });
+      }
+
       const userPayload = {
         full_name: formData.ownerName,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
-        role: 'restaurant_administrator',
-        // restaurant_id: restaurantId,
+        whatsapp: formData.whatsapp, // Include WhatsApp field
+        role: 'restaurant_administrator', // Backward compatibility
         status: 'pending',
+        role_assignments: roleAssignments, // New role assignment structure
       };
+      // Prepare locations with proper is_primary marking
+      const processedLocations = formData.locations.map((location, index) => ({
+        ...location,
+        is_primary: index === 0, // First location is always primary
+      }));
+
       const restaurantPayload = {
         restaurant_name: formData.restaurantName,
         restaurant_url_name: formData.restaurantUrlName,
@@ -1390,7 +1428,7 @@ function RegisterPage() {
             ? formData.website.replace(/&#x2F;/g, '/')
             : formData.website,
         description: formData.description,
-        locations: formData.locations,
+        locations: processedLocations, // Use processed locations with is_primary
         status: 'pending',
         subscription_plan: getRecommendedPlan(),
         marketing_consent: formData.marketingConsent,
