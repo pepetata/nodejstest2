@@ -39,6 +39,7 @@ const UserFormPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    username: '',
     phone: '',
     whatsapp: '',
     password: '',
@@ -153,38 +154,50 @@ const UserFormPage = () => {
       if (foundUser) {
         setUser(foundUser);
         if (foundUser) {
-          setFormData({
+          const processedRoles =
+            foundUser.role_location_pairs?.length > 0
+              ? foundUser.role_location_pairs.reduce((acc, pair) => {
+                  // Group by role_id and collect location_ids
+                  const existingRole = acc.find(
+                    (item) => item.role_id === pair.role_id?.toString()
+                  );
+                  if (existingRole) {
+                    existingRole.location_ids.push(pair.location_id?.toString());
+                  } else {
+                    acc.push({
+                      role_id: pair.role_id?.toString() || '',
+                      location_ids: [pair.location_id?.toString() || ''],
+                    });
+                  }
+                  return acc;
+                }, [])
+              : [{ role_id: '', location_ids: [] }];
+
+          console.log('🔍 UserFormPage: Setting form data for user:', foundUser.id);
+          console.log('🔍 UserFormPage: Roles available:', roles.length);
+          console.log('🔍 UserFormPage: Processed role pairs:', processedRoles);
+
+          const newFormData = {
             name: foundUser.full_name || '',
             email: foundUser.email || '',
+            username: foundUser.username || '',
             phone: foundUser.phone || '',
             whatsapp: foundUser.whatsapp || '',
             password: '',
             confirmPassword: '',
-            role_location_pairs:
-              foundUser.role_location_pairs?.length > 0
-                ? foundUser.role_location_pairs.reduce((acc, pair) => {
-                    // Group by role_id and collect location_ids
-                    const existingRole = acc.find(
-                      (item) => item.role_id === pair.role_id?.toString()
-                    );
-                    if (existingRole) {
-                      existingRole.location_ids.push(pair.location_id?.toString());
-                    } else {
-                      acc.push({
-                        role_id: pair.role_id?.toString() || '',
-                        location_ids: [pair.location_id?.toString() || ''],
-                      });
-                    }
-                    return acc;
-                  }, [])
-                : [{ role_id: '', location_ids: [] }],
+            role_location_pairs: processedRoles,
             is_active: foundUser.is_active ?? true,
             is_admin: foundUser.is_admin ?? false,
-          });
+          };
+
+          console.log('🔍 UserFormPage: Final form data:', newFormData);
+          console.log('🔍 UserFormPage: Role pairs in form data:', newFormData.role_location_pairs);
+
+          setFormData(newFormData);
         }
       }
     }
-  }, [isEditing, id, users, roles.length, dispatch]);
+  }, [isEditing, id, users, roles, dispatch]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -213,9 +226,25 @@ const UserFormPage = () => {
 
   // Remove a role-location pair
   const removeRoleLocationPair = (index) => {
+    // Prevent removing the last role-location pair
+    if (formData.role_location_pairs.length <= 1) {
+      setErrors((prev) => ({
+        ...prev,
+        role_location_pairs:
+          'Não é possível remover o último perfil. O usuário deve ter pelo menos um perfil.',
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       role_location_pairs: prev.role_location_pairs.filter((_, i) => i !== index),
+    }));
+
+    // Clear any existing error
+    setErrors((prev) => ({
+      ...prev,
+      role_location_pairs: '',
     }));
   };
 
@@ -277,11 +306,18 @@ const UserFormPage = () => {
       newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
     }
 
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Email validation (optional)
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email inválido';
+    }
+
+    // Username validation (optional but if provided, should be valid)
+    if (formData.username.trim()) {
+      if (formData.username.length < 3) {
+        newErrors.username = 'Nome de usuário deve ter pelo menos 3 caracteres';
+      } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+        newErrors.username = 'Nome de usuário deve conter apenas letras, números e underscore';
+      }
     }
 
     // Password validation (only for new users or when changing password)
@@ -340,6 +376,7 @@ const UserFormPage = () => {
       const userData = {
         full_name: formData.name, // Send as full_name to match backend expectation
         email: formData.email,
+        username: formData.username,
         phone: formData.phone,
         whatsapp: formData.whatsapp,
         role_location_pairs: formData.role_location_pairs.flatMap((pair) =>
@@ -368,6 +405,9 @@ const UserFormPage = () => {
     } catch (error) {
       console.error('Error saving user:', error);
       setErrors({ submit: error.message || 'Erro ao salvar usuário' });
+
+      // Scroll to top to show error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -452,9 +492,7 @@ const UserFormPage = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="email">
-                    Email <span className="required">*</span>
-                  </label>
+                  <label htmlFor="email">Email</label>
                   <input
                     type="email"
                     id="email"
@@ -462,10 +500,28 @@ const UserFormPage = () => {
                     className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="usuario@exemplo.com"
+                    placeholder="usuario@exemplo.com (opcional)"
                     disabled={loading}
                   />
                   {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="username">Nome de Usuário</label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    className={`form-control ${errors.username ? 'is-invalid' : ''}`}
+                    value={formData.username}
+                    onChange={handleChange}
+                    placeholder="usuario123 (opcional)"
+                    disabled={loading}
+                  />
+                  {errors.username && <div className="invalid-feedback">{errors.username}</div>}
+                  <small className="form-text text-muted">
+                    Nome de usuário único para login (opcional se e-mail for fornecido)
+                  </small>
                 </div>
               </div>
 
@@ -605,6 +661,16 @@ const UserFormPage = () => {
                         value={pair.role_id}
                         onChange={(e) => updateRoleLocationPair(index, 'role_id', e.target.value)}
                         disabled={loading}
+                        onFocus={() => {
+                          console.log(`🔍 Dropdown ${index + 1} focused:`, {
+                            currentValue: pair.role_id,
+                            availableRoles: getAvailableRoles(index).map((r) => ({
+                              id: r.id,
+                              name: r.name,
+                            })),
+                            allRoles: roles.map((r) => ({ id: r.id, name: r.name })),
+                          });
+                        }}
                       >
                         <option value="">Selecione um perfil</option>
                         {getAvailableRoles(index).map((role) => (

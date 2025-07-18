@@ -17,8 +17,8 @@ class UserService {
   constructor(userModelInstance = userModel) {
     this.userModel = userModelInstance;
     this.roleModel = new RoleModel();
-    this.userRoleModel = new UserRoleModel();
-    this.userLocationAssignmentModel = new UserLocationAssignmentModel();
+    this.UserRoleModel = new UserRoleModel();
+    this.UserLocationAssignmentModel = new UserLocationAssignmentModel();
     this.logger = logger.child({ service: 'UserService' });
     this.db = db;
   }
@@ -109,8 +109,8 @@ class UserService {
   }
 
   /**
-   * Create a new user
-   * @param {Object} userData - User data
+   * Create a new user with role assignments
+   * @param {Object} userData - User data with role_location_pairs
    * @param {Object} currentUser - Current authenticated user
    * @returns {Promise<Object>} Created user
    */
@@ -128,12 +128,22 @@ class UserService {
       hasEmail: !!userData.email,
       hasUsername: !!userData.username,
       restaurantId: userData.restaurant_id,
+      roleLocationPairs: userData.role_location_pairs?.length || 0,
     });
 
     try {
       // Add created_by field if current user exists
       if (currentUser) {
         userData.created_by = currentUser.id;
+
+        // Auto-assign restaurant_id from current user if not provided
+        if (!userData.restaurant_id && currentUser.restaurant_id) {
+          userData.restaurant_id = currentUser.restaurant_id;
+          this.logger.info('Auto-assigned restaurant_id from current user', {
+            ...logMeta,
+            assignedRestaurantId: currentUser.restaurant_id,
+          });
+        }
       }
 
       // Check authorization for restaurant assignment
@@ -151,8 +161,47 @@ class UserService {
           }
           throw new Error('Já existe um usuário cadastrado com este e-mail.');
         }
-        userData.email_confirmation_token = crypto.randomBytes(32).toString('hex');
-        userData.email_confirmation_expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiry
+
+        // Only set email confirmation for restaurant registration users
+        // Admin created users don't need email confirmation
+        if (!currentUser || userData.isRegistration === true) {
+          userData.email_confirmation_token = crypto.randomBytes(32).toString('hex');
+          userData.email_confirmation_expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h expiry
+        }
+      }
+
+      // Extract role_location_pairs before creating user
+      const roleLocationPairs = userData.role_location_pairs || [];
+
+      // Validate role_location_pairs
+      if (!roleLocationPairs || roleLocationPairs.length === 0) {
+        throw new Error('Role is required');
+      }
+
+      delete userData.role_location_pairs;
+
+      // Convert empty email to null to avoid database constraint issues
+      if (!userData.email || userData.email.trim() === '') {
+        userData.email = null;
+      }
+
+      // Convert empty username to null to avoid database constraint issues
+      if (!userData.username || userData.username.trim() === '') {
+        userData.username = null;
+      }
+
+      // Generate username if neither email nor username is provided (database constraint requires one or the other)
+      if (!userData.email && !userData.username) {
+        const nameBase = userData.full_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const timestamp = Date.now().toString().slice(-6);
+        userData.username = `${nameBase}${timestamp}`;
+      }
+
+      // Set status to active for admin created users, pending for registration users
+      if (currentUser && !userData.isRegistration) {
+        userData.status = 'active';
+      } else if (!userData.status) {
+        userData.status = 'pending';
       }
 
       const newUser = await this.userModel.create(userData);
@@ -164,9 +213,38 @@ class UserService {
         status: newUser.status,
       });
 
+      // Handle role assignments if provided
+      if (roleLocationPairs.length > 0) {
+        this.logger.info('Assigning roles to new user', {
+          userId: newUser.id,
+          roleCount: roleLocationPairs.length,
+        });
+
+        // Create role assignments
+        for (const pair of roleLocationPairs) {
+          await this.UserRoleModel.create({
+            user_id: newUser.id,
+            role_id: pair.role_id,
+            assigned_by: currentUser?.id,
+          });
+
+          // Create location assignments
+          await this.UserLocationAssignmentModel.create({
+            user_id: newUser.id,
+            location_id: pair.location_id,
+            assigned_by: currentUser?.id,
+          });
+        }
+
+        this.logger.info('Role assignments completed', {
+          userId: newUser.id,
+          assignmentsCreated: roleLocationPairs.length,
+        });
+      }
+
       this.logger.info('user ==================', { to: newUser });
 
-      // Send email confirmation if email exists
+      // Send email confirmation if email exists and user requires confirmation
       if (newUser.email && newUser.email_confirmation_token) {
         const appUrl = process.env.APP_URL || 'http://localhost:3000';
         const confirmUrl = `${appUrl}/confirm-email?token=${newUser.email_confirmation_token}`;
@@ -302,6 +380,7 @@ class UserService {
           ur.role_id,
           ula.location_id,
           r.name as role_name,
+          r.display_name as role_display_name,
           rl.name as location_name
         FROM user_roles ur
         JOIN user_location_assignments ula ON ur.user_id = ula.user_id
@@ -317,6 +396,7 @@ class UserService {
         role_id: row.role_id,
         location_id: row.location_id,
         role_name: row.role_name,
+        role_display_name: row.role_display_name,
         location_name: row.location_name,
       }));
     } catch (error) {
@@ -341,10 +421,50 @@ class UserService {
       filters: options,
     };
 
+    // Add detailed logging for debugging sorting/filtering issues
+    this.logger.info('=== DEBUGGING USER RETRIEVAL ===', {
+      receivedOptions: options,
+      sortBy: options.sortBy,
+      sortOrder: options.sortOrder,
+      sort_by: options.sort_by,
+      sort_order: options.sort_order,
+      location: options.location,
+      role: options.role,
+      status: options.status,
+      allKeys: Object.keys(options),
+    });
+
     this.logger.debug('Fetching users list', logMeta);
 
     try {
-      const { page, limit, restaurant_id, role, status, search, sort_by, sort_order } = options;
+      const {
+        page = 1,
+        limit = 10,
+        restaurant_id,
+        role,
+        status,
+        search,
+        location,
+        sort_by = 'full_name',
+        sort_order = 'asc',
+        sortBy = 'full_name',
+        sortOrder = 'asc',
+      } = options;
+
+      // Use frontend parameter names if provided, fallback to backend names
+      const finalSortBy = sortBy || sort_by;
+      const finalSortOrder = sortOrder || sort_order;
+
+      // Add detailed logging for debugging
+      this.logger.info('=== SORTING PARAMETERS ===', {
+        originalSortBy: sortBy,
+        originalSortOrder: sortOrder,
+        fallbackSortBy: sort_by,
+        fallbackSortOrder: sort_order,
+        finalSortBy,
+        finalSortOrder,
+        willCreateOrderBy: `${finalSortBy} ${finalSortOrder.toUpperCase()}`,
+      });
 
       // Build query filters
       const filters = {};
@@ -359,12 +479,19 @@ class UserService {
 
       if (role) filters.role = role;
       if (status) filters.status = status;
+      if (location) {
+        filters.location = location;
+        this.logger.info('=== LOCATION FILTER APPLIED ===', {
+          locationId: location,
+          locationUUID: location,
+        });
+      }
 
       // Build query options
       const queryOptions = {
-        limit,
-        offset: (page - 1) * limit,
-        orderBy: `${sort_by} ${sort_order.toUpperCase()}`,
+        limit: parseInt(limit),
+        page: parseInt(page),
+        orderBy: `${finalSortBy} ${finalSortOrder.toUpperCase()}`,
       };
 
       // Add search if provided
@@ -377,28 +504,48 @@ class UserService {
 
       const result = await this.userModel.findWithPagination(filters, queryOptions);
 
-      // Add role_location_pairs to each user
-      const usersWithRolePairs = await Promise.all(
-        result.users.map(async (user) => {
-          try {
-            // Get user's role-location pairs
-            const roleLocationPairs = await this.getUserRoleLocationPairs(user.id);
-            return {
-              ...user,
-              role_location_pairs: roleLocationPairs,
-            };
-          } catch (error) {
-            this.logger.warn('Failed to get role-location pairs for user', {
-              userId: user.id,
-              error: error.message,
-            });
-            return {
-              ...user,
-              role_location_pairs: [],
-            };
-          }
-        })
-      );
+      // Add detailed logging for debugging results
+      this.logger.info('=== QUERY RESULTS ===', {
+        totalUsers: result.total,
+        returnedUsers: result.users.length,
+        firstUser: result.users[0]
+          ? {
+              name: result.users[0].full_name,
+              email: result.users[0].email,
+            }
+          : null,
+        lastUser: result.users[result.users.length - 1]
+          ? {
+              name: result.users[result.users.length - 1].full_name,
+              email: result.users[result.users.length - 1].email,
+            }
+          : null,
+        queryOptions,
+        appliedFilters: filters,
+      });
+
+      // Add role_location_pairs to each user while preserving order
+      const usersWithRolePairs = [];
+      for (let i = 0; i < result.users.length; i++) {
+        const user = result.users[i];
+        try {
+          // Get user's role-location pairs
+          const roleLocationPairs = await this.getUserRoleLocationPairs(user.id);
+          usersWithRolePairs.push({
+            ...user,
+            role_location_pairs: roleLocationPairs,
+          });
+        } catch (error) {
+          this.logger.warn('Failed to get role-location pairs for user', {
+            userId: user.id,
+            error: error.message,
+          });
+          usersWithRolePairs.push({
+            ...user,
+            role_location_pairs: [],
+          });
+        }
+      }
 
       const totalPages = Math.ceil(result.total / limit);
 
@@ -498,7 +645,7 @@ class UserService {
           DELETE FROM user_roles
           WHERE user_id = $1
         `;
-        await this.userRoleModel.executeQuery(deleteQuery, [userId]);
+        await this.UserRoleModel.executeQuery(deleteQuery, [userId]);
 
         // Create new role assignments
         for (let i = 0; i < roleLocationPairs.length; i++) {
@@ -513,7 +660,7 @@ class UserService {
             is_active: true,
           };
 
-          await this.userRoleModel.create(roleAssignment);
+          await this.UserRoleModel.create(roleAssignment);
         }
       }
 
@@ -1088,7 +1235,7 @@ class UserService {
       if (locationAssignments.length > 0) {
         for (const locationAssignment of locationAssignments) {
           locationAssignment.user_id = userWithRoles.id;
-          await this.userLocationAssignmentModel.create(locationAssignment);
+          await this.UserLocationAssignmentModel.create(locationAssignment);
         }
       }
 
@@ -1134,7 +1281,7 @@ class UserService {
         }
 
         // Create the assignment
-        await this.userRoleModel.assignRole({
+        await this.UserRoleModel.assignRole({
           user_id: userId,
           role_id: role.id,
           restaurant_id: restaurantId,
@@ -1171,8 +1318,8 @@ class UserService {
       }
 
       // Get user roles
-      const roles = await this.userRoleModel.getUserRoles(userId);
-      const primaryRole = await this.userRoleModel.getUserPrimaryRole(userId);
+      const roles = await this.UserRoleModel.getUserRoles(userId);
+      const primaryRole = await this.UserRoleModel.getUserPrimaryRole(userId);
 
       return {
         ...user,
@@ -1230,7 +1377,7 @@ class UserService {
     try {
       // Get locations from user_location_assignments table
       const locationAssignments =
-        await this.userLocationAssignmentModel.getUserLocationAssignments(userId);
+        await this.UserLocationAssignmentModel.getUserLocationAssignments(userId);
 
       // Transform the data to match the expected format
       const locations = locationAssignments.map((assignment) => ({
@@ -1265,7 +1412,7 @@ class UserService {
    */
   async userHasRole(userId, roleName, context = {}) {
     try {
-      return await this.userRoleModel.userHasRole(userId, roleName, context);
+      return await this.UserRoleModel.userHasRole(userId, roleName, context);
     } catch (error) {
       this.logger.error('Failed to check user role', {
         userId,
@@ -1284,7 +1431,7 @@ class UserService {
    */
   async userHasAdminAccess(userId) {
     try {
-      return await this.userRoleModel.userHasAdminAccess(userId);
+      return await this.UserRoleModel.userHasAdminAccess(userId);
     } catch (error) {
       this.logger.error('Failed to check user admin access', {
         userId,
@@ -1309,7 +1456,7 @@ class UserService {
         throw new Error(`Role '${roleName}' not found`);
       }
 
-      const success = await this.userRoleModel.setPrimaryRole(userId, role.id);
+      const success = await this.UserRoleModel.setPrimaryRole(userId, role.id);
 
       if (success) {
         this.logger.info('Primary role set successfully', { userId, roleName });
@@ -1344,7 +1491,7 @@ class UserService {
         throw new Error(`Role '${roleName}' not found`);
       }
 
-      const success = await this.userRoleModel.revokeRole(userId, role.id, context);
+      const success = await this.UserRoleModel.revokeRole(userId, role.id, context);
 
       if (success) {
         this.logger.info('Role revoked successfully', { userId, roleName, context });
@@ -1400,7 +1547,7 @@ class UserService {
     this.logger.debug('Getting user location assignments', { userId });
 
     try {
-      return await this.userLocationAssignmentModel.getUserLocationAssignments(userId);
+      return await this.UserLocationAssignmentModel.getUserLocationAssignments(userId);
     } catch (error) {
       this.logger.error('Failed to get user location assignments', {
         userId,
@@ -1419,7 +1566,7 @@ class UserService {
     this.logger.debug('Getting user primary location', { userId });
 
     try {
-      return await this.userLocationAssignmentModel.getUserPrimaryLocation(userId);
+      return await this.UserLocationAssignmentModel.getUserPrimaryLocation(userId);
     } catch (error) {
       this.logger.error('Failed to get user primary location', {
         userId,
@@ -1441,7 +1588,7 @@ class UserService {
     this.logger.info('Assigning user to location', { userId, locationId, isPrimary });
 
     try {
-      return await this.userLocationAssignmentModel.assignUserToLocation({
+      return await this.UserLocationAssignmentModel.assignUserToLocation({
         user_id: userId,
         location_id: locationId,
         is_primary_location: isPrimary,
@@ -1467,7 +1614,7 @@ class UserService {
     this.logger.info('Removing user from location', { userId, locationId });
 
     try {
-      return await this.userLocationAssignmentModel.removeUserFromLocation(userId, locationId);
+      return await this.UserLocationAssignmentModel.removeUserFromLocation(userId, locationId);
     } catch (error) {
       this.logger.error('Failed to remove user from location', {
         userId,
@@ -1488,7 +1635,7 @@ class UserService {
     this.logger.info('Setting user primary location', { userId, locationId });
 
     try {
-      return await this.userLocationAssignmentModel.setPrimaryLocation(userId, locationId);
+      return await this.UserLocationAssignmentModel.setPrimaryLocation(userId, locationId);
     } catch (error) {
       this.logger.error('Failed to set user primary location', {
         userId,

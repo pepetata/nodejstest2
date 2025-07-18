@@ -4,7 +4,6 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaUsers,
-  FaShieldAlt,
   FaCheckCircle,
   FaTimesCircle,
   FaEdit,
@@ -42,9 +41,24 @@ const UserTable = ({
 
   // Helper function to get role name from user data directly (when available)
   const getUserRoleName = (user) => {
+    // First check if there's a display name directly on the user
     if (user.role_display_name) {
       return user.role_display_name;
     }
+
+    // Then check if we have role_location_pairs with role display names
+    if (user.role_location_pairs && user.role_location_pairs.length > 0) {
+      const roleDisplayNames = user.role_location_pairs
+        .map((pair) => pair.role_display_name || pair.role_name)
+        .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+        .join(', ');
+
+      if (roleDisplayNames) {
+        return roleDisplayNames;
+      }
+    }
+
+    // Fallback to role lookup by ID
     return getRoleName(user.role_id);
   };
 
@@ -53,13 +67,33 @@ const UserTable = ({
     if (user.role_description) {
       return user.role_description;
     }
+
+    // Check if we have role_location_pairs with role descriptions
+    if (user.role_location_pairs && user.role_location_pairs.length > 0) {
+      const firstPair = user.role_location_pairs[0];
+      if (firstPair.role_id) {
+        return getRoleDescription(firstPair.role_id);
+      }
+    }
+
     return getRoleDescription(user.role_id);
   };
 
-  // Helper function to get location name by ID
-  const getLocationName = (locationId) => {
-    const location = locations.find((l) => String(l.id) === String(locationId));
-    return location ? location.name : 'Matriz';
+  // Helper function to get user's location from role_location_pairs
+  const getUserLocationNames = (user) => {
+    if (!user.role_location_pairs || user.role_location_pairs.length === 0) {
+      return 'Matriz';
+    }
+
+    const locationNames = user.role_location_pairs
+      .map((pair) => {
+        const location = locations.find((l) => String(l.id) === String(pair.location_id));
+        return location ? location.name : 'Matriz';
+      })
+      .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+      .join(', ');
+
+    return locationNames || 'Matriz';
   };
 
   // Helper function to check if user is restaurant administrator
@@ -203,7 +237,7 @@ const UserTable = ({
                   </span>
                 </td>
                 <td>
-                  <span className="location-badge">{getLocationName(user.location_id)}</span>
+                  <span className="location-badge">{getUserLocationNames(user)}</span>
                 </td>
                 <td>
                   <span

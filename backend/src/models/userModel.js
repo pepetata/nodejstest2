@@ -131,12 +131,8 @@ class UserModel extends BaseModel {
    */
   get createSchema() {
     return Joi.object({
-      email: Joi.string().email().optional().allow(null),
-      username: Joi.string().alphanum().min(3).max(100).when('email', {
-        is: Joi.exist(),
-        then: Joi.optional(),
-        otherwise: Joi.required(),
-      }),
+      email: Joi.string().email().optional().allow(null, ''),
+      username: Joi.string().alphanum().min(3).max(100).optional().allow(null),
       password: Joi.string().min(8).max(255).required(),
       full_name: Joi.string().trim().min(2).max(255).required(),
       restaurant_id: Joi.string().guid().optional().allow(null),
@@ -810,14 +806,10 @@ class UserModel extends BaseModel {
         SELECT DISTINCT
           u.*,
           r.restaurant_name,
-          r.restaurant_url_name,
-          ur.role_id,
-          ro.name as role_name,
-          ro.display_name as role_display_name,
-          ro.description as role_description
+          r.restaurant_url_name
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
-        LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_primary_role = true AND ur.is_active = true
+        LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_active = true
         LEFT JOIN roles ro ON ur.role_id = ro.id
       `;
 
@@ -826,7 +818,7 @@ class UserModel extends BaseModel {
         SELECT COUNT(DISTINCT u.id) as total
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
-        LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_primary_role = true AND ur.is_active = true
+        LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_active = true
         LEFT JOIN roles ro ON ur.role_id = ro.id
       `;
 
@@ -842,17 +834,27 @@ class UserModel extends BaseModel {
       }
 
       // Add role filter
-      if (filters.role_id) {
+      if (filters.role) {
         paramCount++;
         whereConditions.push(`ur.role_id = $${paramCount}`);
-        params.push(filters.role_id);
+        params.push(filters.role);
       }
 
       // Add status filter
-      if (filters.is_active !== undefined) {
+      if (filters.status) {
         paramCount++;
-        whereConditions.push(`u.is_active = $${paramCount}`);
-        params.push(filters.is_active);
+        whereConditions.push(`u.status = $${paramCount}`);
+        params.push(filters.status);
+      }
+
+      // Add location filter - using the correct table structure
+      if (filters.location) {
+        paramCount++;
+        whereConditions.push(`EXISTS (
+          SELECT 1 FROM user_location_assignments ula
+          WHERE ula.user_id = u.id AND ula.location_id = $${paramCount}
+        )`);
+        params.push(filters.location);
       }
 
       // Add search functionality
@@ -861,7 +863,7 @@ class UserModel extends BaseModel {
         const searchConditions = search.fields
           .map((field) => {
             if (field === 'full_name') {
-              return `u.name ILIKE $${paramCount}`;
+              return `u.full_name ILIKE $${paramCount}`;
             } else {
               return `u.${field} ILIKE $${paramCount}`;
             }
@@ -879,7 +881,25 @@ class UserModel extends BaseModel {
       }
 
       // Add ORDER BY, LIMIT, and OFFSET to main query
-      query += ` ORDER BY u.${orderBy.replace(/[^a-zA-Z0-9_\s]/g, '')} LIMIT ${limit} OFFSET ${offset}`;
+      const orderByClause = orderBy || 'created_at DESC';
+      // Parse the orderBy to separate column and direction
+      const orderByParts = orderByClause.split(' ');
+      const sortColumn = orderByParts[0];
+      const sortDirection = orderByParts[1] || 'ASC';
+
+      // Use the column name as provided - the database has full_name column
+      query += ` ORDER BY u.${sortColumn} ${sortDirection} LIMIT ${limit} OFFSET ${offset}`;
+
+      // Add detailed logging for debugging
+      this.logger.info('=== SQL QUERY DEBUG ===', {
+        finalQuery: query,
+        parameters: params,
+        sortColumn,
+        sortDirection,
+        orderByClause,
+        limit,
+        offset,
+      });
 
       // Execute queries
       const [usersResult, countResult] = await Promise.all([
@@ -905,6 +925,139 @@ class UserModel extends BaseModel {
       this.logger.error('Failed to find users with pagination', {
         filters,
         queryOptions,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get users by restaurant with filters and pagination
+   * @param {string} restaurantId - Restaurant ID
+   * @param {Object} filters - Filter options
+   * @returns {Promise<Object>} Users with pagination info
+   */
+  async getUsersByRestaurant(restaurantId, filters = {}) {
+    this.logger.debug('Getting users by restaurant', { restaurantId, filters });
+
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'full_name',
+        sortOrder = 'asc',
+        status,
+        role,
+        search,
+      } = filters;
+
+      const offset = (page - 1) * limit;
+      const validSortOrder = sortOrder.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+
+      // Build WHERE conditions
+      const conditions = ['u.restaurant_id = $1'];
+      const params = [restaurantId];
+      let paramIndex = 2;
+
+      // Status filter
+      if (status) {
+        conditions.push(`u.status = $${paramIndex}`);
+        params.push(status);
+        paramIndex++;
+      }
+
+      // Role filter by role ID
+      if (role) {
+        conditions.push(`EXISTS (
+          SELECT 1 FROM user_roles ur
+          WHERE ur.user_id = u.id AND ur.role_id = $${paramIndex}
+        )`);
+        params.push(role);
+        paramIndex++;
+      }
+
+      // Search filter
+      if (search) {
+        conditions.push(`(
+          u.full_name ILIKE $${paramIndex} OR
+          u.email ILIKE $${paramIndex} OR
+          u.username ILIKE $${paramIndex}
+        )`);
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      // Count query
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM users u
+        ${whereClause}
+      `;
+
+      const countResult = await this.executeQuery(countQuery, params);
+      const totalCount = parseInt(countResult.rows[0].total);
+
+      // Main query with role and location data
+      const query = `
+        SELECT
+          u.id,
+          u.full_name,
+          u.email,
+          u.username,
+          u.phone,
+          u.status,
+          u.restaurant_id,
+          u.created_at,
+          u.updated_at,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'role_id', r.id,
+                'role_name', r.name,
+                'role_display_name', r.display_name,
+                'location_id', rl.id,
+                'location_name', rl.name,
+                'location_url_name', rl.url_name
+              )
+            ) FILTER (WHERE r.id IS NOT NULL),
+            '[]'
+          ) as role_location_pairs
+        FROM users u
+        LEFT JOIN user_roles ur ON u.id = ur.user_id
+        LEFT JOIN roles r ON ur.role_id = r.id
+        LEFT JOIN restaurant_locations rl ON ur.location_id = rl.id
+        ${whereClause}
+        GROUP BY u.id, u.full_name, u.email, u.username, u.phone, u.status, u.restaurant_id, u.created_at, u.updated_at
+        ORDER BY u.${sortBy} ${validSortOrder}
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+
+      params.push(limit, offset);
+
+      const result = await this.executeQuery(query, params);
+      const users = result.rows.map((user) => ({
+        ...user,
+        role_location_pairs:
+          typeof user.role_location_pairs === 'string'
+            ? JSON.parse(user.role_location_pairs)
+            : user.role_location_pairs,
+      }));
+
+      return {
+        users,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / limit),
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to get users by restaurant', {
+        restaurantId,
+        filters,
         error: error.message,
       });
       throw error;

@@ -8,33 +8,15 @@ const Joi = require('joi');
 const userValidationSchemas = {
   // User creation schema
   createUser: Joi.object({
-    email: Joi.string()
-      .email()
-      .when('role', {
-        is: Joi.string().valid('restaurant_administrator', 'location_administrator'),
-        then: Joi.required(),
-        otherwise: Joi.optional().allow(null),
-      })
-      .messages({
-        'string.email': 'Please provide a valid email address',
-        'any.required': 'Email is required for administrator roles',
-      }),
+    email: Joi.string().email().optional().allow(null, '').messages({
+      'string.email': 'Please provide a valid email address',
+    }),
 
-    username: Joi.string()
-      .alphanum()
-      .min(3)
-      .max(100)
-      .when('email', {
-        is: Joi.exist(),
-        then: Joi.optional(),
-        otherwise: Joi.required(),
-      })
-      .messages({
-        'string.alphanum': 'Username must contain only alphanumeric characters',
-        'string.min': 'Username must be at least 3 characters long',
-        'string.max': 'Username cannot exceed 100 characters',
-        'any.required': 'Username is required when email is not provided',
-      }),
+    username: Joi.string().alphanum().min(3).max(100).optional().allow(null, '').messages({
+      'string.alphanum': 'Username must contain only alphanumeric characters',
+      'string.min': 'Username must be at least 3 characters long',
+      'string.max': 'Username cannot exceed 100 characters',
+    }),
 
     password: Joi.string()
       .min(8)
@@ -55,32 +37,26 @@ const userValidationSchemas = {
       'any.required': 'Full name is required',
     }),
 
-    role: Joi.string()
-      .valid(
-        'restaurant_administrator',
-        'location_administrator',
-        'waiter',
-        'food_runner',
-        'kds_operator',
-        'pos_operator'
+    role_location_pairs: Joi.array()
+      .items(
+        Joi.object({
+          role_id: Joi.string().uuid().required(),
+          location_id: Joi.string().uuid().required(),
+        })
       )
+      .min(1)
       .required()
       .messages({
-        'any.only':
-          'Role must be one of: restaurant_administrator, location_administrator, waiter, food_runner, kds_operator, pos_operator',
+        'array.min': 'Role is required',
         'any.required': 'Role is required',
       }),
 
     restaurant_id: Joi.string()
       .guid({ version: ['uuidv4'] })
-      .when('role', {
-        is: 'restaurant_administrator',
-        then: Joi.required(),
-        otherwise: Joi.optional().allow(null),
-      })
+      .optional()
+      .allow(null)
       .messages({
         'string.guid': 'Restaurant ID must be a valid UUID',
-        'any.required': 'Restaurant ID is required for restaurant administrators',
       }),
 
     status: Joi.string()
@@ -89,15 +65,18 @@ const userValidationSchemas = {
       .messages({
         'any.only': 'Status must be one of: pending, active, inactive, suspended',
       }),
+
+    phone: Joi.string().allow(null, ''),
+    whatsapp: Joi.string().allow(null, ''),
   }),
 
   // User update schema
   updateUser: Joi.object({
-    email: Joi.string().email().allow(null).messages({
+    email: Joi.string().email().allow(null, '').messages({
       'string.email': 'Please provide a valid email address',
     }),
 
-    username: Joi.string().alphanum().min(3).max(100).allow(null).messages({
+    username: Joi.string().alphanum().min(3).max(100).allow(null, '').messages({
       'string.alphanum': 'Username must contain only alphanumeric characters',
       'string.min': 'Username must be at least 3 characters long',
       'string.max': 'Username cannot exceed 100 characters',
@@ -236,18 +215,10 @@ const userValidationSchemas = {
     }),
 
     role: Joi.string()
-      .valid(
-        'restaurant_administrator',
-        'location_administrator',
-        'waiter',
-        'food_runner',
-        'kds_operator',
-        'pos_operator'
-      )
+      .guid({ version: ['uuidv4'] })
       .optional()
       .messages({
-        'any.only':
-          'Role filter must be one of: restaurant_administrator, location_administrator, waiter, food_runner, kds_operator, pos_operator',
+        'string.guid': 'Role ID must be a valid UUID',
       }),
 
     status: Joi.string().valid('pending', 'active', 'inactive', 'suspended').optional().messages({
@@ -263,15 +234,36 @@ const userValidationSchemas = {
 
     sort_by: Joi.string()
       .valid('created_at', 'updated_at', 'full_name', 'email', 'username', 'status')
-      .default('created_at')
+      .default('full_name')
       .messages({
         'any.only':
           'Sort by must be one of: created_at, updated_at, full_name, email, username, status',
       }),
 
-    sort_order: Joi.string().valid('asc', 'desc').default('desc').messages({
+    sort_order: Joi.string().valid('asc', 'desc').default('asc').messages({
       'any.only': 'Sort order must be either asc or desc',
     }),
+
+    // Frontend parameter names (for compatibility)
+    sortBy: Joi.string()
+      .valid('created_at', 'updated_at', 'full_name', 'email', 'username', 'status')
+      .optional()
+      .messages({
+        'any.only':
+          'Sort by must be one of: created_at, updated_at, full_name, email, username, status',
+      }),
+
+    sortOrder: Joi.string().valid('asc', 'desc').optional().messages({
+      'any.only': 'Sort order must be either asc or desc',
+    }),
+
+    // Location filter parameter
+    location: Joi.string()
+      .guid({ version: ['uuidv4'] })
+      .optional()
+      .messages({
+        'string.guid': 'Location ID must be a valid UUID',
+      }),
   }),
 
   // UUID parameter schema
@@ -353,21 +345,14 @@ const userValidationSchemas = {
     }),
 
     role: Joi.string()
-      .valid(
-        'restaurant_administrator',
-        'location_administrator',
-        'kitchen_manager',
-        'server',
-        'cook',
-        'cashier',
-        'delivery_driver'
-      )
+      .guid({ version: ['uuidv4'] })
+      .optional()
       .messages({
-        'any.only': 'Role must be a valid user role',
+        'string.guid': 'Role ID must be a valid UUID',
       }),
 
-    status: Joi.string().valid('active', 'inactive', 'suspended').messages({
-      'any.only': 'Status must be one of: active, inactive, suspended',
+    status: Joi.string().valid('active', 'inactive', 'suspended', 'pending').messages({
+      'any.only': 'Status must be one of: active, inactive, suspended, pending',
     }),
 
     search: Joi.string().min(1).max(100).messages({

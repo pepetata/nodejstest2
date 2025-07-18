@@ -18,10 +18,61 @@ const UserDetailsModal = ({ user, roles, locations, onClose, show }) => {
     return role ? role.description || 'Sem descrição disponível' : 'Sem descrição disponível';
   };
 
-  // Helper function to get location name
-  const getLocationName = (locationId) => {
-    const location = locations.find((l) => String(l.id) === String(locationId));
-    return location ? location.name : 'Matriz';
+  // Helper function to get user's role from role_location_pairs
+  const getUserRoleName = (user) => {
+    // First check if there's a display name directly on the user
+    if (user.role_display_name) {
+      return user.role_display_name;
+    }
+
+    // Then check if we have role_location_pairs with role names
+    if (user.role_location_pairs && user.role_location_pairs.length > 0) {
+      const roleNames = user.role_location_pairs
+        .map((pair) => pair.role_name)
+        .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+        .join(', ');
+
+      if (roleNames) {
+        return roleNames;
+      }
+    }
+
+    // Fallback to role lookup by ID
+    return getRoleName(user.role_id);
+  };
+
+  // Helper function to get user's role description
+  const getUserRoleDescription = (user) => {
+    if (user.role_description) {
+      return user.role_description;
+    }
+
+    // Check if we have role_location_pairs with role descriptions
+    if (user.role_location_pairs && user.role_location_pairs.length > 0) {
+      const firstPair = user.role_location_pairs[0];
+      if (firstPair.role_id) {
+        return getRoleDescription(firstPair.role_id);
+      }
+    }
+
+    return getRoleDescription(user.role_id);
+  };
+
+  // Helper function to get user's location from role_location_pairs
+  const getUserLocationNames = (user) => {
+    if (!user.role_location_pairs || user.role_location_pairs.length === 0) {
+      return 'Matriz';
+    }
+
+    const locationNames = user.role_location_pairs
+      .map((pair) => {
+        const location = locations.find((l) => String(l.id) === String(pair.location_id));
+        return location ? location.name : 'Matriz';
+      })
+      .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
+      .join(', ');
+
+    return locationNames || 'Matriz';
   };
 
   // Helper function to format date
@@ -77,7 +128,7 @@ const UserDetailsModal = ({ user, roles, locations, onClose, show }) => {
             </div>
             <div className="user-basic-info">
               <h3 className="user-name">{user.full_name}</h3>
-              <p className="user-email">{user.email}</p>
+              <p className="user-email">{user.email || 'Email não informado'}</p>
               <div className="user-status">
                 <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>
               </div>
@@ -95,15 +146,15 @@ const UserDetailsModal = ({ user, roles, locations, onClose, show }) => {
             <div className="detail-card">
               <div className="detail-content">
                 <h4>Perfil</h4>
-                <p>{user.role_display_name || getRoleName(user.role_id)}</p>
-                <small>{user.role_description || getRoleDescription(user.role_id)}</small>
+                <p>{getUserRoleName(user)}</p>
+                <small>{getUserRoleDescription(user)}</small>
               </div>
             </div>
 
             <div className="detail-card">
               <div className="detail-content">
                 <h4>Localização</h4>
-                <p>{getLocationName(user.location_id)}</p>
+                <p>{getUserLocationNames(user)}</p>
               </div>
             </div>
 
@@ -153,19 +204,27 @@ UserDetailsModal.propTypes = {
   user: PropTypes.shape({
     id: PropTypes.string.isRequired,
     full_name: PropTypes.string.isRequired,
-    email: PropTypes.string.isRequired,
+    email: PropTypes.string, // Email can be null, not required
     username: PropTypes.string,
     role_id: PropTypes.string,
     role_display_name: PropTypes.string,
     role_description: PropTypes.string,
     location_id: PropTypes.string,
+    role_location_pairs: PropTypes.arrayOf(
+      PropTypes.shape({
+        role_id: PropTypes.string,
+        location_id: PropTypes.string,
+        role_name: PropTypes.string,
+        location_name: PropTypes.string,
+      })
+    ),
     status: PropTypes.string.isRequired,
     is_admin: PropTypes.bool,
     profile_picture: PropTypes.string,
     created_at: PropTypes.string,
     created_by_name: PropTypes.string,
     last_login: PropTypes.string,
-  }),
+  }).isRequired, // The user object itself is required
   roles: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,

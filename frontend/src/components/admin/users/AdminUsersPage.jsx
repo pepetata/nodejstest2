@@ -47,9 +47,12 @@ const AdminUsersPage = () => {
   // State for filters
   const [filters, setFilters] = useState({
     search: '',
-    role_id: '',
-    location_id: '',
-    is_active: '',
+    role: '',
+    location: '',
+    status: '',
+    is_admin: '',
+    sortBy: 'full_name',
+    sortOrder: 'asc',
     page: 1,
     limit: 10,
   });
@@ -93,7 +96,7 @@ const AdminUsersPage = () => {
       const stats = users.reduce(
         (acc, user) => {
           acc.total++;
-          if (user.is_active) acc.active++;
+          if (user.status === 'active') acc.active++;
           else acc.inactive++;
           if (user.is_admin) acc.admins++;
           return acc;

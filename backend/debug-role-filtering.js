@@ -1,84 +1,100 @@
-// Test to check current user structure and role filtering
-console.log('=== Debugging Current User and Role Filtering ===');
+// Debug the role filtering issue
+const fetch = require('node-fetch');
 
-// Simulate the current user structure based on backend logs
-const currentUser = {
-  role: 'restaurant_administrator',
-  role_name: 'restaurant_administrator', // This might be different
-  is_admin: true,
-};
+async function debugRoleFiltering() {
+  try {
+    // Login first
+    const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'flavio_luiz_ferreira_chain@hotmail.com',
+        password: '12345678',
+      }),
+    });
 
-// Simulate roles from database
-const roles = [
-  { id: 'aeb91604-e30b-4fa4-b36c-d96ad7327f50', name: 'restaurant_administrator' },
-  { id: 'def91604-e30b-4fa4-b36c-d96ad7327f51', name: 'location_administrator' },
-  { id: '123456789-e30b-4fa4-b36c-d96ad7327f52', name: 'waiter' },
-  { id: '987654321-e30b-4fa4-b36c-d96ad7327f53', name: 'manager' },
-];
+    const loginData = await loginResponse.json();
+    const token = loginData.token;
+    const headers = { Authorization: `Bearer ${token}` };
 
-// Test the filtering logic
-function getAvailableRoles(currentPairIndex = null) {
-  let availableRoles = [];
+    // Get roles data
+    const rolesResponse = await fetch('http://localhost:5000/api/v1/users/roles', { headers });
+    const rolesData = await rolesResponse.json();
+    const allRoles = rolesData.data || rolesData;
 
-  console.log('Current user:', currentUser);
-  console.log('Current user role_name:', currentUser.role_name);
-  console.log('Current user role:', currentUser.role);
+    console.log('=== ALL AVAILABLE ROLES ===');
+    allRoles.forEach((role, index) => {
+      console.log(
+        `${index + 1}. Role ID: ${role.id}, Name: ${role.name}, Display: ${role.display_name}`
+      );
+    });
 
-  // If current user is superadmin, show all roles except superadmin
-  if (currentUser.role_name === 'superadmin') {
-    availableRoles = roles.filter((role) => role.name !== 'superadmin');
-  }
-  // If current user is restaurant_administrator, show restaurant_administrator and below
-  else if (currentUser.role_name === 'restaurant_administrator') {
-    availableRoles = roles.filter((role) => role.name !== 'superadmin');
-    console.log('✅ Matched restaurant_administrator condition');
-  }
-  // For other roles, show only roles below their level
-  else {
-    availableRoles = roles.filter(
-      (role) => role.name !== 'superadmin' && role.name !== 'restaurant_administrator'
+    // Get users data
+    const usersResponse = await fetch('http://localhost:5000/api/v1/users', { headers });
+    const usersData = await usersResponse.json();
+    const targetUser = usersData.data?.find(
+      (user) => user.id === 'be833b40-af07-4f51-8be0-761eb7c0e64d'
     );
-    console.log('❌ Fell through to other roles condition');
+
+    console.log('\n=== USER ROLE ASSIGNMENTS ===');
+    targetUser.role_location_pairs.forEach((pair, index) => {
+      console.log(`${index + 1}. Role ID: ${pair.role_id}, Role Name: ${pair.role_name}`);
+    });
+
+    // Process the data like the frontend does
+    const processedRoles = targetUser.role_location_pairs.reduce((acc, pair) => {
+      const existingRole = acc.find((item) => item.role_id === pair.role_id?.toString());
+      if (existingRole) {
+        existingRole.location_ids.push(pair.location_id?.toString());
+      } else {
+        acc.push({
+          role_id: pair.role_id?.toString() || '',
+          location_ids: [pair.location_id?.toString() || ''],
+        });
+      }
+      return acc;
+    }, []);
+
+    console.log('\n=== PROCESSED ROLE GROUPS ===');
+    processedRoles.forEach((group, index) => {
+      const matchingRole = allRoles.find((r) => r.id === group.role_id);
+      console.log(`Perfil ${index + 1}:`);
+      console.log(`  Role ID: ${group.role_id}`);
+      console.log(`  Role Name: ${matchingRole?.name || 'NOT FOUND'}`);
+      console.log(`  Display Name: ${matchingRole?.display_name || 'NOT FOUND'}`);
+      console.log(`  Location IDs: ${group.location_ids.join(', ')}`);
+    });
+
+    // Simulate getAvailableRoles for each role group
+    console.log('\n=== AVAILABLE ROLES FOR EACH GROUP ===');
+    processedRoles.forEach((group, index) => {
+      console.log(
+        `\nFor Perfil ${index + 1} (current role: ${allRoles.find((r) => r.id === group.role_id)?.name}):`
+      );
+
+      // Filter roles like the frontend does
+      const currentUserRole = 'restaurant_administrator'; // From auth
+      let availableRoles = [];
+
+      if (currentUserRole === 'restaurant_administrator') {
+        availableRoles = allRoles.filter((role) => role.name !== 'superadmin');
+      }
+
+      // Filter out already selected roles (except current)
+      const selectedRoleIds = processedRoles
+        .map((pair, pairIndex) => (pairIndex !== index ? pair.role_id : null))
+        .filter(Boolean);
+
+      const finalRoles = availableRoles.filter((role) => !selectedRoleIds.includes(role.id));
+
+      console.log(`  Available roles: ${finalRoles.map((r) => r.name).join(', ')}`);
+      console.log(
+        `  Selected roles to exclude: ${selectedRoleIds.map((id) => allRoles.find((r) => r.id === id)?.name).join(', ')}`
+      );
+    });
+  } catch (error) {
+    console.error('Error:', error.message);
   }
-
-  console.log('Available roles after permission filtering:', availableRoles);
-
-  // Filter out already selected roles (except for the current role being edited)
-  const formData = {
-    role_location_pairs: [
-      { role_id: 'aeb91604-e30b-4fa4-b36c-d96ad7327f50', location_ids: ['loc1', 'loc2'] },
-    ],
-  };
-
-  const selectedRoleIds = formData.role_location_pairs
-    .map((pair, index) => (index !== currentPairIndex ? pair.role_id : null))
-    .filter(Boolean);
-
-  console.log('Selected role IDs to exclude:', selectedRoleIds);
-  console.log('Current pair index:', currentPairIndex);
-
-  const finalRoles = availableRoles.filter((role) => !selectedRoleIds.includes(role.id));
-  console.log('Final available roles:', finalRoles);
-
-  return finalRoles;
 }
 
-// Test for editing existing role (index 0)
-console.log('\n=== Testing for editing existing role (index 0) ===');
-const rolesForEdit = getAvailableRoles(0);
-console.log(
-  'Roles available for editing:',
-  rolesForEdit.map((r) => r.name)
-);
-
-// Test for adding new role
-console.log('\n=== Testing for adding new role ===');
-const rolesForNew = getAvailableRoles();
-console.log(
-  'Roles available for new role:',
-  rolesForNew.map((r) => r.name)
-);
-
-// Check if restaurant_administrator is available
-const hasRestaurantAdmin = rolesForEdit.some((r) => r.name === 'restaurant_administrator');
-console.log('Restaurant administrator available for editing:', hasRestaurantAdmin);
+debugRoleFiltering();

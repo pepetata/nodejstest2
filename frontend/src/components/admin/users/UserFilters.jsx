@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { FaSearch, FaTimes, FaSlidersH, FaFilter } from 'react-icons/fa';
+import { FaSearch, FaTimes, FaSlidersH } from 'react-icons/fa';
 
 const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => {
   const [localFilters, setLocalFilters] = useState({
@@ -8,8 +8,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
     status: '',
     role: '',
     location: '',
-    is_admin: '',
-    sortBy: 'name',
+    sortBy: 'full_name',
     sortOrder: 'asc',
     ...filters,
   });
@@ -54,8 +53,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
       status: '',
       role: '',
       location: '',
-      is_admin: '',
-      sortBy: 'name',
+      sortBy: 'full_name',
       sortOrder: 'asc',
       page: 1,
     };
@@ -65,13 +63,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
 
   // Check if any filters are active
   const hasActiveFilters = () => {
-    return (
-      localFilters.search ||
-      localFilters.status ||
-      localFilters.role ||
-      localFilters.location ||
-      localFilters.is_admin
-    );
+    return localFilters.search || localFilters.status || localFilters.role || localFilters.location;
   };
 
   return (
@@ -112,6 +104,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             <option value="">Todos os Status</option>
             <option value="active">Apenas Ativos</option>
             <option value="inactive">Apenas Inativos</option>
+            <option value="suspended">Suspensos</option>
           </select>
 
           <select
@@ -121,22 +114,13 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             disabled={loading}
           >
             <option value="">Todos os Perfis</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="form-control"
-            value={localFilters.is_admin}
-            onChange={(e) => handleFilterChange('is_admin', e.target.value)}
-            disabled={loading}
-          >
-            <option value="">Tipo de Usuário</option>
-            <option value="true">Apenas Admins</option>
-            <option value="false">Usuários Comuns</option>
+            {roles
+              .filter((role) => role.role_name !== 'superadmin') // Exclude superadmin role
+              .map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.role_display_name || role.display_name || role.name}
+                </option>
+              ))}
           </select>
         </div>
 
@@ -196,7 +180,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
                 onChange={(e) => handleFilterChange('sortBy', e.target.value)}
                 disabled={loading}
               >
-                <option value="name">Nome</option>
+                <option value="full_name">Nome</option>
                 <option value="email">Email</option>
                 <option value="created_at">Data de Criação</option>
                 <option value="last_login">Último Acesso</option>
@@ -235,7 +219,16 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             )}
             {localFilters.status && (
               <span className="filter-tag">
-                Status: {localFilters.status === 'active' ? 'Ativo' : 'Inativo'}
+                Status:{' '}
+                {localFilters.status === 'active'
+                  ? 'Ativo'
+                  : localFilters.status === 'inactive'
+                    ? 'Inativo'
+                    : localFilters.status === 'pending'
+                      ? 'Pendente'
+                      : localFilters.status === 'suspended'
+                        ? 'Suspenso'
+                        : localFilters.status}
                 <button onClick={() => handleFilterChange('status', '')}>
                   <FaTimes />
                 </button>
@@ -243,7 +236,11 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             )}
             {localFilters.role && (
               <span className="filter-tag">
-                Perfil: {roles.find((r) => r.id === parseInt(localFilters.role))?.name}
+                Perfil:{' '}
+                {roles.find((r) => String(r.id) === String(localFilters.role))?.role_display_name ||
+                  roles.find((r) => String(r.id) === String(localFilters.role))?.display_name ||
+                  roles.find((r) => String(r.id) === String(localFilters.role))?.name ||
+                  'Desconhecido'}
                 <button onClick={() => handleFilterChange('role', '')}>
                   <FaTimes />
                 </button>
@@ -253,14 +250,6 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
               <span className="filter-tag">
                 Localização: {locations.find((l) => l.id === parseInt(localFilters.location))?.name}
                 <button onClick={() => handleFilterChange('location', '')}>
-                  <FaTimes />
-                </button>
-              </span>
-            )}
-            {localFilters.is_admin && (
-              <span className="filter-tag">
-                Tipo: {localFilters.is_admin === 'true' ? 'Admin' : 'Usuário Comum'}
-                <button onClick={() => handleFilterChange('is_admin', '')}>
                   <FaTimes />
                 </button>
               </span>
@@ -278,7 +267,6 @@ UserFilters.propTypes = {
     status: PropTypes.string,
     role: PropTypes.string,
     location: PropTypes.string,
-    is_admin: PropTypes.string,
     sortBy: PropTypes.string,
     sortOrder: PropTypes.string,
     page: PropTypes.number,
