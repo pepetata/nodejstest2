@@ -299,6 +299,136 @@
   }
 }
 
+// Enhanced Role-Location Display Styles
+.roles-locations-section {
+  margin-top: 24px;
+  padding: 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+
+  h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &::before {
+      content: '👥';
+      font-size: 20px;
+    }
+  }
+
+  .role-location-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .role-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #e67e22;
+      box-shadow: 0 4px 12px rgba(230, 126, 34, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .role-header {
+      margin-bottom: 16px;
+
+      .role-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #e67e22;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        &::before {
+          content: '🔐';
+          font-size: 16px;
+        }
+      }
+
+      .role-description {
+        font-size: 14px;
+        color: #718096;
+        margin: 0;
+        font-style: italic;
+        line-height: 1.4;
+      }
+    }
+
+    .role-locations {
+      .locations-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #4a5568;
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .location-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .location-tag {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 6px 12px;
+          border-radius: 20px;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+          transition: all 0.2s ease;
+
+          &::before {
+            content: '📍';
+            font-size: 10px;
+          }
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+          }
+        }
+      }
+    }
+  }
+
+  .no-roles-message {
+    text-align: center;
+    padding: 32px;
+    color: #718096;
+    font-style: italic;
+
+    p {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    &::before {
+      content: '⚠️';
+      display: block;
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+  }
+}
+
 // Responsive Design
 @media (max-width: 768px) {
   .user-details-modal {
@@ -346,6 +476,24 @@
 
       .detail-card {
         padding: 24px;
+      }
+    }
+
+    .roles-locations-section {
+      margin-top: 20px;
+      padding: 20px;
+
+      .role-card {
+        padding: 16px;
+
+        .role-locations {
+          .location-tags {
+            .location-tag {
+              font-size: 11px;
+              padding: 4px 10px;
+            }
+          }
+        }
       }
     }
   }

@@ -355,6 +355,68 @@ class UserModel extends BaseModel {
   }
 
   /**
+   * Find user by ID with creator name
+   */
+  async findByIdWithCreator(id) {
+    this.logger.debug('Finding user by ID with creator name', { user_id: id });
+    try {
+      let query, values;
+
+      if (this.isValidUuid(id)) {
+        const { sanitizedUuid } = this.validateUuid(id);
+        query = `
+          SELECT
+            u.*,
+            creator.full_name AS created_by_name
+          FROM users u
+          LEFT JOIN users creator ON u.created_by = creator.id
+          WHERE u.id = $1
+          LIMIT 1
+        `;
+        values = [sanitizedUuid];
+      } else if (/^\d+$/.test(id)) {
+        query = `
+          SELECT
+            u.*,
+            creator.full_name AS created_by_name
+          FROM users u
+          LEFT JOIN users creator ON u.created_by = creator.id
+          WHERE u.id = $1
+          LIMIT 1
+        `;
+        values = [Number(id)];
+      } else {
+        throw new Error('Formato de ID de usuário inválido. Deve ser um UUID ou número.');
+      }
+
+      const result = await this.executeQuery(query, values);
+      
+      console.log('=== findByIdWithCreator Debug ===');
+      console.log('Query:', query);
+      console.log('Values:', values);
+      console.log('Result rows:', result.rows?.length);
+      if (result.rows?.length > 0) {
+        console.log('User data:', result.rows[0]);
+        console.log('created_by_name value:', result.rows[0].created_by_name);
+      }
+      console.log('=====================================');
+
+      if (result.rows && result.rows.length > 0) {
+        const user = result.rows[0];
+        return this.sanitizeOutput(user, this.sensitiveFields);
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.error('Failed to find user by ID with creator', {
+        user_id: id,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Find user by ID with restaurant data (for authentication)
    */
   async findByIdWithRestaurant(id) {
@@ -835,9 +897,11 @@ class UserModel extends BaseModel {
         SELECT DISTINCT
           u.*,
           r.restaurant_name,
-          r.restaurant_url_name
+          r.restaurant_url_name,
+          creator.full_name AS created_by_name
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
+        LEFT JOIN users creator ON u.created_by = creator.id
         LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_active = true
         LEFT JOIN roles ro ON ur.role_id = ro.id
       `;
@@ -847,6 +911,7 @@ class UserModel extends BaseModel {
         SELECT COUNT(DISTINCT u.id) as total
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
+        LEFT JOIN users creator ON u.created_by = creator.id
         LEFT JOIN user_roles ur ON u.id = ur.user_id AND ur.is_active = true
         LEFT JOIN roles ro ON ur.role_id = ro.id
       `;

@@ -1,78 +1,69 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FaTimes, FaCheck } from 'react-icons/fa';
 import '../../../styles/admin/users/userDetailsModal.scss';
 
-const UserDetailsModal = ({ user, roles, locations, onClose, show }) => {
-  if (!show || !user) return null;
+const UserDetailsModal = ({ user, onClose, roles = [], locations = [] }) => {
+  // Debug: Log user data to check created_by_name field
+  useEffect(() => {
+    console.log('=== UserDetailsModal Debug ===');
+    console.log('User data received:', user);
+    console.log('created_by field:', user?.created_by);
+    console.log('created_by_name field:', user?.created_by_name);
+    console.log('================================');
+  }, [user]);
 
-  // Helper function to get role name
-  const getRoleName = (roleId) => {
-    const role = roles.find((r) => String(r.id) === String(roleId));
-    return role ? role.display_name || role.name : 'N/A';
-  };
+  if (!user) {
+    return null;
+  }
 
-  // Helper function to get role description
-  const getRoleDescription = (roleId) => {
-    const role = roles.find((r) => String(r.id) === String(roleId));
-    return role ? role.description || 'Sem descrição disponível' : 'Sem descrição disponível';
-  };
-
-  // Helper function to get user's role from role_location_pairs
-  const getUserRoleName = (user) => {
-    // First check if there's a display name directly on the user
-    if (user.role_display_name) {
-      return user.role_display_name;
-    }
-
-    // Then check if we have role_location_pairs with role names
-    if (user.role_location_pairs && user.role_location_pairs.length > 0) {
-      const roleNames = user.role_location_pairs
-        .map((pair) => pair.role_name)
-        .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
-        .join(', ');
-
-      if (roleNames) {
-        return roleNames;
-      }
-    }
-
-    // Fallback to role lookup by ID
-    return getRoleName(user.role_id);
-  };
-
-  // Helper function to get user's role description
-  const getUserRoleDescription = (user) => {
-    if (user.role_description) {
-      return user.role_description;
-    }
-
-    // Check if we have role_location_pairs with role descriptions
-    if (user.role_location_pairs && user.role_location_pairs.length > 0) {
-      const firstPair = user.role_location_pairs[0];
-      if (firstPair.role_id) {
-        return getRoleDescription(firstPair.role_id);
-      }
-    }
-
-    return getRoleDescription(user.role_id);
-  };
-
-  // Helper function to get user's location from role_location_pairs
-  const getUserLocationNames = (user) => {
+  // Helper function to get grouped role-location data
+  const getGroupedRoleLocations = (user) => {
     if (!user.role_location_pairs || user.role_location_pairs.length === 0) {
-      return 'Matriz';
+      return [];
     }
 
-    const locationNames = user.role_location_pairs
-      .map((pair) => {
-        const location = locations.find((l) => String(l.id) === String(pair.location_id));
-        return location ? location.name : 'Matriz';
-      })
-      .filter((name, index, self) => self.indexOf(name) === index) // Remove duplicates
-      .join(', ');
+    // Group by role_id and collect locations
+    const grouped = user.role_location_pairs.reduce((acc, pair) => {
+      const existingRole = acc.find((item) => item.role_id === pair.role_id);
 
-    return locationNames || 'Matriz';
+      if (existingRole) {
+        // Add location to existing role if not already present
+        if (!existingRole.locations.find((loc) => loc.id === pair.location_id)) {
+          const location = locations.find((l) => String(l.id) === String(pair.location_id));
+          if (location) {
+            existingRole.locations.push({
+              id: pair.location_id,
+              name: location.name,
+            });
+          }
+        }
+      } else {
+        // Create new role entry
+        const role = roles.find((r) => String(r.id) === String(pair.role_id));
+        const location = locations.find((l) => String(l.id) === String(pair.location_id));
+
+        if (role) {
+          acc.push({
+            role_id: pair.role_id,
+            role_name: role.display_name || role.name,
+            role_description: role.description || 'Sem descrição disponível',
+            locations: location
+              ? [
+                  {
+                    id: pair.location_id,
+                    name: location.name,
+                  },
+                ]
+              : [],
+          });
+        }
+      }
+
+      return acc;
+    }, []);
+
+    return grouped;
   };
 
   // Helper function to format date
@@ -145,21 +136,6 @@ const UserDetailsModal = ({ user, roles, locations, onClose, show }) => {
 
             <div className="detail-card">
               <div className="detail-content">
-                <h4>Perfil</h4>
-                <p>{getUserRoleName(user)}</p>
-                <small>{getUserRoleDescription(user)}</small>
-              </div>
-            </div>
-
-            <div className="detail-card">
-              <div className="detail-content">
-                <h4>Localização</h4>
-                <p>{getUserLocationNames(user)}</p>
-              </div>
-            </div>
-
-            <div className="detail-card">
-              <div className="detail-content">
                 <h4>Data de Criação</h4>
                 <p>{formatDate(user.created_at)}</p>
               </div>
@@ -178,6 +154,37 @@ const UserDetailsModal = ({ user, roles, locations, onClose, show }) => {
                 <p>{formatDate(user.last_login) || 'Nunca logou'}</p>
               </div>
             </div>
+          </div>
+
+          {/* Enhanced Role-Location Display */}
+          <div className="roles-locations-section">
+            <h4>Perfis e Localizações</h4>
+            {getGroupedRoleLocations(user).length > 0 ? (
+              <div className="role-location-list">
+                {getGroupedRoleLocations(user).map((roleGroup) => (
+                  <div key={roleGroup.role_id} className="role-card">
+                    <div className="role-header">
+                      <h5 className="role-name">{roleGroup.role_name}</h5>
+                      <p className="role-description">{roleGroup.role_description}</p>
+                    </div>
+                    <div className="role-locations">
+                      <span className="locations-label">Localizações:</span>
+                      <div className="location-tags">
+                        {roleGroup.locations.map((location) => (
+                          <span key={location.id} className="location-tag">
+                            {location.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-roles-message">
+                <p>Nenhum perfil atribuído</p>
+              </div>
+            )}
           </div>
 
           {user.is_admin && (
@@ -222,6 +229,7 @@ UserDetailsModal.propTypes = {
     is_admin: PropTypes.bool,
     profile_picture: PropTypes.string,
     created_at: PropTypes.string,
+    created_by: PropTypes.string,
     created_by_name: PropTypes.string,
     last_login: PropTypes.string,
   }).isRequired, // The user object itself is required

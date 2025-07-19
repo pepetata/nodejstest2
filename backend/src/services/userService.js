@@ -311,7 +311,7 @@ class UserService {
     this.logger.debug('Fetching user by ID', logMeta);
 
     try {
-      const user = await this.userModel.findById(userId);
+      const user = await this.userModel.findByIdWithCreator(userId);
 
       if (!user) {
         this.logger.warn('User not found', { ...logMeta, userId });
@@ -340,6 +340,7 @@ class UserService {
         role: user.role,
         status: user.status,
         roleLocationPairsCount: user.role_location_pairs?.length || 0,
+        hasCreatorName: !!user.created_by_name,
       });
 
       return user;
