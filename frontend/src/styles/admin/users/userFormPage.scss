@@ -488,4 +488,31 @@
     margin-bottom: 0.5rem;
     display: block;
   }
+
+  // Placeholder styling - italic font with blue color
+  .form-control {
+    &::placeholder {
+      font-style: italic;
+      color: #007bff;
+      opacity: 0.8;
+    }
+
+    &::-webkit-input-placeholder {
+      font-style: italic;
+      color: #007bff;
+      opacity: 0.8;
+    }
+
+    &::-moz-placeholder {
+      font-style: italic;
+      color: #007bff;
+      opacity: 0.8;
+    }
+
+    &:-ms-input-placeholder {
+      font-style: italic;
+      color: #007bff;
+      opacity: 0.8;
+    }
+  }
 }

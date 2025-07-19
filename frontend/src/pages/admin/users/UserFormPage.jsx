@@ -320,6 +320,11 @@ const UserFormPage = () => {
       }
     }
 
+    // At least one of email or username is required
+    if (!formData.email.trim() && !formData.username.trim()) {
+      newErrors.emailOrUsername = 'É necessário fornecer pelo menos um e-mail ou nome de usuário';
+    }
+
     // Password validation (only for new users or when changing password)
     if (!isEditing || formData.password) {
       if (!formData.password) {
@@ -359,7 +364,15 @@ const UserFormPage = () => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    const hasErrors = Object.keys(newErrors).length > 0;
+
+    // Scroll to top if there are validation errors
+    if (hasErrors) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    return !hasErrors;
   };
 
   // Handle form submission
@@ -524,6 +537,16 @@ const UserFormPage = () => {
                   </small>
                 </div>
               </div>
+
+              {/* Email OR Username validation error */}
+              {errors.emailOrUsername && (
+                <div className="form-group">
+                  <div className="alert alert-danger d-flex align-items-center">
+                    <FaExclamationTriangle className="me-2" />
+                    <span>{errors.emailOrUsername}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="form-row">
                 <div className="form-group">

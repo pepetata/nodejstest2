@@ -144,7 +144,21 @@ class UserModel extends BaseModel {
       first_login_password_change: Joi.boolean().default(true),
       phone: Joi.string().allow(null, ''),
       whatsapp: Joi.string().allow(null, ''),
-    });
+    })
+      .custom((value, helpers) => {
+        // Ensure at least one of email or username is provided
+        const hasEmail = value.email && value.email.trim() !== '';
+        const hasUsername = value.username && value.username.trim() !== '';
+
+        if (!hasEmail && !hasUsername) {
+          return helpers.error('custom.usernameOrEmail');
+        }
+
+        return value;
+      })
+      .messages({
+        'custom.usernameOrEmail': 'É necessário fornecer pelo menos um e-mail ou nome de usuário',
+      });
   }
 
   /**
@@ -152,7 +166,7 @@ class UserModel extends BaseModel {
    */
   get updateSchema() {
     return Joi.object({
-      email: Joi.string().email().allow(null),
+      email: Joi.string().email().allow(null, ''),
       username: Joi.string().alphanum().min(3).max(100).allow(null),
       full_name: Joi.string().trim().min(2).max(255),
       restaurant_id: Joi.string().guid().allow(null),
@@ -619,6 +633,21 @@ class UserModel extends BaseModel {
         if (existingUsername) {
           throw new Error('Nome de usuário já cadastrado');
         }
+      }
+
+      // Ensure user will still have at least one of email or username after update
+      const finalEmail = validatedData.hasOwnProperty('email')
+        ? validatedData.email
+        : currentUser.email;
+      const finalUsername = validatedData.hasOwnProperty('username')
+        ? validatedData.username
+        : currentUser.username;
+
+      const hasEmail = finalEmail && finalEmail.trim() !== '';
+      const hasUsername = finalUsername && finalUsername.trim() !== '';
+
+      if (!hasEmail && !hasUsername) {
+        throw new Error('É necessário manter pelo menos um e-mail ou nome de usuário');
       }
 
       // Validate restaurant exists if restaurant_id provided

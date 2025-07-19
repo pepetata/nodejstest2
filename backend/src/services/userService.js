@@ -190,11 +190,17 @@ class UserService {
         userData.username = null;
       }
 
-      // Generate username if neither email nor username is provided (database constraint requires one or the other)
+      // Ensure at least one of email or username is provided (database constraint requires one or the other)
       if (!userData.email && !userData.username) {
+        // Generate username automatically if neither email nor username is provided
         const nameBase = userData.full_name.toLowerCase().replace(/[^a-z0-9]/g, '');
         const timestamp = Date.now().toString().slice(-6);
         userData.username = `${nameBase}${timestamp}`;
+
+        this.logger.info('Auto-generated username for user', {
+          ...logMeta,
+          generatedUsername: userData.username,
+        });
       }
 
       // Set status to active for admin created users, pending for registration users
@@ -629,6 +635,22 @@ class UserService {
       const roleLocationPairs = updateData.role_location_pairs;
       const userFieldsToUpdate = { ...updateData };
       delete userFieldsToUpdate.role_location_pairs;
+
+      // Convert empty email to null to avoid database constraint issues
+      if (
+        userFieldsToUpdate.email !== undefined &&
+        (!userFieldsToUpdate.email || userFieldsToUpdate.email.trim() === '')
+      ) {
+        userFieldsToUpdate.email = null;
+      }
+
+      // Convert empty username to null to avoid database constraint issues
+      if (
+        userFieldsToUpdate.username !== undefined &&
+        (!userFieldsToUpdate.username || userFieldsToUpdate.username.trim() === '')
+      ) {
+        userFieldsToUpdate.username = null;
+      }
 
       // Update basic user fields
       const updatedUser = await this.userModel.update(userId, userFieldsToUpdate);
