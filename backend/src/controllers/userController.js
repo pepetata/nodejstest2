@@ -221,6 +221,13 @@ class UserController {
         role: user.role,
       });
 
+      controllerLogger.info('🔍 Sending user to frontend:', {
+        userId: user.id,
+        hasRoleLocationPairs: !!user.role_location_pairs,
+        roleLocationPairsCount: user.role_location_pairs?.length || 0,
+        roleLocationPairs: user.role_location_pairs,
+      });
+
       return res.status(200).json(ResponseFormatter.success(user, 'User retrieved successfully'));
     } catch (error) {
       if (error.statusCode === 403) {

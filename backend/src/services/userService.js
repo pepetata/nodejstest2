@@ -322,11 +322,24 @@ class UserService {
       // Check if current user can access this user's data
       await this.validateUserAccess(user, currentUser);
 
+      // Add role_location_pairs to the user
+      try {
+        const roleLocationPairs = await this.getUserRoleLocationPairs(user.id);
+        user.role_location_pairs = roleLocationPairs;
+      } catch (error) {
+        this.logger.warn('Failed to get role-location pairs for user', {
+          userId: user.id,
+          error: error.message,
+        });
+        user.role_location_pairs = [];
+      }
+
       this.logger.debug('User retrieved successfully', {
         ...logMeta,
         targetUserId: user.id,
         role: user.role,
         status: user.status,
+        roleLocationPairsCount: user.role_location_pairs?.length || 0,
       });
 
       return user;
@@ -384,14 +397,13 @@ class UserService {
       const query = `
         SELECT DISTINCT
           ur.role_id,
-          ula.location_id,
+          ur.location_id,
           r.name as role_name,
           r.display_name as role_display_name,
           rl.name as location_name
         FROM user_roles ur
-        JOIN user_location_assignments ula ON ur.user_id = ula.user_id
         JOIN roles r ON ur.role_id = r.id
-        JOIN restaurant_locations rl ON ula.location_id = rl.id
+        LEFT JOIN restaurant_locations rl ON ur.location_id = rl.id
         WHERE ur.user_id = $1 AND ur.is_active = true
         ORDER BY r.name, rl.name
       `;

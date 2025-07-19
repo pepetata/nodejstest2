@@ -15,10 +15,9 @@ import {
 import {
   createUser,
   updateUser,
-  fetchUsers,
+  fetchUserById,
   fetchRoles,
   fetchLocations,
-  selectUsers,
   selectRoles,
   selectLocations,
 } from '../../../store/usersSlice';
@@ -30,7 +29,6 @@ const UserFormPage = () => {
   const { id } = useParams();
   const isEditing = !!id;
 
-  const users = useSelector(selectUsers);
   const roles = useSelector(selectRoles);
   const locations = useSelector(selectLocations);
   const currentUser = useSelector((state) => state.auth.user);
@@ -138,22 +136,19 @@ const UserFormPage = () => {
     if (!locations.length) {
       dispatch(fetchLocations());
     }
-
-    // Always fetch users if we're in edit mode and don't have users loaded
-    if (isEditing && users.length === 0) {
-      dispatch(fetchUsers());
-    }
-  }, [roles.length, locations.length, dispatch, isEditing, users.length]);
+  }, [roles.length, locations.length, dispatch]);
 
   // Separate useEffect for loading user data to avoid infinite loops
   useEffect(() => {
-    if (isEditing && id && roles.length > 0 && users.length > 0) {
-      // Try to find user by both string and integer ID
-      const foundUser = users.find((u) => u.id === id || u.id === parseInt(id));
+    if (isEditing && id && roles.length > 0) {
+      // Use fetchUserById instead of relying on users array
+      dispatch(fetchUserById(id))
+        .unwrap()
+        .then((response) => {
+          // Extract the actual user data from the API response
+          const foundUser = response.data;
+          setUser(foundUser);
 
-      if (foundUser) {
-        setUser(foundUser);
-        if (foundUser) {
           const processedRoles =
             foundUser.role_location_pairs?.length > 0
               ? foundUser.role_location_pairs.reduce((acc, pair) => {
@@ -173,10 +168,6 @@ const UserFormPage = () => {
                 }, [])
               : [{ role_id: '', location_ids: [] }];
 
-          console.log('🔍 UserFormPage: Setting form data for user:', foundUser.id);
-          console.log('🔍 UserFormPage: Roles available:', roles.length);
-          console.log('🔍 UserFormPage: Processed role pairs:', processedRoles);
-
           const newFormData = {
             name: foundUser.full_name || '',
             email: foundUser.email || '',
@@ -190,14 +181,13 @@ const UserFormPage = () => {
             is_admin: foundUser.is_admin ?? false,
           };
 
-          console.log('🔍 UserFormPage: Final form data:', newFormData);
-          console.log('🔍 UserFormPage: Role pairs in form data:', newFormData.role_location_pairs);
-
           setFormData(newFormData);
-        }
-      }
+        })
+        .catch((error) => {
+          setErrors({ submit: 'Erro ao carregar dados do usuário: ' + error });
+        });
     }
-  }, [isEditing, id, users, roles, dispatch]);
+  }, [isEditing, id, roles.length, dispatch]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -684,16 +674,6 @@ const UserFormPage = () => {
                         value={pair.role_id}
                         onChange={(e) => updateRoleLocationPair(index, 'role_id', e.target.value)}
                         disabled={loading}
-                        onFocus={() => {
-                          console.log(`🔍 Dropdown ${index + 1} focused:`, {
-                            currentValue: pair.role_id,
-                            availableRoles: getAvailableRoles(index).map((r) => ({
-                              id: r.id,
-                              name: r.name,
-                            })),
-                            allRoles: roles.map((r) => ({ id: r.id, name: r.name })),
-                          });
-                        }}
                       >
                         <option value="">Selecione um perfil</option>
                         {getAvailableRoles(index).map((role) => (
