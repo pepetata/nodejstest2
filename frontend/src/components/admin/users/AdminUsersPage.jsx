@@ -153,9 +153,9 @@ const AdminUsersPage = () => {
     }
   };
 
-  const handleToggleStatus = async (user) => {
+  const handleToggleStatus = async (userId, currentStatus) => {
     try {
-      await dispatch(toggleUserStatus(user.id)).unwrap();
+      await dispatch(toggleUserStatus({ userId, status: !currentStatus })).unwrap();
       // Refresh users list
       dispatch(fetchUsers(filters));
     } catch (error) {

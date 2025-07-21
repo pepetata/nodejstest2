@@ -230,7 +230,7 @@ const UserTable = ({
                     </div>
                   </div>
                 </td>
-                <td>{user.email}</td>
+                <td>{user.email || user.username || '-'}</td>
                 <td>
                   <span className="role-badge" title={getUserRoleDescription(user)}>
                     {getUserRoleName(user)}
@@ -308,7 +308,7 @@ UserTable.propTypes = {
     PropTypes.shape({
       id: PropTypes.string.isRequired, // UUIDs are strings
       full_name: PropTypes.string.isRequired,
-      email: PropTypes.string.isRequired,
+      email: PropTypes.string, // Optional - users can have email or username
       username: PropTypes.string,
       role_id: PropTypes.string, // Role IDs are also UUIDs (strings)
       location_id: PropTypes.string, // Location IDs are also UUIDs (strings)

@@ -12,7 +12,6 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
     phone: '',
     whatsapp: '',
     password: '',
-    confirmPassword: '',
     role_id: '',
     location_id: '',
     is_active: true,
@@ -28,6 +27,7 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
   // Initialize form data
   useEffect(() => {
     if (user) {
+      // EDIT MODE: Include confirmPassword field
       setFormData({
         name: user.name || '',
         email: user.email || '',
@@ -41,13 +41,13 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
         is_admin: user.is_admin ?? false,
       });
     } else {
+      // CREATE MODE: No confirmPassword field
       setFormData({
         name: '',
         email: '',
         phone: '',
         whatsapp: '',
         password: '',
-        confirmPassword: '',
         role_id: '',
         location_id: '',
         is_active: true,
@@ -60,16 +60,76 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    const newValue = type === 'checkbox' ? checked : value;
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: newValue,
+      };
+
+      // When editing and password is cleared, also clear confirmPassword (if it exists)
+      if (isEditing && name === 'password' && !newValue && 'confirmPassword' in prev) {
+        updated.confirmPassword = '';
+      }
+
+      return updated;
+    });
 
     // Clear specific error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
         [name]: '',
+      }));
+    }
+
+    // Real-time validation for password field during editing
+    if (isEditing && name === 'password' && value) {
+      if (value.length < 8) {
+        setErrors((prev) => ({
+          ...prev,
+          password: 'Senha deve ter pelo menos 8 caracteres',
+        }));
+      }
+
+      // Also check if confirmPassword needs to be re-validated
+      if (
+        'confirmPassword' in formData &&
+        formData.confirmPassword &&
+        value !== formData.confirmPassword
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          confirmPassword: 'Senhas não coincidem',
+        }));
+      } else if (
+        'confirmPassword' in formData &&
+        formData.confirmPassword &&
+        value === formData.confirmPassword
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          confirmPassword: '',
+        }));
+      }
+    }
+
+    // Real-time validation for confirmPassword field during editing
+    if (isEditing && name === 'confirmPassword' && value && formData.password) {
+      if (value !== formData.password) {
+        setErrors((prev) => ({
+          ...prev,
+          confirmPassword: 'Senhas não coincidem',
+        }));
+      }
+    }
+
+    // Also clear confirmPassword error when password is cleared (only in edit mode)
+    if (isEditing && name === 'password' && !value && errors.confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: '',
       }));
     }
   };
@@ -92,15 +152,26 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
       newErrors.email = 'Email inválido';
     }
 
-    // Password validation (only for new users or when changing password)
-    if (!isEditing || formData.password) {
+    // Password validation
+    if (!isEditing) {
+      // When creating: password is required, no confirmation needed
       if (!formData.password) {
         newErrors.password = 'Senha é obrigatória';
-      } else if (formData.password.length < 6) {
-        newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+      } else if (formData.password.length < 8) {
+        newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
+      }
+      // Explicitly ensure no confirmPassword validation in create mode
+    } else if (formData.password) {
+      // When editing: if password is provided, validate it and require confirmation
+      if (formData.password.length < 8) {
+        newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
       }
 
-      if (formData.password !== formData.confirmPassword) {
+      // Only validate confirmation if confirmPassword exists and password is provided
+      if (
+        formData.confirmPassword !== undefined &&
+        formData.password !== formData.confirmPassword
+      ) {
         newErrors.confirmPassword = 'Senhas não coincidem';
       }
     }
@@ -149,6 +220,13 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
       // Remove password fields if not provided (for editing)
       if (isEditing && !formData.password) {
         delete userData.password;
+        if (userData.confirmPassword !== undefined) {
+          delete userData.confirmPassword;
+        }
+      }
+
+      // For creating users, don't send confirmPassword even if it exists
+      if (!isEditing && userData.confirmPassword !== undefined) {
         delete userData.confirmPassword;
       }
 
@@ -203,7 +281,7 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="user-form">
+        <form onSubmit={handleSubmit} className="user-form" key={isEditing ? 'edit' : 'create'}>
           <div className="modal-body">
             {/* Submit Error */}
             {errors.submit && (
@@ -292,57 +370,75 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
                 {isEditing ? 'Alterar Senha (opcional)' : 'Senha de Acesso'}
               </h4>
 
-              <div className="form-row">
+              {user === null ? (
+                /* CREATE MODE: Single password field, no confirmation */
                 <div className="form-group">
                   <label htmlFor="password">
-                    {isEditing ? 'Nova Senha' : 'Senha'}{' '}
-                    {!isEditing && <span className="required">*</span>}
-                  </label>
-                  <div className="password-input">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder={
-                        isEditing ? 'Deixe em branco para manter atual' : 'Mínimo 6 caracteres'
-                      }
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex="-1"
-                    >
-                      {showPassword ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                  {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">
-                    Confirmar Senha{' '}
-                    {(!isEditing || formData.password) && <span className="required">*</span>}
+                    Senha <span className="required">*</span>
                   </label>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
-                    value={formData.confirmPassword}
+                    type="text"
+                    id="password"
+                    name="password"
+                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                    value={formData.password}
                     onChange={handleChange}
-                    placeholder="Digite a senha novamente"
+                    placeholder="Mínimo 8 caracteres"
                     disabled={loading}
                   />
-                  {errors.confirmPassword && (
-                    <div className="invalid-feedback">{errors.confirmPassword}</div>
+                  {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                </div>
+              ) : (
+                /* EDIT MODE: Password field with optional confirmation */
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="password">Nova Senha</label>
+                    <div className="password-input">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="password"
+                        name="password"
+                        className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Deixe em branco para manter atual"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex="-1"
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                  </div>
+
+                  {/* Show confirm password only when editing and password is provided */}
+                  {formData.password && 'confirmPassword' in formData && (
+                    <div className="form-group">
+                      <label htmlFor="confirmPassword">
+                        Confirmar Senha <span className="required">*</span>
+                      </label>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                        value={formData.confirmPassword || ''}
+                        onChange={handleChange}
+                        placeholder="Digite a senha novamente"
+                        disabled={loading}
+                      />
+                      {errors.confirmPassword && (
+                        <div className="invalid-feedback">{errors.confirmPassword}</div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Role and Location */}

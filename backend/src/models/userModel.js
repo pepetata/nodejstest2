@@ -85,6 +85,7 @@ class UserModel extends BaseModel {
           full_name: row.full_name,
           username: row.username,
           status: row.status,
+          is_active: row.status === 'active', // Convert status to boolean
           restaurant_id: row.restaurant_id,
           restaurant_subdomain: row.restaurant_subdomain,
           created_at: row.created_at,
@@ -179,6 +180,26 @@ class UserModel extends BaseModel {
       phone: Joi.string().allow(null, ''),
       whatsapp: Joi.string().allow(null, ''),
     }).min(1);
+  }
+
+  /**
+   * Override sanitizeOutput to add computed fields
+   * @param {Object} data - Raw data from database
+   * @param {Array} sensitiveFields - Fields to remove
+   * @returns {Object} Sanitized data with computed fields
+   */
+  sanitizeOutput(data, sensitiveFields = []) {
+    if (!data) return data;
+
+    // Call parent sanitizeOutput first
+    const sanitized = super.sanitizeOutput(data, sensitiveFields);
+
+    // Add computed fields
+    if (sanitized.status) {
+      sanitized.is_active = sanitized.status === 'active';
+    }
+
+    return sanitized;
   }
 
   /**
@@ -390,7 +411,7 @@ class UserModel extends BaseModel {
       }
 
       const result = await this.executeQuery(query, values);
-      
+
       console.log('=== findByIdWithCreator Debug ===');
       console.log('Query:', query);
       console.log('Values:', values);
@@ -504,6 +525,7 @@ class UserModel extends BaseModel {
           full_name: row.full_name,
           username: row.username,
           status: row.status,
+          is_active: row.status === 'active', // Convert status to boolean
           restaurant_id: row.restaurant_id,
           restaurant_subdomain: row.restaurant_subdomain,
           created_at: row.created_at,

@@ -386,6 +386,14 @@ const userValidationSchemas = {
     .messages({
       'object.missing': 'O token de confirmação ou e-mail é obrigatório.',
     }),
+
+  // Toggle user status schema
+  toggleUserStatus: Joi.object({
+    status: Joi.boolean().required().messages({
+      'any.required': 'Status is required',
+      'boolean.base': 'Status must be a boolean value (true for active, false for inactive)',
+    }),
+  }),
 };
 
 module.exports = userValidationSchemas;

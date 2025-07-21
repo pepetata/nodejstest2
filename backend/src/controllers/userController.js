@@ -833,7 +833,7 @@ class UserController {
       }
 
       const userService = new UserService();
-      const roles = await userService.getAvailableRoles();
+      const roles = await userService.getAvailableRoles(req.user);
 
       controllerLogger.info('Successfully retrieved roles', { count: roles.length });
 
@@ -866,11 +866,12 @@ class UserController {
    */
   getRestaurantLocations = asyncHandler(async (req, res) => {
     const requestId = req.requestId || `req_${Date.now()}`;
+    const restaurantId = req.user?.restaurant_id;
     const controllerLogger = this.logger.child({
       operation: 'getRestaurantLocations',
       requestId,
       userId: req.user?.id,
-      restaurantId: req.user?.restaurant_id,
+      restaurantId,
     });
 
     try {
@@ -891,28 +892,7 @@ class UserController {
       }
 
       const userService = new UserService();
-
-      // Get locations for current user's restaurant
-      const restaurantId = req.user.restaurant_id;
-      if (!restaurantId) {
-        controllerLogger.warn('User has no restaurant_id');
-        return res.status(400).json(
-          ResponseFormatter.error('Usuário não está associado a um restaurante.', 400, {
-            requestId,
-          })
-        );
-      }
-
-      // Get actual restaurant locations from database
-      const query = `
-        SELECT id, name, restaurant_id, created_at
-        FROM restaurant_locations
-        WHERE restaurant_id = $1
-        ORDER BY name ASC
-      `;
-
-      const result = await db.query(query, [restaurantId]);
-      const locations = result.rows;
+      const locations = await userService.getAvailableLocations(req.user);
 
       controllerLogger.info('Successfully retrieved locations', { count: locations.length });
 
@@ -936,6 +916,115 @@ class UserController {
       );
 
       return res.status(500).json(errorResponse);
+    }
+  });
+
+  /**
+   * Toggle user status (activate/deactivate)
+   * PATCH /api/v1/users/:id/status
+   *
+   * @route PATCH /api/v1/users/:id/status
+   * @access Private - Admin only
+   * @body {Object} { status: boolean } - New status for the user
+   * @returns {Object} 200 - Updated user data
+   * @returns {Object} 400 - Validation error
+   * @returns {Object} 403 - Insufficient permissions
+   * @returns {Object} 404 - User not found
+   */
+  toggleUserStatus = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const { id: userId } = req.params;
+    const { status } = req.body;
+
+    const controllerLogger = this.logger.child({
+      operation: 'toggleUserStatus',
+      requestId,
+      targetUserId: userId,
+      currentUserId: req.user?.id,
+      newStatus: status,
+      method: req.method,
+      path: req.path,
+    });
+
+    controllerLogger.info('Toggling user status', {
+      userId,
+      newStatus: status,
+    });
+
+    try {
+      // Check if current user has permission to manage users
+      if (!this.isAuthorizedToManageUsers(req.user)) {
+        controllerLogger.warn('Access denied - insufficient permissions', {
+          userId: req.user?.id,
+          role: req.user?.role || req.user?.primaryRole?.role_name,
+        });
+
+        return res
+          .status(403)
+          .json(
+            ResponseFormatter.error(
+              'Access denied - insufficient permissions to manage users',
+              403,
+              null,
+              requestId
+            )
+          );
+      }
+
+      // Update user status using the existing updateUser service method
+      // Map boolean status to database status enum
+      const dbStatus = status ? 'active' : 'inactive';
+      const updatedUser = await this.userService.updateUser(userId, { status: dbStatus }, req.user);
+
+      controllerLogger.info('User status updated successfully', {
+        userId: updatedUser.id,
+        newStatus: status,
+        previousStatus: !status,
+      });
+
+      return res.status(200).json(
+        ResponseFormatter.success(
+          updatedUser,
+          `User ${status ? 'activated' : 'deactivated'} successfully`,
+          {
+            etag: updatedUser.etag,
+          }
+        )
+      );
+    } catch (error) {
+      if (error.statusCode === 404) {
+        controllerLogger.warn('User not found for status toggle', { userId });
+
+        return res
+          .status(404)
+          .json(ResponseFormatter.error('User not found', 404, null, requestId));
+      }
+
+      if (error.statusCode === 403) {
+        controllerLogger.warn('Access denied for status toggle', {
+          error: error.message,
+          userId,
+        });
+
+        return res.status(403).json(ResponseFormatter.error(error.message, 403, null, requestId));
+      }
+
+      controllerLogger.error('Error toggling user status', {
+        error: error.message,
+        stack: error.stack,
+        userId,
+      });
+
+      return res
+        .status(500)
+        .json(
+          ResponseFormatter.error(
+            'Internal server error while toggling user status',
+            500,
+            null,
+            requestId
+          )
+        );
     }
   });
 

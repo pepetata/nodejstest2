@@ -41,13 +41,46 @@ const UserFormPage = () => {
     phone: '',
     whatsapp: '',
     password: '',
-    confirmPassword: '',
+    ...(isEditing && { confirmPassword: '' }), // Add confirmPassword only in edit mode
     role_location_pairs: [{ role_id: '', location_ids: [] }], // Changed to support multiple locations per role
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Handle beforeunload event to warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Required for Chrome
+        return ''; // Required for other browsers
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && showUnsavedModal) {
+        handleCancelLeave();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [hasUnsavedChanges, showUnsavedModal]);
 
   // Role display names and descriptions in Portuguese
   const roleDisplayInfo = {
@@ -110,10 +143,19 @@ const UserFormPage = () => {
     else if (currentUserRole === 'restaurant_administrator') {
       availableRoles = roles.filter((role) => role.name !== 'superadmin');
     }
+    // If current user is location_administrator, they cannot see restaurant_administrator or superadmin
+    else if (currentUserRole === 'location_administrator') {
+      availableRoles = roles.filter(
+        (role) => role.name !== 'superadmin' && role.name !== 'restaurant_administrator'
+      );
+    }
     // For other roles, show only roles below their level
     else {
       availableRoles = roles.filter(
-        (role) => role.name !== 'superadmin' && role.name !== 'restaurant_administrator'
+        (role) =>
+          role.name !== 'superadmin' &&
+          role.name !== 'restaurant_administrator' &&
+          role.name !== 'location_administrator'
       );
     }
 
@@ -175,13 +217,14 @@ const UserFormPage = () => {
             phone: foundUser.phone || '',
             whatsapp: foundUser.whatsapp || '',
             password: '',
-            confirmPassword: '',
+            confirmPassword: '', // Only in edit mode
             role_location_pairs: processedRoles,
             is_active: foundUser.is_active ?? true,
             is_admin: foundUser.is_admin ?? false,
           };
 
           setFormData(newFormData);
+          // Don't mark as unsaved changes when loading initial data
         })
         .catch((error) => {
           setErrors({ submit: 'Erro ao carregar dados do usuário: ' + error });
@@ -197,13 +240,45 @@ const UserFormPage = () => {
       [name]: type === 'checkbox' ? checked : value,
     }));
 
-    // Clear specific error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: '',
-      }));
-    }
+    // Mark as having unsaved changes
+    setHasUnsavedChanges(true);
+
+    // Handle errors with a single setState call to avoid conflicts
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+
+      // Clear the specific error for the field being changed
+      if (newErrors[name]) {
+        newErrors[name] = '';
+      }
+
+      // Real-time validation for password field during editing
+      if (isEditing && name === 'password' && value) {
+        if (value.length < 8) {
+          newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
+        } else {
+          newErrors.password = ''; // Clear error if password is valid
+        }
+
+        // Also check if confirmPassword needs to be re-validated
+        if (formData.confirmPassword && value !== formData.confirmPassword) {
+          newErrors.confirmPassword = 'Senhas não coincidem';
+        } else if (formData.confirmPassword && value === formData.confirmPassword) {
+          newErrors.confirmPassword = '';
+        }
+      }
+
+      // Real-time validation for confirmPassword field during editing
+      if (isEditing && name === 'confirmPassword' && value && formData.password) {
+        if (value !== formData.password) {
+          newErrors.confirmPassword = 'Senhas não coincidem';
+        } else {
+          newErrors.confirmPassword = '';
+        }
+      }
+
+      return newErrors;
+    });
   };
 
   // Add a new role-location pair
@@ -212,6 +287,7 @@ const UserFormPage = () => {
       ...prev,
       role_location_pairs: [...prev.role_location_pairs, { role_id: '', location_ids: [] }],
     }));
+    setHasUnsavedChanges(true);
   };
 
   // Remove a role-location pair
@@ -230,6 +306,7 @@ const UserFormPage = () => {
       ...prev,
       role_location_pairs: prev.role_location_pairs.filter((_, i) => i !== index),
     }));
+    setHasUnsavedChanges(true);
 
     // Clear any existing error
     setErrors((prev) => ({
@@ -246,6 +323,7 @@ const UserFormPage = () => {
         i === index ? { ...pair, [field]: value } : pair
       ),
     }));
+    setHasUnsavedChanges(true);
 
     // Clear specific error when user makes selection
     if (errors.role_location_pairs) {
@@ -275,6 +353,7 @@ const UserFormPage = () => {
         return pair;
       }),
     }));
+    setHasUnsavedChanges(true);
 
     // Clear specific error when user makes selection
     if (errors.role_location_pairs) {
@@ -315,15 +394,23 @@ const UserFormPage = () => {
       newErrors.emailOrUsername = 'É necessário fornecer pelo menos um e-mail ou nome de usuário';
     }
 
-    // Password validation (only for new users or when changing password)
-    if (!isEditing || formData.password) {
+    // Password validation
+    if (!isEditing) {
+      // When creating: password is required, no confirmation needed
       if (!formData.password) {
         newErrors.password = 'Senha é obrigatória';
-      } else if (formData.password.length < 6) {
-        newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+      } else if (formData.password.length < 8) {
+        newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
+      }
+      // No confirmation validation in create mode
+    } else if (formData.password) {
+      // When editing: if password is provided, validate it and require confirmation
+      if (formData.password.length < 8) {
+        newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
       }
 
-      if (formData.password !== formData.confirmPassword) {
+      // Only validate confirmation if confirmPassword exists and password is provided
+      if ('confirmPassword' in formData && formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = 'Senhas não coincidem';
       }
     }
@@ -403,6 +490,9 @@ const UserFormPage = () => {
         await dispatch(createUser(userData)).unwrap();
       }
 
+      // Clear unsaved changes flag since we successfully saved
+      setHasUnsavedChanges(false);
+
       // Navigate back to users list
       navigate('/admin/users');
     } catch (error) {
@@ -440,10 +530,29 @@ const UserFormPage = () => {
       ...prev,
       [field]: formatted,
     }));
+    setHasUnsavedChanges(true);
   };
 
   const handleCancel = () => {
-    navigate('/admin/users');
+    if (hasUnsavedChanges) {
+      setShowUnsavedModal(true);
+      setPendingNavigation('/admin/users');
+    } else {
+      navigate('/admin/users');
+    }
+  };
+
+  const handleConfirmLeave = () => {
+    setShowUnsavedModal(false);
+    setHasUnsavedChanges(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setShowUnsavedModal(false);
+    setPendingNavigation(null);
   };
 
   return (
@@ -577,57 +686,79 @@ const UserFormPage = () => {
                 {isEditing ? 'Alterar Senha (opcional)' : 'Senha de Acesso'}
               </h3>
 
-              <div className="form-row">
+              {!isEditing ? (
+                /* CREATE MODE: Single password field, no confirmation */
                 <div className="form-group">
                   <label htmlFor="password">
-                    {isEditing ? 'Nova Senha' : 'Senha'}{' '}
-                    {!isEditing && <span className="required">*</span>}
-                  </label>
-                  <div className="password-input">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder={
-                        isEditing ? 'Deixe em branco para manter atual' : 'Mínimo 6 caracteres'
-                      }
-                      disabled={loading}
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex="-1"
-                    >
-                      {showPassword ? <FaEyeSlash /> : <FaEye />}
-                    </button>
-                  </div>
-                  {errors.password && <div className="invalid-feedback">{errors.password}</div>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">
-                    Confirmar Senha{' '}
-                    {(!isEditing || formData.password) && <span className="required">*</span>}
+                    Senha <span className="required">*</span>
                   </label>
                   <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
-                    value={formData.confirmPassword}
+                    type="text"
+                    id="password"
+                    name="password"
+                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                    value={formData.password}
                     onChange={handleChange}
-                    placeholder="Digite a senha novamente"
+                    placeholder="Mínimo 8 caracteres"
                     disabled={loading}
                   />
-                  {errors.confirmPassword && (
-                    <div className="invalid-feedback">{errors.confirmPassword}</div>
+                  {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                </div>
+              ) : (
+                /* EDIT MODE: Password field with optional confirmation */
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="password">Nova Senha</label>
+                    <div className="password-input">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="password"
+                        name="password"
+                        className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Deixe em branco para manter atual"
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex="-1"
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                      {errors.password && (
+                        <div className="invalid-feedback" style={{ display: 'block' }}>
+                          {errors.password}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Show confirm password only when editing and password is provided */}
+                  {formData.password && 'confirmPassword' in formData && (
+                    <div className="form-group">
+                      <label htmlFor="confirmPassword">
+                        Confirmar Senha <span className="required">*</span>
+                      </label>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                        value={formData.confirmPassword || ''}
+                        onChange={handleChange}
+                        placeholder="Digite a senha novamente"
+                        disabled={loading}
+                      />
+                      {errors.confirmPassword && (
+                        <div className="invalid-feedback">{errors.confirmPassword}</div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Role and Location Pairs */}
@@ -784,6 +915,39 @@ const UserFormPage = () => {
           </form>
         </div>
       </div>
+
+      {/* Unsaved Changes Warning Modal */}
+      {showUnsavedModal && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unsaved-modal-title"
+        >
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 id="unsaved-modal-title">
+                <FaExclamationTriangle className="text-warning me-2" />
+                Alterações não salvas
+              </h3>
+            </div>
+            <div className="modal-body">
+              <p>Você possui alterações não salvas que serão perdidas se continuar.</p>
+              <p>
+                <strong>Tem certeza que deseja sair sem salvar?</strong>
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={handleCancelLeave}>
+                Cancelar
+              </button>
+              <button type="button" className="btn btn-danger" onClick={handleConfirmLeave}>
+                Sair sem salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

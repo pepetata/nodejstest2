@@ -161,6 +161,21 @@ router.delete(
 );
 
 /**
+ * @route PATCH /api/v1/users/:id/status
+ * @desc Toggle user status (activate/deactivate)
+ * @access Private - Admin only
+ * @middleware authMiddleware, userManagementLimiter, ValidationMiddleware
+ */
+router.patch(
+  '/:id/status',
+  authMiddleware,
+  userManagementLimiter,
+  ValidationMiddleware.validate(userValidationSchemas.userIdParam, 'params'),
+  ValidationMiddleware.validate(userValidationSchemas.toggleUserStatus, 'body'),
+  userController.toggleUserStatus
+);
+
+/**
  * @route POST /api/v1/users/:id/change-password
  * @desc Change user password
  * @access Private - Admin or self

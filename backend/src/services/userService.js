@@ -390,6 +390,7 @@ class UserService {
       const query = `
         SELECT DISTINCT
           ur.role_id,
+          ur.restaurant_id,
           ur.location_id,
           r.name as role_name,
           r.display_name as role_display_name,
@@ -405,6 +406,7 @@ class UserService {
 
       return result.rows.map((row) => ({
         role_id: row.role_id,
+        restaurant_id: row.restaurant_id,
         location_id: row.location_id,
         role_name: row.role_name,
         role_display_name: row.role_display_name,
@@ -1528,14 +1530,150 @@ class UserService {
   }
 
   /**
-   * Get all available roles
+   * Get all available roles (filtered based on current user permissions)
+   * @param {Object} currentUser - Current authenticated user
    * @returns {Array} Array of roles
    */
-  async getAvailableRoles() {
+  async getAvailableRoles(currentUser = null) {
     try {
-      return await this.roleModel.getActiveRoles();
+      const allRoles = await this.roleModel.getActiveRoles();
+
+      // If no current user provided, return all active roles
+      if (!currentUser) {
+        return allRoles;
+      }
+
+      // Filter roles based on current user's permissions
+      const currentUserRole = currentUser.role || currentUser.primaryRole?.role_name;
+
+      // Superadmin can see all roles except superadmin itself (for assignment purposes)
+      if (currentUserRole === 'superadmin') {
+        return allRoles.filter((role) => role.name !== 'superadmin');
+      }
+
+      // Restaurant administrators can assign all roles except superadmin
+      if (currentUserRole === 'restaurant_administrator') {
+        return allRoles.filter((role) => role.name !== 'superadmin');
+      }
+
+      // Location administrators cannot see restaurant_administrator or superadmin roles
+      if (currentUserRole === 'location_administrator') {
+        return allRoles.filter(
+          (role) => role.name !== 'superadmin' && role.name !== 'restaurant_administrator'
+        );
+      }
+
+      // For other roles, show only non-admin roles
+      return allRoles.filter(
+        (role) =>
+          role.name !== 'superadmin' &&
+          role.name !== 'restaurant_administrator' &&
+          role.name !== 'location_administrator'
+      );
     } catch (error) {
       this.logger.error('Failed to get available roles', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get available locations for a user based on their role
+   * @param {Object} currentUser - Current authenticated user
+   * @param {string} targetRole - The role for which locations are requested
+   * @returns {Array} Array of available locations
+   */
+  async getAvailableLocations(currentUser, targetRole = null) {
+    try {
+      const currentUserRole = currentUser.role || currentUser.primaryRole?.role_name;
+
+      // Superadmin can access all locations
+      if (currentUserRole === 'superadmin') {
+        const query = `
+          SELECT id, name, restaurant_id, address_street, address_city, address_state, is_primary
+          FROM restaurant_locations
+          ORDER BY name ASC
+        `;
+        const result = await this.db.query(query);
+        return result.rows;
+      }
+
+      // Get current user's role-location pairs
+      const userRolePairs =
+        currentUser.roleLocationPairs ||
+        (await this.getUserRoleLocationPairs(currentUser.id || currentUser.user_id));
+
+      // Restaurant administrators can access all locations in their restaurants
+      if (currentUserRole === 'restaurant_administrator') {
+        const restaurantIds = [
+          ...new Set(
+            userRolePairs
+              .filter((pair) => pair.role_name === 'restaurant_administrator')
+              .map((pair) => pair.restaurant_id)
+          ),
+        ];
+
+        if (restaurantIds.length === 0) {
+          // Fallback: use current user's restaurant_id
+          restaurantIds.push(currentUser.restaurant_id);
+        }
+
+        const query = `
+          SELECT id, name, restaurant_id, address_street, address_city, address_state, is_primary
+          FROM restaurant_locations
+          WHERE restaurant_id = ANY($1::uuid[])
+          ORDER BY name ASC
+        `;
+        const result = await this.db.query(query, [restaurantIds]);
+        return result.rows;
+      }
+
+      // Location administrators can only access their assigned locations
+      if (currentUserRole === 'location_administrator') {
+        const locationIds = [
+          ...new Set(
+            userRolePairs
+              .filter((pair) => pair.role_name === 'location_administrator')
+              .map((pair) => pair.location_id)
+          ),
+        ];
+
+        if (locationIds.length === 0) {
+          return [];
+        }
+
+        const query = `
+          SELECT id, name, restaurant_id, address_street, address_city, address_state, is_primary
+          FROM restaurant_locations
+          WHERE id = ANY($1::uuid[])
+          ORDER BY name ASC
+        `;
+        const result = await this.db.query(query, [locationIds]);
+        return result.rows;
+      }
+
+      // For other roles, return only their assigned locations
+      const locationIds = [...new Set(userRolePairs.map((pair) => pair.location_id))].filter(
+        Boolean
+      );
+
+      if (locationIds.length === 0) {
+        return [];
+      }
+
+      const query = `
+        SELECT id, name, restaurant_id, address_street, address_city, address_state, is_primary
+        FROM restaurant_locations
+        WHERE id = ANY($1::uuid[])
+        ORDER BY name ASC
+      `;
+      const result = await this.db.query(query, [locationIds]);
+      return result.rows;
+    } catch (error) {
+      this.logger.error('Failed to get available locations', {
+        error: error.message,
+        currentUser: currentUser.id || currentUser.user_id,
+        stack: error.stack,
+      });
       throw error;
     }
   }
