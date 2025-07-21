@@ -252,7 +252,7 @@ const UserFormPage = () => {
   };
 
   // Filter roles based on current user permissions and exclude already selected roles
-  const getAvailableRoles = (currentPairIndex = null) => {
+  const getAvailableRoles = (currentPairIndex = null, forSingleLocationMode = false) => {
     if (!currentUser || !roles.length) return [];
 
     let availableRoles = [];
@@ -284,14 +284,23 @@ const UserFormPage = () => {
       );
     }
 
-    // Filter out already selected roles (except for the current role being edited)
-    const selectedRoleIds = formData.role_location_pairs
-      .map((pair, index) => (index !== currentPairIndex ? pair.role_id : null))
-      .filter(Boolean);
+    // IMPORTANT: Filter out location_administrator role for single-location restaurants
+    // Location administrators should only be available for multi-location restaurants
+    if (locations.length <= 1) {
+      availableRoles = availableRoles.filter((role) => role.name !== 'location_administrator');
+    }
 
-    const finalRoles = availableRoles.filter((role) => !selectedRoleIds.includes(role.id));
+    // Filter out already selected roles ONLY for multi-location mode (dropdowns)
+    // In single-location mode (checkboxes), show all available roles regardless of selection
+    if (!forSingleLocationMode) {
+      const selectedRoleIds = formData.role_location_pairs
+        .map((pair, index) => (index !== currentPairIndex ? pair.role_id : null))
+        .filter(Boolean);
 
-    return finalRoles;
+      availableRoles = availableRoles.filter((role) => !selectedRoleIds.includes(role.id));
+    }
+
+    return availableRoles;
   };
 
   // Load user data if editing
@@ -983,7 +992,7 @@ const UserFormPage = () => {
                       Selecione os perfis do usuário <span className="required">*</span>
                     </div>
                     <div className="role-checkboxes">
-                      {roles.map((role) => {
+                      {getAvailableRoles(null, true).map((role) => {
                         const isSelected = formData.role_location_pairs.some(
                           (pair) => pair.role_id === role.id
                         );
