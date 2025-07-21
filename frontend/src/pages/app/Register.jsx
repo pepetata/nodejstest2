@@ -2416,7 +2416,7 @@ function RegisterPage() {
   const renderSuccessModal = () =>
     showSuccessModal && (
       <div className="modal-overlay">
-        <div className="modal-content">
+        <div className="modal-content success">
           <h2>Cadastro realizado com sucesso!</h2>
           <p>Seu restaurante e usuário administrador foram criados.</p>
           <p>
@@ -2424,15 +2424,17 @@ function RegisterPage() {
             e-mail para ativar sua conta.
           </p>
           <p>Após a confirmação, faça login para começar a usar o À La Carte.</p>
-          <button
-            className="modal-close-btn"
-            onClick={() => {
-              setShowSuccessModal(false);
-              navigate('/');
-            }}
-          >
-            Fechar
-          </button>
+          <div className="modal-actions">
+            <button
+              className="modal-btn"
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate('/');
+              }}
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       </div>
     );

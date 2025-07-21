@@ -646,25 +646,138 @@
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  backdrop-filter: blur(4px);
 }
+
 .modal-content {
   background: #fff !important;
   opacity: 1 !important;
-  padding: 32px 24px;
-  border-radius: 8px;
-  max-width: 400px;
+  padding: 40px 32px 32px;
+  border-radius: 16px;
+  max-width: 420px;
+  width: 90%;
   text-align: center;
-  box-shadow: 0 2px 16px #0002;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1);
+  position: relative;
+  animation: modalSlideIn 0.3s ease-out;
+
+  h2 {
+    color: vars.$primary;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+  }
+
+  p {
+    color: vars.$text-secondary;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
 }
-.modal-close-btn {
-  margin-top: 24px;
-  padding: 10px 24px;
-  background: #1e90ff;
-  color: #fff;
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-close-btn,
+.modal-btn {
+  background: linear-gradient(135deg, vars.$primary 0%, vars.$logoO 100%);
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
+  padding: 12px 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  box-shadow:
+    0 4px 12px rgba(vars.$primary, 0.3),
+    0 2px 6px rgba(vars.$primary, 0.15);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 16px rgba(vars.$primary, 0.4),
+      0 4px 8px rgba(vars.$primary, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow:
+      0 2px 8px rgba(vars.$primary, 0.3),
+      0 1px 4px rgba(vars.$primary, 0.15);
+  }
+
+  // Secondary button variant
+  &.secondary {
+    background: vars.$bg-color;
+    color: vars.$text-primary;
+    border: 2px solid #e5e7eb;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.1),
+      0 1px 4px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      background: #f8f9fa;
+      border-color: vars.$primary;
+      color: vars.$primary;
+      box-shadow:
+        0 4px 12px rgba(vars.$primary, 0.15),
+        0 2px 6px rgba(vars.$primary, 0.1);
+    }
+  }
+}
+
+// Success modal specific styling
+.modal-content.success {
+  &::before {
+    content: '✅';
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+    animation: bounceIn 0.6s ease-out 0.2s both;
+  }
+
+  h2 {
+    color: #28a745;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Registration-specific responsive design */

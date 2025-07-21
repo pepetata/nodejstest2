@@ -263,9 +263,33 @@ class UserService {
 
       return newUser;
     } catch (error) {
+      // Log the full error details for debugging
+      this.logger.error('User creation failed with detailed error', {
+        ...logMeta,
+        originalError: error.message,
+        errorDetails: error.details || null,
+        errorStack: error.stack?.split('\n').slice(0, 5),
+        userData: {
+          hasEmail: !!userData.email,
+          hasUsername: !!userData.username,
+          hasPassword: !!userData.password,
+          hasFullName: !!userData.full_name,
+          restaurantId: userData.restaurant_id,
+          status: userData.status,
+          roleLocationPairs: userData.role_location_pairs?.length || 0,
+        },
+      });
+
       // Translate error for end user
       let mensagemErro = error.message;
-      if (mensagemErro.includes('duplicate key') && mensagemErro.includes('email')) {
+
+      // Handle validation errors with specific details
+      if (mensagemErro === 'Validation failed' && error.details) {
+        const validationErrors = error.details
+          .map((detail) => `${detail.field}: ${detail.message}`)
+          .join(', ');
+        mensagemErro = `Erro de validação: ${validationErrors}`;
+      } else if (mensagemErro.includes('duplicate key') && mensagemErro.includes('email')) {
         mensagemErro = 'Já existe um usuário cadastrado com este e-mail.';
       } else if (mensagemErro === 'User not found') {
         mensagemErro = 'Usuário não encontrado.';
@@ -283,7 +307,13 @@ class UserService {
         error: mensagemErro,
         code: error.code,
       });
-      throw new Error(mensagemErro);
+
+      // Preserve error details when rethrowing
+      const newError = new Error(mensagemErro);
+      if (error.details) {
+        newError.details = error.details;
+      }
+      throw newError;
     }
   }
 
@@ -1116,13 +1146,53 @@ class UserService {
       email: userData.email,
       username: userData.username,
       rolesCount: roles.length,
+      userData: {
+        hasPassword: !!userData.password,
+        hasFullName: !!userData.full_name,
+        hasEmail: !!userData.email,
+        hasUsername: !!userData.username,
+        restaurantId: userData.restaurant_id,
+        status: userData.status,
+      },
     });
 
     try {
+      // Convert roles array to role_location_pairs format for createUser validation
+      if (roles.length > 0) {
+        // We need to convert role names to role IDs, so let's look up the roles first
+        const roleLocationPairs = [];
+
+        for (const role of roles) {
+          // If we have a roleName, look up the role ID
+          let roleId = role.roleId;
+          if (!roleId && role.roleName) {
+            const roleRecord = await this.roleModel.findByName(role.roleName);
+            if (roleRecord) {
+              roleId = roleRecord.id;
+            }
+          }
+
+          if (roleId) {
+            roleLocationPairs.push({
+              role_id: roleId,
+              location_id: role.locationId || null,
+            });
+          }
+        }
+
+        userData.role_location_pairs = roleLocationPairs;
+
+        this.logger.info('Role conversion complete', {
+          originalRolesCount: roles.length,
+          convertedRoleLocationPairsCount: roleLocationPairs.length,
+          roleLocationPairs: roleLocationPairs,
+        });
+      }
+
       // Create the user first (using existing createUser method)
       const user = await this.createUser(userData, createdBy ? { id: createdBy } : null);
 
-      // Assign roles if provided
+      // Assign roles if provided (this will handle the actual role assignments in the database)
       if (roles.length > 0) {
         await this.assignRolesToUser(user.id, roles, createdBy);
       }
@@ -1138,9 +1208,18 @@ class UserService {
       return userWithRoles;
     } catch (error) {
       this.logger.error('Failed to create user with roles', {
-        userData: { email: userData.email, username: userData.username },
+        userData: {
+          email: userData.email,
+          username: userData.username,
+          hasPassword: !!userData.password,
+          hasFullName: !!userData.full_name,
+          hasRoleLocationPairs: !!userData.role_location_pairs,
+          roleLocationPairsCount: userData.role_location_pairs?.length || 0,
+        },
         roles,
         error: error.message,
+        errorDetails: error.details || null,
+        errorStack: error.stack?.split('\n').slice(0, 3),
       });
       throw error;
     }

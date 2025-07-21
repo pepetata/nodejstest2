@@ -240,9 +240,30 @@ class RestaurantService {
           businessType: restaurantData.business_type,
         });
         await this.restaurantModel.deleteRestaurant(newRestaurant.id);
+
+        // Log the full error details for debugging
+        serviceLogger.error('User creation failed during restaurant creation', {
+          error: error.message,
+          details: error.details || null,
+          stack: error.stack?.split('\n').slice(0, 5),
+          userData: {
+            email: userData.email,
+            username: userData.username,
+            hasRoles: !!userData.role_location_pairs,
+            rolesCount: userData.role_location_pairs?.length || 0,
+          },
+        });
+
         // Translate user-related errors for end user
         let mensagemErroUsuario = error.message;
-        if (
+
+        // Handle validation errors with specific details
+        if (mensagemErroUsuario === 'Validation failed' && error.details) {
+          const validationErrors = error.details
+            .map((detail) => `${detail.field}: ${detail.message}`)
+            .join(', ');
+          mensagemErroUsuario = `Erro de validação: ${validationErrors}`;
+        } else if (
           mensagemErroUsuario.includes('duplicate key') &&
           mensagemErroUsuario.includes('email')
         ) {
