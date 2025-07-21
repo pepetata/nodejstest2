@@ -590,6 +590,92 @@
     display: block;
   }
 
+  // Single location mode styling
+  .single-location-mode {
+    .location-info {
+      background: #e7f3ff;
+      border: 1px solid #b3d9ff;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+
+      .assigned-location {
+        color: #0066cc;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .location-icon {
+          color: #0066cc;
+        }
+
+        strong {
+          font-weight: 600;
+        }
+      }
+
+      .form-text {
+        color: #495057;
+        font-size: 0.875rem;
+        margin-bottom: 0;
+      }
+    }
+
+    .role-checkboxes {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+      padding: 1rem;
+      border: 1px solid #dee2e6;
+      border-radius: 0.375rem;
+      background: #f8f9fa;
+      max-height: 300px;
+      overflow-y: auto;
+
+      .role-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: $logoO;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type='checkbox'] {
+          width: 18px;
+          height: 18px;
+          accent-color: $logoO;
+          cursor: pointer;
+          margin: 0;
+          flex-shrink: 0;
+        }
+
+        .role-label {
+          cursor: pointer;
+          margin-bottom: 0;
+          font-weight: 600;
+          color: #495057;
+          font-size: 0.95rem;
+          flex-grow: 1;
+        }
+
+        // When checkbox is checked
+        input[type='checkbox']:checked + .role-label {
+          color: $logoO;
+        }
+      }
+    }
+  }
+
   // Placeholder styling - italic font with blue color
   .form-control {
     &::placeholder {

@@ -42,7 +42,7 @@ const UserFormPage = () => {
     whatsapp: '',
     password: '',
     ...(isEditing && { confirmPassword: '' }), // Add confirmPassword only in edit mode
-    role_location_pairs: [{ role_id: '', location_ids: [] }], // Changed to support multiple locations per role
+    role_location_pairs: [], // Start with empty array, will be initialized based on location count
   });
 
   const [errors, setErrors] = useState({});
@@ -270,6 +270,25 @@ const UserFormPage = () => {
     }
   }, [roles.length, locations.length, dispatch]);
 
+  // Initialize role_location_pairs based on location count (only for new users)
+  useEffect(() => {
+    if (!isEditing && locations.length > 0 && formData.role_location_pairs.length === 0) {
+      if (locations.length === 1) {
+        // Single location: start with empty array (roles will be added via checkboxes)
+        setFormData((prev) => ({
+          ...prev,
+          role_location_pairs: [],
+        }));
+      } else {
+        // Multi-location: start with one empty pair
+        setFormData((prev) => ({
+          ...prev,
+          role_location_pairs: [{ role_id: '', location_ids: [] }],
+        }));
+      }
+    }
+  }, [locations.length, isEditing, formData.role_location_pairs.length]);
+
   // Separate useEffect for loading user data to avoid infinite loops
   useEffect(() => {
     if (isEditing && id && roles.length > 0) {
@@ -465,6 +484,45 @@ const UserFormPage = () => {
     }
   };
 
+  // Toggle role for single location mode
+  const toggleRoleForSingleLocation = (roleId) => {
+    const singleLocationId = locations[0].id.toString();
+    const existingPairIndex = formData.role_location_pairs.findIndex(
+      (pair) => pair.role_id === roleId
+    );
+
+    let newRolePairs;
+    if (existingPairIndex >= 0) {
+      // Remove the role
+      newRolePairs = formData.role_location_pairs.filter((_, i) => i !== existingPairIndex);
+    } else {
+      // Add the role with the single location
+      newRolePairs = [
+        ...formData.role_location_pairs,
+        {
+          role_id: roleId,
+          location_ids: [singleLocationId],
+        },
+      ];
+    }
+
+    const newFormData = {
+      ...formData,
+      role_location_pairs: newRolePairs,
+    };
+
+    setFormData(newFormData);
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
+
+    // Clear specific error when user makes selection
+    if (errors.role_location_pairs) {
+      setErrors((prev) => ({
+        ...prev,
+        role_location_pairs: '',
+      }));
+    }
+  };
+
   // Validate form
   const validateForm = () => {
     const newErrors = {};
@@ -531,13 +589,25 @@ const UserFormPage = () => {
       newErrors.role_location_pairs =
         'Pelo menos uma combinação de perfil e localização é obrigatória';
     } else {
-      // Check if all pairs have both role and at least one location selected
-      const hasIncompletePairs = formData.role_location_pairs.some(
-        (pair) => !pair.role_id || !pair.location_ids || pair.location_ids.length === 0
+      // For single location mode, filter out empty pairs first
+      const validPairs = formData.role_location_pairs.filter(
+        (pair) => pair.role_id && pair.role_id !== ''
       );
-      if (hasIncompletePairs) {
+
+      if (validPairs.length === 0) {
         newErrors.role_location_pairs =
-          'Todos os perfis devem ter pelo menos uma localização associada';
+          locations.length === 1
+            ? 'Selecione pelo menos um perfil'
+            : 'Pelo menos uma combinação de perfil e localização é obrigatória';
+      } else {
+        // Check if all valid pairs have both role and at least one location selected
+        const hasIncompletePairs = validPairs.some(
+          (pair) => !pair.role_id || !pair.location_ids || pair.location_ids.length === 0
+        );
+        if (hasIncompletePairs) {
+          newErrors.role_location_pairs =
+            'Todos os perfis devem ter pelo menos uma localização associada';
+        }
       }
     }
 
@@ -866,120 +936,168 @@ const UserFormPage = () => {
 
             {/* Role and Location Pairs */}
             <div className="form-section">
-              <h3 className="section-title">Perfis e Unidades</h3>
+              <h3 className="section-title">
+                {locations.length === 1 ? 'Perfis' : 'Perfis e Unidades'}
+              </h3>
 
-              {formData.role_location_pairs.length === 0 && (
-                <div className="no-pairs-message">
-                  <p>Nenhum perfil adicionado ainda.</p>
-                  <button
-                    type="button"
-                    className="btn btn-primary add-pair-btn"
-                    onClick={addRoleLocationPair}
-                    disabled={loading}
-                  >
-                    <FaPlus />
-                    Adicionar Perfil
-                  </button>
-                </div>
-              )}
-
-              {formData.role_location_pairs.map((pair, index) => (
-                <div key={index} className="role-location-pair">
-                  <div className="pair-header">
-                    <h4>Perfil {index + 1}</h4>
-                    <button
-                      type="button"
-                      className="btn btn-danger remove-pair-btn"
-                      onClick={() => removeRoleLocationPair(index)}
-                      disabled={loading}
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor={`role_${index}`}>
-                        Perfil <span className="required">*</span>
-                      </label>
-                      <select
-                        id={`role_${index}`}
-                        className="form-control"
-                        value={pair.role_id}
-                        onChange={(e) => updateRoleLocationPair(index, 'role_id', e.target.value)}
-                        disabled={loading}
-                      >
-                        <option value="">Selecione um perfil</option>
-                        {getAvailableRoles(index).map((role) => (
-                          <option
-                            key={role.id}
-                            value={role.id}
-                            title={roleDisplayInfo[role.name]?.description}
-                          >
-                            {roleDisplayInfo[role.name]?.name || role.name}
-                          </option>
-                        ))}
-                      </select>
-                      {pair.role_id &&
-                        roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name] && (
-                          <small className="form-text text-muted">
-                            <FaInfoCircle />
-                            <span
-                              className="role-description"
-                              title={
-                                roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name]
-                                  ?.description
-                              }
-                            >
-                              {
-                                roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name]
-                                  ?.description
-                              }
-                            </span>
-                          </small>
-                        )}
+              {locations.length === 1 ? (
+                /* Single Location Mode: Multi-role selection */
+                <div className="single-location-mode">
+                  <div className="form-group">
+                    <div className="form-label">
+                      Selecione os perfis do usuário <span className="required">*</span>
                     </div>
-
-                    <div className="form-group">
-                      <div className="form-label">
-                        Unidades <span className="required">*</span>
-                      </div>
-                      <div className="location-checkboxes">
-                        {locations.map((location) => (
-                          <div key={location.id} className="checkbox-item">
+                    <div className="role-checkboxes">
+                      {roles.map((role) => {
+                        const isSelected = formData.role_location_pairs.some(
+                          (pair) => pair.role_id === role.id
+                        );
+                        return (
+                          <div key={role.id} className="checkbox-item role-checkbox">
                             <input
                               type="checkbox"
-                              id={`location_${index}_${location.id}`}
-                              checked={pair.location_ids?.includes(location.id.toString()) || false}
-                              onChange={() => toggleLocationForRole(index, location.id.toString())}
+                              id={`role_${role.id}`}
+                              checked={isSelected}
+                              onChange={() => toggleRoleForSingleLocation(role.id)}
                               disabled={loading}
                             />
-                            <label htmlFor={`location_${index}_${location.id}`}>
-                              {location.name}
+                            <label htmlFor={`role_${role.id}`} className="role-label">
+                              {roleDisplayInfo[role.name]?.name || role.name}
                             </label>
                           </div>
-                        ))}
-                      </div>
-                      {pair.location_ids && pair.location_ids.length > 0 && (
-                        <small className="form-text text-muted">
-                          {pair.location_ids.length} localização(ões) selecionada(s)
-                        </small>
-                      )}
+                        );
+                      })}
                     </div>
+                    {formData.role_location_pairs.length > 0 && (
+                      <small className="form-text text-muted">
+                        {formData.role_location_pairs.length} perfil(is) selecionado(s)
+                      </small>
+                    )}
                   </div>
                 </div>
-              ))}
+              ) : (
+                /* Multi-Location Mode: Original role-location pairs */
+                <>
+                  {formData.role_location_pairs.length === 0 && (
+                    <div className="no-pairs-message">
+                      <p>Nenhum perfil adicionado ainda.</p>
+                      <button
+                        type="button"
+                        className="btn btn-primary add-pair-btn"
+                        onClick={addRoleLocationPair}
+                        disabled={loading}
+                      >
+                        <FaPlus />
+                        Adicionar Perfil
+                      </button>
+                    </div>
+                  )}
 
-              {formData.role_location_pairs.length > 0 && (
-                <button
-                  type="button"
-                  className="btn btn-secondary add-pair-btn"
-                  onClick={addRoleLocationPair}
-                  disabled={loading}
-                >
-                  <FaPlus />
-                  Adicionar Outro Perfil
-                </button>
+                  {formData.role_location_pairs.map((pair, index) => (
+                    <div key={index} className="role-location-pair">
+                      <div className="pair-header">
+                        <h4>Perfil {index + 1}</h4>
+                        <button
+                          type="button"
+                          className="btn btn-danger remove-pair-btn"
+                          onClick={() => removeRoleLocationPair(index)}
+                          disabled={loading}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label htmlFor={`role_${index}`}>
+                            Perfil <span className="required">*</span>
+                          </label>
+                          <select
+                            id={`role_${index}`}
+                            className="form-control"
+                            value={pair.role_id}
+                            onChange={(e) =>
+                              updateRoleLocationPair(index, 'role_id', e.target.value)
+                            }
+                            disabled={loading}
+                          >
+                            <option value="">Selecione um perfil</option>
+                            {getAvailableRoles(index).map((role) => (
+                              <option
+                                key={role.id}
+                                value={role.id}
+                                title={roleDisplayInfo[role.name]?.description}
+                              >
+                                {roleDisplayInfo[role.name]?.name || role.name}
+                              </option>
+                            ))}
+                          </select>
+                          {pair.role_id &&
+                            roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name] && (
+                              <small className="form-text text-muted">
+                                <FaInfoCircle />
+                                <span
+                                  className="role-description"
+                                  title={
+                                    roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name]
+                                      ?.description
+                                  }
+                                >
+                                  {
+                                    roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name]
+                                      ?.description
+                                  }
+                                </span>
+                              </small>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                          <div className="form-label">
+                            Unidades <span className="required">*</span>
+                          </div>
+                          <div className="location-checkboxes">
+                            {locations.map((location) => (
+                              <div key={location.id} className="checkbox-item">
+                                <input
+                                  type="checkbox"
+                                  id={`location_${index}_${location.id}`}
+                                  checked={
+                                    pair.location_ids?.includes(location.id.toString()) || false
+                                  }
+                                  onChange={() =>
+                                    toggleLocationForRole(index, location.id.toString())
+                                  }
+                                  disabled={loading}
+                                />
+                                <label htmlFor={`location_${index}_${location.id}`}>
+                                  {location.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                          {pair.location_ids && pair.location_ids.length > 0 && (
+                            <small className="form-text text-muted">
+                              {pair.location_ids.length} localização(ões) selecionada(s)
+                            </small>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {formData.role_location_pairs.length > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary add-pair-btn"
+                      onClick={addRoleLocationPair}
+                      disabled={loading}
+                    >
+                      <FaPlus />
+                      Adicionar Outro Perfil
+                    </button>
+                  )}
+                </>
               )}
 
               {errors.role_location_pairs && (
