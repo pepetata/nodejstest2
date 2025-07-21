@@ -102,7 +102,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             <option value="">Todos os Status</option>
             <option value="active">Apenas Ativos</option>
             <option value="inactive">Apenas Inativos</option>
-            <option value="suspended">Suspensos</option>
+            {/* <option value="suspended">Suspensos</option> */}
           </select>
 
           <select
@@ -188,7 +188,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
       {/* Active Filters Display */}
       {hasActiveFilters() && (
         <div className="active-filters">
-          <span className="active-filters-label">Filtros ativos:</span>
+          <span className="active-filters-label">Filtros ativos (clique no x para remover):</span>
           <div className="active-filters-list">
             {localFilters.search && (
               <span className="filter-tag">

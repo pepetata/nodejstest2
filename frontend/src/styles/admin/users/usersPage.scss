@@ -5,33 +5,68 @@
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
-  // Page Header
+  // Page Header - Restaurant Profile Style
   .page-header {
-    background: white;
-    border-radius: 16px;
-    padding: 24px 32px;
+    // background: white;
+    // border-radius: 16px;
+    padding: 0px 32px;
     margin-bottom: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    // box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    // border: 1px solid rgba(255, 255, 255, 0.2);
 
     .header-content {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
       gap: 16px;
 
-      .page-title {
-        display: flex;
-        align-items: center;
-        font-size: 28px;
-        font-weight: 700;
-        color: #2c3e50;
-        margin: 0;
+      @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
 
-        svg {
+      .page-title-section {
+        flex: 1;
+
+        .page-title {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 1.9rem;
+          font-weight: 800;
           color: #e67e22;
-          margin-right: 12px;
+          margin-bottom: 0.75rem;
+          background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+
+          @media (max-width: 768px) {
+            font-size: 1.75rem;
+          }
+
+          @media (max-width: 480px) {
+            font-size: 1.5rem;
+          }
+
+          svg {
+            color: #e67e22;
+            font-size: 1.8rem;
+          }
+        }
+
+        .page-subtitle {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          font-size: 1.1rem;
+          color: #7f8c8d;
+          line-height: 1.6;
+          margin: 0;
+
+          @media (max-width: 768px) {
+            font-size: 1rem;
+          }
         }
       }
 
@@ -120,17 +155,17 @@
   // Statistics Cards with enhanced styling
   .statistics-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
 
     .stat-card {
       background: white;
       border-radius: 20px;
-      padding: 28px;
+      padding: 5px 15px;
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 15px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -194,8 +229,8 @@
       }
 
       .stat-icon {
-        width: 72px;
-        height: 72px;
+        width: 50px;
+        height: 50px;
         border-radius: 16px;
         display: flex;
         align-items: center;
@@ -330,7 +365,7 @@
 .user-filters {
   background: white;
   border-radius: 20px;
-  padding: 32px;
+  padding: 10px 32px;
   margin-bottom: 32px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(230, 126, 34, 0.1);
@@ -480,8 +515,8 @@
 
   // Sort options row
   .sort-container {
-    margin-top: 24px;
-    padding-top: 24px;
+    margin-top: 10px;
+    // padding-top: 10px;
     border-top: 2px solid #f8f9fa;
     display: flex;
     gap: 20px;
@@ -591,7 +626,7 @@
   // Active filters display
   .active-filters {
     margin-top: 20px;
-    padding-top: 20px;
+    // padding-top: 20px;
     border-top: 1px solid #f1f3f4;
     display: flex;
     gap: 16px;
@@ -673,7 +708,7 @@
 
       th {
         border: none;
-        padding: 15px 16px;
+        padding: 10px 16px;
         font-weight: 700;
         color: #2c3e50;
         font-size: 14px;
@@ -722,7 +757,7 @@
         }
 
         td {
-          padding: 20px 16px;
+          padding: 10px 16px;
           vertical-align: middle;
           border: none;
           font-weight: 500;

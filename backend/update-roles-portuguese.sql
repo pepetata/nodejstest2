@@ -20,8 +20,8 @@ UPDATE roles SET
 WHERE name = 'waiter';
 
 UPDATE roles SET
-    display_name = 'Entregador',
-    description = 'Funcionário responsável por entregar comida aos clientes'
+    display_name = 'Corredor',
+    description = 'Funcionário responsável por entregar os pratos aos clientes'
 WHERE name = 'food_runner';
 
 UPDATE roles SET

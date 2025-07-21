@@ -114,7 +114,7 @@ const UserFormPage = () => {
       description: 'Processa pagamentos e fechamento de contas',
     },
     food_runner: {
-      name: 'Corredor de Comida',
+      name: 'Corredor',
       description: 'Entrega pratos da cozinha para os clientes',
     },
     kds_operator: {

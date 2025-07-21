@@ -181,7 +181,12 @@ const AdminUsersPage = () => {
       {/* Page Header */}
       <div className="page-header">
         <div className="header-content">
-          <h1 className="page-title">Gerenciamento de Usuários</h1>
+          <div className="page-title-section">
+            <h1 className="page-title">Gerenciamento de Usuários</h1>
+            <p className="page-subtitle">
+              Gerencie os usuários do seu restaurante, perfis e permissões de acesso.
+            </p>
+          </div>
           <button className="btn btn-primary" onClick={handleCreateUser} disabled={loading}>
             <FaPlus className="me-2" />
             Novo Usuário
