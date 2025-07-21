@@ -69,9 +69,9 @@ class RestaurantValidation {
     const locationSchema = Joi.object({
       id: Joi.any().optional(), // Accept any id (frontend uses timestamp)
       name: Joi.string().trim().min(2).max(100).required().messages({
-        'string.empty': 'Nome da localização é obrigatório',
-        'string.min': 'Nome da localização deve ter pelo menos 2 caracteres',
-        'string.max': 'Nome da localização não pode exceder 100 caracteres',
+        'string.empty': 'Nome da Unidade é obrigatório',
+        'string.min': 'Nome da Unidade deve ter pelo menos 2 caracteres',
+        'string.max': 'Nome da Unidade não pode exceder 100 caracteres',
       }),
       urlName: Joi.string()
         .trim()
@@ -80,23 +80,23 @@ class RestaurantValidation {
         .pattern(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/)
         .required()
         .messages({
-          'string.empty': 'Nome para URL da localização é obrigatório',
+          'string.empty': 'Nome para URL da Unidade é obrigatório',
           'string.min': 'Nome para URL deve ter pelo menos 3 caracteres',
           'string.max': 'Nome para URL não pode exceder 50 caracteres',
           'string.pattern.base':
             'Nome para URL deve conter apenas letras minúsculas, números e hífens, sem hífens consecutivos',
         }),
       phone: Joi.string().max(20).required().messages({
-        'string.max': 'Telefone da localização não pode exceder 20 caracteres',
-        'string.empty': 'Telefone da localização é obrigatório',
+        'string.max': 'Telefone da Unidade não pode exceder 20 caracteres',
+        'string.empty': 'Telefone da Unidade é obrigatório',
       }),
       whatsapp: Joi.string().max(20).allow('', null).messages({
-        'string.max': 'WhatsApp da localização não pode exceder 20 caracteres',
+        'string.max': 'WhatsApp da Unidade não pode exceder 20 caracteres',
       }),
       address: addressSchema.required(),
       operatingHours: operatingHoursSchema.required(),
       selectedFeatures: Joi.array().items(Joi.string()).min(1).required().messages({
-        'array.min': 'Selecione pelo menos um recurso para a localização',
+        'array.min': 'Selecione pelo menos um recurso para a Unidade',
       }),
     });
 
@@ -244,8 +244,8 @@ class RestaurantValidation {
 
     return Joi.object({
       name: Joi.string().trim().min(1).max(100).messages({
-        'string.min': 'Nome da localização deve ter pelo menos 1 caractere',
-        'string.max': 'Nome da localização não pode exceder 100 caracteres',
+        'string.min': 'Nome da Unidade deve ter pelo menos 1 caractere',
+        'string.max': 'Nome da Unidade não pode exceder 100 caracteres',
       }),
       url_name: Joi.string()
         .trim()

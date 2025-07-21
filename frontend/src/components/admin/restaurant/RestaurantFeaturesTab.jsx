@@ -67,7 +67,7 @@ const RestaurantFeaturesTab = ({ onSave }) => {
     starter: {
       name: 'Plano Inicial',
       price: 29,
-      description: 'Recursos básicos para localizações únicas',
+      description: 'Recursos básicos para unidades únicas',
     },
     professional: {
       name: 'Plano Profissional',

@@ -896,7 +896,7 @@ class UserController {
         controllerLogger.warn('Unauthorized access to locations endpoint');
         return res.status(403).json(
           ResponseFormatter.error(
-            'Acesso negado. Apenas administradores podem visualizar localizações.',
+            'Acesso negado. Apenas administradores podem visualizar unidades.',
             403,
             {
               requestId,
@@ -911,7 +911,7 @@ class UserController {
       controllerLogger.info('Successfully retrieved locations', { count: locations.length });
 
       return res.status(200).json(
-        ResponseFormatter.success(locations, 'Localizações recuperadas com sucesso', {
+        ResponseFormatter.success(locations, 'Unidades recuperadas com sucesso', {
           requestId,
           total: locations.length,
           restaurantId,
@@ -921,7 +921,7 @@ class UserController {
       controllerLogger.error('Failed to get restaurant locations', { error: error.message });
 
       const errorResponse = ResponseFormatter.error(
-        'Erro interno do servidor ao buscar localizações',
+        'Erro interno do servidor ao buscar unidades',
         500,
         {
           requestId,

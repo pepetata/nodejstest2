@@ -158,7 +158,7 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [] }) => {
 
           {/* Enhanced Role-Location Display */}
           <div className="roles-locations-section">
-            <h4>Perfis e Localizações</h4>
+            <h4>Perfis e Unidades</h4>
             {getGroupedRoleLocations(user).length > 0 ? (
               <div className="role-location-list">
                 {getGroupedRoleLocations(user).map((roleGroup) => (
@@ -168,7 +168,7 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [] }) => {
                       <p className="role-description">{roleGroup.role_description}</p>
                     </div>
                     <div className="role-locations">
-                      <span className="locations-label">Localizações:</span>
+                      <span className="locations-label">Unidades:</span>
                       <div className="location-tags">
                         {roleGroup.locations.map((location) => (
                           <span key={location.id} className="location-tag">

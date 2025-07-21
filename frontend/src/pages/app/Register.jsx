@@ -190,7 +190,7 @@ function RegisterPage() {
     starter: {
       name: 'Plano Inicial',
       price: 29,
-      description: 'Recursos básicos para localizações únicas',
+      description: 'Recursos básicos para unidades únicas',
     },
     professional: {
       name: 'Plano Profissional',
@@ -228,24 +228,24 @@ function RegisterPage() {
 
     // Validate location name (for multi-location)
     if (formData.businessType === 'multi' && !currentLocation.name?.trim()) {
-      errors.push('Nome da localização é obrigatório');
+      errors.push('Nome da unidade é obrigatório');
     }
 
     // Validate location URL name (for multi-location)
     if (formData.businessType === 'multi' && !currentLocation.urlName?.trim()) {
-      errors.push('Nome da localização para URL é obrigatório');
+      errors.push('Nome da unidade para URL é obrigatório');
     }
 
     // Validate phone
     if (!currentLocation.phone?.trim()) {
-      errors.push('Telefone da localização é obrigatório');
+      errors.push('Telefone da unidade é obrigatório');
     } else if (!validateInternationalPhone(currentLocation.phone)) {
-      errors.push('Telefone da localização deve estar em formato válido');
+      errors.push('Telefone da unidade deve estar em formato válido');
     }
 
     // Validate WhatsApp (if provided)
     if (currentLocation.whatsapp?.trim() && !validateInternationalPhone(currentLocation.whatsapp)) {
-      errors.push('WhatsApp da localização deve estar em formato válido');
+      errors.push('WhatsApp da unidade deve estar em formato válido');
     }
 
     // Validate address fields
@@ -322,7 +322,7 @@ function RegisterPage() {
 
     // Prevent adding new location if current location has errors
     if (hasCurrentLocationErrors()) {
-      setError('Por favor, corrija os erros da localização atual antes de adicionar uma nova.');
+      setError('Por favor, corrija os erros da unidade atual antes de adicionar uma nova.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -334,7 +334,7 @@ function RegisterPage() {
         .filter(Boolean);
       const urlNameSet = new Set(urlNames);
       if (urlNames.length !== urlNameSet.size) {
-        setError('Nome da URL da localização duplicado. Cada localização deve ter uma URL única.');
+        setError('Nome da URL da unidade duplicado. Cada unidade deve ter uma URL única.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -413,7 +413,7 @@ function RegisterPage() {
       // Check for duplicates after update
       let errorMsg = '';
       if (prev.businessType === 'multi' && hasDuplicateLocationUrlNames(updatedLocations)) {
-        errorMsg = 'Nome da URL da localização duplicado. Cada localização deve ter uma URL única.';
+        errorMsg = 'Nome da URL da unidade duplicado. Cada unidade deve ter uma URL única.';
       }
       setFieldErrors((fe) => ({ ...fe, 'location.urlName': errorMsg }));
       return { ...prev, locations: updatedLocations };
@@ -429,7 +429,7 @@ function RegisterPage() {
       // Check for duplicates after cleanup
       let errorMsg = '';
       if (prev.businessType === 'multi' && hasDuplicateLocationUrlNames(updatedLocations)) {
-        errorMsg = 'Nome da URL da localização duplicado. Cada localização deve ter uma URL única.';
+        errorMsg = 'Nome da URL da unidade duplicado. Cada unidade deve ter uma URL única.';
       }
       setFieldErrors((fe) => ({ ...fe, 'location.urlName': errorMsg }));
       return { ...prev, locations: updatedLocations };
@@ -522,14 +522,14 @@ function RegisterPage() {
       required: true,
       validate: (value) => {
         if (formData.businessType === 'multi' && !value?.trim())
-          return 'Nome da localização é obrigatório';
+          return 'Nome da unidade é obrigatório';
         return null;
       },
     },
     'location.phone': {
       required: true,
       validate: (value) => {
-        if (!value?.trim()) return 'Telefone da localização é obrigatório';
+        if (!value?.trim()) return 'Telefone da unidade é obrigatório';
         if (!validateInternationalPhone(value))
           return 'Telefone deve ter formato válido (ex: (11) 99999-9999, +55 11 99999-9999, +52 12 1234-1234)';
         return null;
@@ -547,7 +547,7 @@ function RegisterPage() {
       required: true,
       validate: (value) => {
         if (formData.businessType === 'multi' && !value?.trim())
-          return 'Nome da localização para URL é obrigatório';
+          return 'Nome da unidade para URL é obrigatório';
         if (value && !validateRestaurantUrlName(value))
           return 'Nome deve ter 3-50 caracteres, apenas letras, números e hífens';
         return null;
@@ -1360,7 +1360,7 @@ function RegisterPage() {
 
     // Check for duplicate location urlNames before submit (multi-location)
     if (formData.businessType === 'multi' && hasDuplicateLocationUrlNames(formData.locations)) {
-      setError('Nome da URL da localização duplicado. Cada localização deve ter uma URL única.');
+      setError('Nome da URL da unidade duplicado. Cada unidade deve ter uma URL única.');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -1774,10 +1774,10 @@ function RegisterPage() {
 
     return (
       <div>
-        <h3 className="step-title">Localizações e Horários</h3>
+        <h3 className="step-title">Unidades e Horários</h3>
         <p className="step-description">
           {formData.businessType === 'multi'
-            ? 'Configure cada localização do seu restaurante'
+            ? 'Configure cada unidade do seu restaurante'
             : 'Comece inserindo seu CEP para preenchimento automático'}
         </p>
 
@@ -1821,7 +1821,7 @@ function RegisterPage() {
             {/* Location Name Input */}
             <div className="form-group">
               <label htmlFor="location-name" className="form-label">
-                Nome da Localização *
+                Nome da Unidade *
               </label>
               <input
                 type="text"
@@ -1837,7 +1837,7 @@ function RegisterPage() {
             {/* Location URL Name Input */}
             <div className={`form-group ${getFieldErrorClass('location.urlName')}`}>
               <label htmlFor="location-url-name" className="form-label">
-                Nome da Localização para URL do Menu *
+                Nome da Unidade para URL do Menu *
               </label>
               <input
                 type="text"
@@ -1867,7 +1867,7 @@ function RegisterPage() {
         <div className="form-row">
           <div className={`form-group ${getFieldErrorClass('location.phone')}`}>
             <label htmlFor="location-phone" className="form-label">
-              Telefone da Localização *
+              Telefone da Unidade *
             </label>
             <input
               type="tel"
@@ -1887,7 +1887,7 @@ function RegisterPage() {
 
           <div className={`form-group ${getFieldErrorClass('location.whatsapp')}`}>
             <label htmlFor="location-whatsapp" className="form-label">
-              WhatsApp da Localização (Opcional)
+              WhatsApp da Unidade (Opcional)
             </label>
             <input
               type="tel"
@@ -2144,7 +2144,7 @@ function RegisterPage() {
             {formData.businessType === 'multi' && (
               <div className="location-summary">
                 <p>
-                  Total de recursos em todas as localizações:{' '}
+                  Total de recursos em todas as unidades:{' '}
                   {formData.locations.reduce(
                     (total, loc) => total + loc.selectedFeatures.length,
                     0

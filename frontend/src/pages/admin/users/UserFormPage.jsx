@@ -94,8 +94,8 @@ const UserFormPage = () => {
       description: 'Gerencia o restaurante, usuários e configurações',
     },
     location_administrator: {
-      name: 'Administrador de Localização',
-      description: 'Gerencia uma localização específica do restaurante',
+      name: 'Administrador de unidade',
+      description: 'Gerencia uma unidade específica do restaurante',
     },
     manager: {
       name: 'Gerente',
@@ -866,7 +866,7 @@ const UserFormPage = () => {
 
             {/* Role and Location Pairs */}
             <div className="form-section">
-              <h3 className="section-title">Perfis e Localizações</h3>
+              <h3 className="section-title">Perfis e Unidades</h3>
 
               {formData.role_location_pairs.length === 0 && (
                 <div className="no-pairs-message">
@@ -942,7 +942,7 @@ const UserFormPage = () => {
 
                     <div className="form-group">
                       <div className="form-label">
-                        Localizações <span className="required">*</span>
+                        Unidades <span className="required">*</span>
                       </div>
                       <div className="location-checkboxes">
                         {locations.map((location) => (

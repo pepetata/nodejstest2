@@ -272,7 +272,7 @@ const AdminProtectedRoute = ({ children }) => {
           <h2 style={{ color: '#dc3545', marginBottom: '20px' }}>Acesso Negado</h2>
           <p style={{ color: '#6c757d', marginBottom: '30px', lineHeight: '1.5' }}>
             Você não tem permissão para acessar o painel administrativo. Apenas administradores de
-            restaurante e administradores de localização podem acessar esta área.
+            restaurante e administradores de unidade podem acessar esta área.
           </p>
           <button
             onClick={() => {

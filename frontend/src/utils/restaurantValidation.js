@@ -89,14 +89,14 @@ export const validateState = (state) => {
 };
 
 export const validateLocationName = (name) => {
-  if (!name) return 'Nome da localização é obrigatório';
+  if (!name) return 'Nome da unidade é obrigatório';
   if (name.length < 3) return 'Nome deve ter pelo menos 3 caracteres';
   if (name.length > 100) return 'Nome deve ter no máximo 100 caracteres';
   return null;
 };
 
 export const validateLocationUrlName = (urlName) => {
-  if (!urlName) return 'URL da localização é obrigatória';
+  if (!urlName) return 'URL da unidade é obrigatória';
   const urlRegex = /^[a-z0-9-]+$/;
   if (!urlRegex.test(urlName)) return 'URL deve conter apenas letras minúsculas, números e hífens';
   if (urlName.length < 2) return 'URL deve ter pelo menos 2 caracteres';

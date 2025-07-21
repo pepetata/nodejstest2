@@ -60,7 +60,7 @@ export const termosDeServico = `
 
 ### Plano Empresarial - R$ 149/mês
 - Todos os recursos do Plano Profissional
-- Suporte para múltiplas localizações
+- Suporte para múltiplas Unidades
 - Integração completa de pagamento
 - Programa de fidelidade para clientes
 - Análises avançadas e relatórios personalizados

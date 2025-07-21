@@ -127,7 +127,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
             onChange={(e) => handleFilterChange('location', e.target.value)}
             disabled={loading}
           >
-            <option value="">Todas as Localizações</option>
+            <option value="">Todas as Unidades</option>
             {locations.map((location) => (
               <option key={location.id} value={location.id}>
                 {location.name}

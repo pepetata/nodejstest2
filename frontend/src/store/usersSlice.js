@@ -110,7 +110,7 @@ export const fetchLocations = createAsyncThunk(
       return response.data.data; // Extract the actual data array from the API response
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.error || error.message || 'Erro ao carregar localizações'
+        error.response?.data?.error || error.message || 'Erro ao carregar unidades'
       );
     }
   }

@@ -10,12 +10,12 @@ WHERE name = 'superadmin';
 
 UPDATE roles SET
     display_name = 'Administrador do Restaurante',
-    description = 'Acesso completo de gerenciamento do restaurante em todas as localizações'
+    description = 'Acesso completo de gerenciamento do restaurante em todas as unidades'
 WHERE name = 'restaurant_administrator';
 
 UPDATE roles SET
-    display_name = 'Administrador da Localização',
-    description = 'Acesso de gerenciamento para múltiplas localizações específicas'
+    display_name = 'Administrador da Unidade',
+    description = 'Acesso de gerenciamento para múltiplas unidades específicas'
 WHERE name = 'location_administrator';
 
 UPDATE roles SET

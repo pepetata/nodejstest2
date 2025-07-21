@@ -99,7 +99,7 @@ const AdminRestaurantProfilePage = () => {
     },
     {
       id: 'locations',
-      name: 'Localizações',
+      name: 'Unidades',
       // icon: '📍',
       // description: 'Endereços e horários de funcionamento',
     },
@@ -323,7 +323,7 @@ const AdminRestaurantProfilePage = () => {
         <div className="admin-page-title-section">
           <h1 className="admin-page-title">Perfil do Restaurante</h1>
           <p className="admin-page-subtitle">
-            Gerencie as informações do seu restaurante, localizações, mídia e dados de pagamento.
+            Gerencie as informações do seu restaurante, unidades, mídia e dados de pagamento.
           </p>
         </div>
       </div>

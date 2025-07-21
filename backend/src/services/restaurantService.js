@@ -141,7 +141,7 @@ class RestaurantService {
             for (const name of urlNames) {
               if (urlNameSet.has(name)) {
                 throw new Error(
-                  'Nome da URL da localização duplicado. Cada localização deve ter uma URL única.'
+                  'Nome da URL da Unidade duplicado. Cada unidade deve ter uma URL única.'
                 );
               }
               urlNameSet.add(name);
@@ -274,9 +274,9 @@ class RestaurantService {
       } else if (mensagemErro === 'Restaurant not found') {
         mensagemErro = 'Restaurante não encontrado.';
       } else if (mensagemErro === 'Cannot delete restaurant with active locations') {
-        mensagemErro = 'Não é possível excluir o restaurante com localizações ativas.';
+        mensagemErro = 'Não é possível excluir o restaurante com unidades ativas.';
       } else if (mensagemErro.startsWith('Location limit reached')) {
-        mensagemErro = 'Limite de localizações atingido para o plano de assinatura.';
+        mensagemErro = 'Limite de unidades atingido para o plano de assinatura.';
       } else if (mensagemErro === 'Insufficient permissions to access this restaurant') {
         mensagemErro = 'Permissões insuficientes para acessar este restaurante.';
       } else if (mensagemErro === 'Insufficient permissions to access this user') {

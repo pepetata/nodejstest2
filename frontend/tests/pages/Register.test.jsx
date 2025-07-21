@@ -244,7 +244,7 @@ describe('RegisterPage', () => {
       const nextButton = screen.getByRole('button', { name: /próximo passo/i });
       await user.click(nextButton);
 
-      expect(screen.getByText('Localizações e Horários')).toBeInTheDocument();
+      expect(screen.getByText('Unidades e Horários')).toBeInTheDocument();
     });
   });
 
@@ -261,7 +261,7 @@ describe('RegisterPage', () => {
       const nextButton = screen.getByRole('button', { name: /próximo passo/i });
       await user.click(nextButton);
 
-      expect(screen.getByText(/telefone da localização é obrigatório/i)).toBeInTheDocument();
+      expect(screen.getByText(/telefone da unidade é obrigatório/i)).toBeInTheDocument();
     });
 
     it('validates CEP format', async () => {
@@ -532,8 +532,8 @@ describe('RegisterPage', () => {
       await user.click(nextButton);
 
       // Should show location name field for multi-location - use ID instead of strict regex
-      expect(screen.getByLabelText('Nome da Localização *')).toBeInTheDocument();
-      expect(screen.getByLabelText(/nome da localização para url do menu/i)).toBeInTheDocument();
+      expect(screen.getByLabelText('Nome da unidade *')).toBeInTheDocument();
+      expect(screen.getByLabelText(/nome da unidade para url do menu/i)).toBeInTheDocument();
     });
 
     it('adds new location for multi-location business', async () => {
@@ -557,10 +557,10 @@ describe('RegisterPage', () => {
       await user.type(locationName, 'Centro');
 
       // Fill the location URL name (this was missing and causing validation error)
-      const locationUrlInput = screen.getByLabelText(/nome da localização para url do menu/i);
+      const locationUrlInput = screen.getByLabelText(/nome da unidade para url do menu/i);
       await user.type(locationUrlInput, 'centro');
 
-      const locationPhone = screen.getByLabelText(/telefone da localização/i);
+      const locationPhone = screen.getByLabelText(/telefone da unidade/i);
       await user.type(locationPhone, '(11) 99999-9999');
 
       const cepInput = screen.getByLabelText(/cep/i);
@@ -602,7 +602,7 @@ describe('RegisterPage', () => {
       await waitFor(() => {
         expect(
           screen.getByText(
-            /por favor, corrija os erros da localização atual antes de adicionar uma nova/i
+            /por favor, corrija os erros da unidade atual antes de adicionar uma nova/i
           )
         ).toBeInTheDocument();
       });
@@ -631,10 +631,10 @@ describe('RegisterPage', () => {
       await user.type(locationName, 'Centro');
 
       // Fill the location URL name (required for multi-location)
-      const locationUrlInput = screen.getByLabelText(/nome da localização para url do menu/i);
+      const locationUrlInput = screen.getByLabelText(/nome da unidade para url do menu/i);
       await user.type(locationUrlInput, 'centro');
 
-      const locationPhone = screen.getByLabelText(/telefone da localização/i);
+      const locationPhone = screen.getByLabelText(/telefone da unidade/i);
       await user.type(locationPhone, '(11) 99999-9999');
 
       const cepInput = screen.getByLabelText(/cep/i);
@@ -680,10 +680,10 @@ describe('RegisterPage', () => {
       await user.type(locationName, 'Centro');
 
       // Fill the location URL name (required for multi-location)
-      const locationUrlInput = screen.getByLabelText(/nome da localização para url do menu/i);
+      const locationUrlInput = screen.getByLabelText(/nome da unidade para url do menu/i);
       await user.type(locationUrlInput, 'centro');
 
-      const locationPhone = screen.getByLabelText(/telefone da localização/i);
+      const locationPhone = screen.getByLabelText(/telefone da unidade/i);
       await user.type(locationPhone, '(11) 99999-9999');
 
       const cepInput = screen.getByLabelText(/cep/i);
@@ -700,7 +700,7 @@ describe('RegisterPage', () => {
       });
 
       // Fill second location
-      const secondLocationPhone = screen.getByLabelText(/telefone da localização/i);
+      const secondLocationPhone = screen.getByLabelText(/telefone da unidade/i);
       await user.clear(secondLocationPhone);
       await user.type(secondLocationPhone, '(11) 88888-8888');
 
@@ -710,7 +710,7 @@ describe('RegisterPage', () => {
 
       // Should show first location data
       await waitFor(() => {
-        const phoneInput = screen.getByLabelText(/telefone da localização/i);
+        const phoneInput = screen.getByLabelText(/telefone da unidade/i);
         expect(phoneInput).toHaveValue('(11) 99999-9999');
       });
     });
@@ -734,7 +734,7 @@ describe('RegisterPage', () => {
       await user.click(nextButton);
 
       // Fill location URL name
-      const locationUrlInput = screen.getByLabelText(/nome da localização para url/i);
+      const locationUrlInput = screen.getByLabelText(/nome da unidade para url/i);
       await user.type(locationUrlInput, 'centro');
 
       // Should show the combined URL (URL format has some concatenation issues in the component)
@@ -769,8 +769,8 @@ describe('RegisterPage', () => {
       await waitFor(() => {
         expect(screen.getByText(/por favor, corrija/i)).toBeInTheDocument();
         // The specific error messages may be consolidated into a general error message
-        // expect(screen.getByText(/nome da localização é obrigatório/i)).toBeInTheDocument();
-        // expect(screen.getByText(/telefone da localização é obrigatório/i)).toBeInTheDocument();
+        // expect(screen.getByText(/nome da unidade é obrigatório/i)).toBeInTheDocument();
+        // expect(screen.getByText(/telefone da unidade é obrigatório/i)).toBeInTheDocument();
         // expect(screen.getByText(/cep é obrigatório/i)).toBeInTheDocument();
       });
     });
@@ -788,7 +788,7 @@ describe('RegisterPage', () => {
       await user.click(nextButton);
 
       // Fill only required fields for single location
-      const locationPhone = screen.getByLabelText(/telefone da localização/i);
+      const locationPhone = screen.getByLabelText(/telefone da unidade/i);
       await user.type(locationPhone, '(11) 99999-9999');
 
       const cepInput = screen.getByLabelText(/cep/i);

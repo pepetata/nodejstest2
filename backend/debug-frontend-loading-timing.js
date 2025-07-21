@@ -90,7 +90,7 @@ async function debugFrontendLoadingTiming() {
       const roleDisplayInfo = {
         superadmin: { name: 'Super Administrador' },
         restaurant_administrator: { name: 'Administrador do Restaurante' },
-        location_administrator: { name: 'Administrador de Localização' },
+        location_administrator: { name: 'Administrador de Unidade' },
         manager: { name: 'Gerente' },
         waiter: { name: 'Garçom' },
         kitchen: { name: 'Cozinha' },

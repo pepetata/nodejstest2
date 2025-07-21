@@ -36,7 +36,7 @@ export const fetchRestaurantLocations = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.error?.message ||
           error.response?.data?.message ||
-          'Erro ao carregar localizações'
+          'Erro ao carregar unidades'
       );
     }
   }

@@ -316,7 +316,7 @@ const RestaurantLocationsTab = ({ onSave }) => {
         <div className="empty-state">
           <span className="empty-icon">📍</span>
           <h3>Nenhuma localização encontrada</h3>
-          <p>Não foi possível carregar as localizações do restaurante.</p>
+          <p>Não foi possível carregar as unidades do restaurante.</p>
         </div>
       </div>
     );
@@ -325,7 +325,7 @@ const RestaurantLocationsTab = ({ onSave }) => {
   if (!currentLocation) {
     return (
       <div className="tab-content-loading">
-        <p>Carregando informações da localização...</p>
+        <p>Carregando informações da Unidade...</p>
       </div>
     );
   }
@@ -360,7 +360,7 @@ const RestaurantLocationsTab = ({ onSave }) => {
       {/* Location Details */}
       <div className="tab-section">
         <h3 className="section-title">
-          Informações da Localização
+          Informações da Unidade
           <div className="tab-edit-controls">
             {!isEditing ? (
               <button className="btn btn-primary" onClick={handleStartEditing}>
@@ -381,7 +381,7 @@ const RestaurantLocationsTab = ({ onSave }) => {
 
         <div className="form-grid">
           <FormField
-            label="Nome da Localização"
+            label="Nome da Unidade"
             name="name"
             type="text"
             value={currentLocation.name || ''}
@@ -394,7 +394,7 @@ const RestaurantLocationsTab = ({ onSave }) => {
           />
 
           <FormField
-            label="URL da Localização"
+            label="URL da Unidade"
             name="url_name"
             type="text"
             value={currentLocation.url_name || ''}
@@ -575,7 +575,7 @@ const RestaurantLocationsTab = ({ onSave }) => {
         isOpen={showCancelModal}
         onConfirm={handleConfirmCancel}
         onCancel={handleCancelModal}
-        message="Você tem alterações não salvas nas localizações. Deseja descartar as alterações?"
+        message="Você tem alterações não salvas nas unidades. Deseja descartar as alterações?"
       />
     </div>
   );

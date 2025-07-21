@@ -79,7 +79,7 @@ user.role_location_pairs = [
     role_name: "restaurant_administrator",
     role_display_name: "Administrador do Restaurante",
     location_id: "uuid",
-    location_name: "Localização Principal",
+    location_name: "Matriz",
     location_url_name: "matriz",
   },
 ];
