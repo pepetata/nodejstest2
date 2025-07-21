@@ -18,6 +18,7 @@ const UserTable = ({
   roles,
   locations,
   loading,
+  currentUser,
   currentPage,
   totalPages,
   totalCount,
@@ -122,6 +123,12 @@ const UserTable = ({
 
   // Helper function to determine if actions should be disabled
   const shouldDisableActions = (user) => {
+    // Prevent current user from performing actions on themselves
+    if (currentUser && String(user.id) === String(currentUser.id)) {
+      return true;
+    }
+
+    // Existing logic: prevent actions on the only restaurant admin
     return isOnlyRestaurantAdmin(user);
   };
 
@@ -330,6 +337,12 @@ UserTable.propTypes = {
     })
   ).isRequired,
   loading: PropTypes.bool.isRequired,
+  currentUser: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    full_name: PropTypes.string,
+    email: PropTypes.string,
+    username: PropTypes.string,
+  }),
   currentPage: PropTypes.number.isRequired,
   totalPages: PropTypes.number.isRequired,
   totalCount: PropTypes.number.isRequired,

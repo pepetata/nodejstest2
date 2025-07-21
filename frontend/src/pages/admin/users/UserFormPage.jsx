@@ -51,6 +51,7 @@ const UserFormPage = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [originalFormData, setOriginalFormData] = useState(null);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -124,6 +125,95 @@ const UserFormPage = () => {
       name: 'Operador POS',
       description: 'Opera o sistema de ponto de venda',
     },
+  };
+
+  // Helper function to deeply compare form data for changes
+  const hasFormDataChanged = (current, original) => {
+    if (!original) {
+      console.log('No original data yet, returning false');
+      return false; // No original data yet, so no changes
+    }
+
+    // Compare simple fields (ignore password fields as they start empty in edit mode)
+    const fieldsToCompare = ['name', 'email', 'username', 'phone', 'whatsapp'];
+    for (const field of fieldsToCompare) {
+      // Normalize values for comparison (handle null, undefined, empty string)
+      const currentValue = current[field] || '';
+      const originalValue = original[field] || '';
+
+      // Special case for username: if original is empty and current matches email, consider it unchanged
+      if (field === 'username' && originalValue === '' && currentValue !== '') {
+        // Check if the username field was auto-populated with the email
+        const currentEmail = current.email || '';
+        console.log(
+          `Checking username vs email: username="${currentValue}", email="${currentEmail}"`
+        );
+        if (currentValue === currentEmail) {
+          console.log(
+            `Username field populated with email, considering as unchanged: "${currentValue}"`
+          );
+          continue;
+        }
+      }
+
+      if (currentValue !== originalValue) {
+        console.log(`Field ${field} changed: "${originalValue}" -> "${currentValue}"`);
+        return true;
+      }
+    }
+
+    // Compare password field only if it has a value (not empty)
+    if (current.password && current.password !== '') {
+      console.log('Password field has value, marking as changed');
+      return true;
+    }
+
+    // Compare role_location_pairs (deep comparison)
+    if (current.role_location_pairs.length !== original.role_location_pairs.length) {
+      console.log(
+        'Role pairs length changed:',
+        original.role_location_pairs.length,
+        '->',
+        current.role_location_pairs.length
+      );
+      return true;
+    }
+
+    for (let i = 0; i < current.role_location_pairs.length; i++) {
+      const currentPair = current.role_location_pairs[i];
+      const originalPair = original.role_location_pairs[i];
+
+      if (currentPair.role_id !== originalPair.role_id) {
+        console.log(`Role ${i} changed: "${originalPair.role_id}" -> "${currentPair.role_id}"`);
+        return true;
+      }
+
+      // Compare location_ids arrays
+      if (currentPair.location_ids.length !== originalPair.location_ids.length) {
+        console.log(
+          `Location IDs length changed for role ${i}:`,
+          originalPair.location_ids.length,
+          '->',
+          currentPair.location_ids.length
+        );
+        return true;
+      }
+
+      const sortedCurrent = [...currentPair.location_ids].sort();
+      const sortedOriginal = [...originalPair.location_ids].sort();
+
+      for (let j = 0; j < sortedCurrent.length; j++) {
+        if (sortedCurrent[j] !== sortedOriginal[j]) {
+          console.log(
+            `Location ID ${j} changed for role ${i}: "${sortedOriginal[j]}" -> "${sortedCurrent[j]}"`
+          );
+          return true;
+        }
+      }
+    }
+
+    console.log('No changes detected');
+    return false; // No changes detected
   };
 
   // Filter roles based on current user permissions and exclude already selected roles
@@ -224,6 +314,7 @@ const UserFormPage = () => {
           };
 
           setFormData(newFormData);
+          setOriginalFormData(JSON.parse(JSON.stringify(newFormData))); // Deep copy to avoid reference issues
           // Don't mark as unsaved changes when loading initial data
         })
         .catch((error) => {
@@ -235,13 +326,15 @@ const UserFormPage = () => {
   // Handle input changes
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [name]: type === 'checkbox' ? checked : value,
-    }));
+    };
 
-    // Mark as having unsaved changes
-    setHasUnsavedChanges(true);
+    setFormData(newFormData);
+
+    // Check if form data has actually changed from original
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
 
     // Handle errors with a single setState call to avoid conflicts
     setErrors((prev) => {
@@ -283,11 +376,13 @@ const UserFormPage = () => {
 
   // Add a new role-location pair
   const addRoleLocationPair = () => {
-    setFormData((prev) => ({
-      ...prev,
-      role_location_pairs: [...prev.role_location_pairs, { role_id: '', location_ids: [] }],
-    }));
-    setHasUnsavedChanges(true);
+    const newFormData = {
+      ...formData,
+      role_location_pairs: [...formData.role_location_pairs, { role_id: '', location_ids: [] }],
+    };
+
+    setFormData(newFormData);
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
   };
 
   // Remove a role-location pair
@@ -302,11 +397,13 @@ const UserFormPage = () => {
       return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      role_location_pairs: prev.role_location_pairs.filter((_, i) => i !== index),
-    }));
-    setHasUnsavedChanges(true);
+    const newFormData = {
+      ...formData,
+      role_location_pairs: formData.role_location_pairs.filter((_, i) => i !== index),
+    };
+
+    setFormData(newFormData);
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
 
     // Clear any existing error
     setErrors((prev) => ({
@@ -317,13 +414,15 @@ const UserFormPage = () => {
 
   // Update a specific role-location pair
   const updateRoleLocationPair = (index, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      role_location_pairs: prev.role_location_pairs.map((pair, i) =>
+    const newFormData = {
+      ...formData,
+      role_location_pairs: formData.role_location_pairs.map((pair, i) =>
         i === index ? { ...pair, [field]: value } : pair
       ),
-    }));
-    setHasUnsavedChanges(true);
+    };
+
+    setFormData(newFormData);
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
 
     // Clear specific error when user makes selection
     if (errors.role_location_pairs) {
@@ -336,9 +435,9 @@ const UserFormPage = () => {
 
   // Toggle location selection for a role
   const toggleLocationForRole = (roleIndex, locationId) => {
-    setFormData((prev) => ({
-      ...prev,
-      role_location_pairs: prev.role_location_pairs.map((pair, i) => {
+    const newFormData = {
+      ...formData,
+      role_location_pairs: formData.role_location_pairs.map((pair, i) => {
         if (i === roleIndex) {
           const currentLocationIds = pair.location_ids || [];
           const locationExists = currentLocationIds.includes(locationId);
@@ -352,8 +451,10 @@ const UserFormPage = () => {
         }
         return pair;
       }),
-    }));
-    setHasUnsavedChanges(true);
+    };
+
+    setFormData(newFormData);
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
 
     // Clear specific error when user makes selection
     if (errors.role_location_pairs) {
@@ -526,11 +627,13 @@ const UserFormPage = () => {
 
   const handlePhoneChange = (e, field) => {
     const formatted = formatPhoneNumber(e.target.value);
-    setFormData((prev) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: formatted,
-    }));
-    setHasUnsavedChanges(true);
+    };
+
+    setFormData(newFormData);
+    setHasUnsavedChanges(hasFormDataChanged(newFormData, originalFormData));
   };
 
   const handleCancel = () => {

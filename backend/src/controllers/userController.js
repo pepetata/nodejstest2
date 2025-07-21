@@ -472,6 +472,20 @@ class UserController {
           );
       }
 
+      // Prevent user from deleting themselves
+      if (String(userId) === String(req.user?.id)) {
+        controllerLogger.warn('Self-protection: User attempting to delete their own account', {
+          userId: req.user?.id,
+          targetUserId: userId,
+        });
+
+        return res
+          .status(403)
+          .json(
+            ResponseFormatter.error('You cannot delete your own account', 403, null, requestId)
+          );
+      }
+
       // Idempotency check with ETag (if provided)
       if (ifMatch) {
         const currentUser = await this.userService.getUserById(userId, req.user);
@@ -968,6 +982,20 @@ class UserController {
               null,
               requestId
             )
+          );
+      }
+
+      // Prevent user from deactivating themselves
+      if (String(userId) === String(req.user?.id)) {
+        controllerLogger.warn('Self-protection: User attempting to change their own status', {
+          userId: req.user?.id,
+          targetUserId: userId,
+        });
+
+        return res
+          .status(403)
+          .json(
+            ResponseFormatter.error('You cannot deactivate your own account', 403, null, requestId)
           );
       }
 

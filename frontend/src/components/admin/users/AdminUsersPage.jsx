@@ -37,6 +37,7 @@ const AdminUsersPage = () => {
   const pagination = useSelector(selectUsersPagination);
   const roles = useSelector(selectRoles);
   const locations = useSelector(selectLocations);
+  const currentUser = useSelector((state) => state.auth.user);
 
   // State for modals and forms
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -246,6 +247,7 @@ const AdminUsersPage = () => {
         roles={roles || []}
         locations={locations || []}
         loading={loading}
+        currentUser={currentUser}
         currentPage={pagination?.page || 1}
         totalPages={pagination?.totalPages || 1}
         totalCount={pagination?.total || 0}
