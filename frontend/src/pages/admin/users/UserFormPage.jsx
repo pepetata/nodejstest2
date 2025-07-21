@@ -129,6 +129,10 @@ const UserFormPage = () => {
 
   // Helper function to deeply compare form data for changes
   const hasFormDataChanged = (current, original) => {
+    console.log('🔍 hasFormDataChanged called');
+    console.log('Current data:', JSON.stringify(current, null, 2));
+    console.log('Original data:', JSON.stringify(original, null, 2));
+
     if (!original) {
       console.log('No original data yet, returning false');
       return false; // No original data yet, so no changes
@@ -140,6 +144,10 @@ const UserFormPage = () => {
       // Normalize values for comparison (handle null, undefined, empty string)
       const currentValue = current[field] || '';
       const originalValue = original[field] || '';
+
+      console.log(
+        `🔎 Comparing field "${field}": current="${currentValue}", original="${originalValue}"`
+      );
 
       // Special case for username: if original is empty and current matches email, consider it unchanged
       if (field === 'username' && originalValue === '' && currentValue !== '') {
@@ -157,7 +165,7 @@ const UserFormPage = () => {
       }
 
       if (currentValue !== originalValue) {
-        console.log(`Field ${field} changed: "${originalValue}" -> "${currentValue}"`);
+        console.log(`❌ Field ${field} changed: "${originalValue}" -> "${currentValue}"`);
         return true;
       }
     }
@@ -169,9 +177,14 @@ const UserFormPage = () => {
     }
 
     // Compare role_location_pairs (deep comparison)
+    console.log('🔎 Comparing role_location_pairs...');
+    console.log(
+      `Current pairs length: ${current.role_location_pairs.length}, Original pairs length: ${original.role_location_pairs.length}`
+    );
+
     if (current.role_location_pairs.length !== original.role_location_pairs.length) {
       console.log(
-        'Role pairs length changed:',
+        '❌ Role pairs length changed:',
         original.role_location_pairs.length,
         '->',
         current.role_location_pairs.length
@@ -183,15 +196,31 @@ const UserFormPage = () => {
       const currentPair = current.role_location_pairs[i];
       const originalPair = original.role_location_pairs[i];
 
+      console.log(`🔎 Comparing role pair ${i}:`);
+      console.log(
+        `  Current: role_id="${currentPair.role_id}" (${typeof currentPair.role_id}), location_ids=[${currentPair.location_ids.join(',')}]`
+      );
+      console.log(
+        `  Original: role_id="${originalPair.role_id}" (${typeof originalPair.role_id}), location_ids=[${originalPair.location_ids.join(',')}]`
+      );
+
       if (currentPair.role_id !== originalPair.role_id) {
-        console.log(`Role ${i} changed: "${originalPair.role_id}" -> "${currentPair.role_id}"`);
+        console.log(`❌ Role ${i} changed: "${originalPair.role_id}" -> "${currentPair.role_id}"`);
         return true;
       }
 
       // Compare location_ids arrays
+      console.log(`🔎 Comparing location_ids for role ${i}:`);
+      console.log(
+        `  Current location_ids: [${currentPair.location_ids.join(',')}] (length: ${currentPair.location_ids.length})`
+      );
+      console.log(
+        `  Original location_ids: [${originalPair.location_ids.join(',')}] (length: ${originalPair.location_ids.length})`
+      );
+
       if (currentPair.location_ids.length !== originalPair.location_ids.length) {
         console.log(
-          `Location IDs length changed for role ${i}:`,
+          `❌ Location IDs length changed for role ${i}:`,
           originalPair.location_ids.length,
           '->',
           currentPair.location_ids.length
@@ -202,17 +231,23 @@ const UserFormPage = () => {
       const sortedCurrent = [...currentPair.location_ids].sort();
       const sortedOriginal = [...originalPair.location_ids].sort();
 
+      console.log(`  Sorted current: [${sortedCurrent.join(',')}]`);
+      console.log(`  Sorted original: [${sortedOriginal.join(',')}]`);
+
       for (let j = 0; j < sortedCurrent.length; j++) {
+        console.log(
+          `    Comparing location ${j}: "${sortedOriginal[j]}" vs "${sortedCurrent[j]}" (types: ${typeof sortedOriginal[j]} vs ${typeof sortedCurrent[j]})`
+        );
         if (sortedCurrent[j] !== sortedOriginal[j]) {
           console.log(
-            `Location ID ${j} changed for role ${i}: "${sortedOriginal[j]}" -> "${sortedCurrent[j]}"`
+            `❌ Location ID ${j} changed for role ${i}: "${sortedOriginal[j]}" -> "${sortedCurrent[j]}"`
           );
           return true;
         }
       }
     }
 
-    console.log('No changes detected');
+    console.log('✅ No changes detected');
     return false; // No changes detected
   };
 
