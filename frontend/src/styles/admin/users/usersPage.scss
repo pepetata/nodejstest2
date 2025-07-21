@@ -984,6 +984,15 @@
           box-shadow: none !important;
         }
       }
+
+      // Make icons larger and more visible
+      svg {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+        min-width: 18px !important;
+        min-height: 18px !important;
+      }
     }
   }
 
