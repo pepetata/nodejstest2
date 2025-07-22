@@ -29,7 +29,10 @@ const RouteGuard = ({ children, requireAuth = false, requireAdmin = false }) => 
 
   // Memoize expensive computations
   const hasValidToken = useMemo(() => storage.get('token'), []);
-  const isAuthenticated = useMemo(() => !!user && !!token && !!hasValidToken, [user, token, hasValidToken]);
+  const isAuthenticated = useMemo(
+    () => !!user && !!token && !!hasValidToken,
+    [user, token, hasValidToken]
+  );
   const isAdmin = useMemo(
     () => user?.role === 'restaurant_administrator' || user?.role === 'location_administrator',
     [user?.role]
@@ -41,7 +44,7 @@ const RouteGuard = ({ children, requireAuth = false, requireAdmin = false }) => 
     const sub = window.location.hostname.split('.')[0];
     return {
       subdomain: sub,
-      isSubdomain: sub && sub !== 'localhost' && sub !== 'www'
+      isSubdomain: sub && sub !== 'localhost' && sub !== 'www',
     };
   }, []);
 
