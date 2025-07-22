@@ -138,10 +138,6 @@ const LoginPage = ({ subdomain: _subdomain }) => {
         const user = resultAction.payload.user;
         const userRestaurantSubdomain = resultAction.payload?.restaurant?.url;
 
-        console.log('Login successful, payload:', resultAction.payload); // Debug
-        console.log('User restaurant subdomain:', userRestaurantSubdomain); // Debug
-        console.log('User roles:', user.roles); // Debug
-
         // Check user roles to determine where to redirect
         const hasAdminRole = user.roles?.some(
           (role) =>
@@ -154,7 +150,6 @@ const LoginPage = ({ subdomain: _subdomain }) => {
           // User is an admin (restaurant or location administrator), redirect to admin page
           const token = resultAction.payload.token;
           const redirectUrl = `http://${userRestaurantSubdomain}.localhost:3000/admin?token=${encodeURIComponent(token)}&auth=true`;
-          console.log('Redirecting admin to:', redirectUrl); // Debug
           window.location.href = redirectUrl;
         } else if (hasAdminRole && restaurantSlug) {
           // Fallback: if we have a restaurant slug (user is on restaurant page), redirect to restaurant admin
@@ -162,11 +157,9 @@ const LoginPage = ({ subdomain: _subdomain }) => {
         } else if (userRestaurantSubdomain) {
           // For non-admin users with a restaurant, redirect to coming-soon page
           const redirectUrl = `http://${userRestaurantSubdomain}.localhost:3000/coming-soon`;
-          console.log('Redirecting non-admin user to coming-soon page:', redirectUrl); // Debug
           window.location.href = redirectUrl;
         } else {
           // For other user types without a restaurant, redirect to a placeholder page
-          console.log('Non-admin user without restaurant, redirecting to placeholder page'); // Debug
           // TODO: Create appropriate pages for different user roles (waiter, cook, etc.)
           navigate('/dashboard'); // Placeholder for now
         }

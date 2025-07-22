@@ -42,9 +42,6 @@ function App({ getSubdomain }) {
 
   const [restaurantExists, setRestaurantExists] = useState(null); // null = loading, true = exists, false = not exists
 
-  console.log(`Subdomain detected: ${subdomain}`);
-  console.log(`Restaurant exists state: ${restaurantExists}`);
-
   // Check if authenticated user's restaurant matches current subdomain
   useEffect(() => {
     if (isAuthenticated && restaurant) {
@@ -54,10 +51,6 @@ function App({ getSubdomain }) {
       if (subdomain) {
         // If user is authenticated and we're on a subdomain, check if it matches their restaurant
         if (restaurant.url !== subdomain) {
-          console.log(
-            `Restaurant mismatch detected. User restaurant: ${restaurant.url}, Current subdomain: ${subdomain}. Logging out...`
-          );
-
           // Clear all authentication data
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -72,7 +65,6 @@ function App({ getSubdomain }) {
       } else if (!isOnLoginPage) {
         // If user is authenticated with a restaurant but on main domain (and not on login page), they should be logged out
         // This prevents restaurant admin from accessing main domain while logged in
-        console.log(`Restaurant admin on main domain detected. Logging out...`);
 
         // Clear all authentication data
         localStorage.removeItem('token');
@@ -127,8 +119,6 @@ function App({ getSubdomain }) {
     const shouldLogout = urlParams.get('logout');
 
     if (shouldLogout === 'true') {
-      console.log('Logout parameter detected, forcing authentication clear');
-
       // Clear all possible authentication data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -166,7 +156,6 @@ function App({ getSubdomain }) {
         restaurantExists === null ? (
           // Loading state while validating restaurant
           <>
-            {console.log(`Rendering loading state for subdomain: ${subdomain}`)}
             <Route
               path="*"
               element={
@@ -179,7 +168,6 @@ function App({ getSubdomain }) {
         ) : restaurantExists === false ? (
           // Restaurant doesn't exist - show 404 for all routes with Layout
           <>
-            {console.log(`Rendering 404 for non-existent subdomain: ${subdomain}`)}
             <Route
               path="*"
               element={
@@ -192,15 +180,11 @@ function App({ getSubdomain }) {
         ) : (
           // Restaurant exists - show subdomain routes
           <>
-            {console.log(`Rendering valid subdomain routes for: ${subdomain}`)}
-            {console.log('Rendering subdomain routes for:', subdomain)}
-
             {/* Admin routes for restaurant subdomain */}
             <Route
               path="/admin"
               element={
                 <>
-                  {console.log('Admin route matched!')}
                   <AdminProtectedRoute>
                     <AdminLayout />
                   </AdminProtectedRoute>

@@ -13,13 +13,8 @@ api.interceptors.request.use(
   (config) => {
     // Read token from both localStorage and sessionStorage
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    console.log('🔑 API Request Interceptor - Token:', token ? 'Present' : 'Missing');
-    console.log('🔑 API Request Interceptor - URL:', config.url);
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
-      console.log('🔑 API Request Interceptor - Authorization header added');
-    } else {
-      console.log('🔑 API Request Interceptor - No token found, skipping auth header');
     }
     return config;
   },

@@ -17,7 +17,6 @@ const AdminProtectedRoute = ({ children }) => {
   const isAuthenticated = useSelector((state) => !!state.auth.user);
   const user = useSelector((state) => state.auth.user);
   const restaurant = useSelector((state) => state.auth.restaurant);
-  const authStatus = useSelector((state) => state.auth.status);
 
   // Check if we're on a subdomain (no restaurantSlug in URL params)
   const isSubdomain =
@@ -56,26 +55,18 @@ const AdminProtectedRoute = ({ children }) => {
   // Handle initial rehydration state - simple timeout approach
   useEffect(() => {
     const hasToken = storage.get('token');
-    console.log('AdminProtectedRoute - Initial rehydration check:', {
-      hasToken: !!hasToken,
-      isAuthenticated,
-    });
 
     if (!hasToken) {
       // No token, no need to wait for rehydration
-      console.log('AdminProtectedRoute - No token, stopping rehydration immediately');
       setIsRehydrating(false);
     } else {
       // We have a token, give rehydration some time to complete
-      console.log('AdminProtectedRoute - Token found, waiting for rehydration...');
       const timeoutId = setTimeout(() => {
-        console.log('AdminProtectedRoute - Rehydration timeout completed');
         setIsRehydrating(false);
       }, 1000); // Wait 1 second for rehydration
 
       // If user gets authenticated before timeout, stop waiting immediately
       if (isAuthenticated) {
-        console.log('AdminProtectedRoute - User authenticated during wait, stopping rehydration');
         clearTimeout(timeoutId);
         setIsRehydrating(false);
       }
@@ -100,8 +91,6 @@ const AdminProtectedRoute = ({ children }) => {
     const auth = searchParams.get('auth');
 
     if (token && auth === 'true' && !isAuthenticated) {
-      console.log('AdminProtectedRoute - Found token in URL, setting up authentication');
-
       // Store the token in localStorage for this subdomain
       storage.set('token', token, true); // Use localStorage (rememberMe = true)
 
@@ -109,22 +98,12 @@ const AdminProtectedRoute = ({ children }) => {
       authService
         .getCurrentUser()
         .then((response) => {
-          console.log('AdminProtectedRoute - API Response:', response); // Debug full response
           const userData = response.data?.user || response.user; // Handle different response structures
           const restaurantData = response.data?.restaurant || response.restaurant; // Extract restaurant data
           const token = storage.get('token');
 
-          console.log('AdminProtectedRoute - Successfully fetched user data:', userData);
-          console.log(
-            'AdminProtectedRoute - Successfully fetched restaurant data:',
-            restaurantData
-          );
-          console.log('AdminProtectedRoute - Restaurant status:', restaurantData?.status);
-          console.log('AdminProtectedRoute - User is_admin:', userData?.is_admin);
-
           // Check if restaurant is inactive and user is admin
           if (restaurantData && restaurantData.status === 'inactive' && userData?.is_admin) {
-            console.log('AdminProtectedRoute - Restaurant is inactive, showing modal');
             setInactiveRestaurantName(restaurantData.name || 'Restaurante');
             setShowInactiveModal(true);
           }
@@ -178,7 +157,6 @@ const AdminProtectedRoute = ({ children }) => {
 
   // Show loading state while rehydrating authentication
   if (isRehydrating) {
-    console.log('AdminProtectedRoute - Rehydrating authentication state...');
     return (
       <div
         style={{
@@ -200,19 +178,13 @@ const AdminProtectedRoute = ({ children }) => {
   const isUserAuthenticated = isAuthenticated && hasValidToken;
 
   if (!isUserAuthenticated) {
-    console.log(
-      'AdminProtectedRoute - User not authenticated or no valid token, redirecting to login'
-    );
-
     // Clear any stale Redux state if token is missing
     if (isAuthenticated && !hasValidToken) {
-      console.log('AdminProtectedRoute - Clearing stale authentication state');
       dispatch({ type: 'auth/logout' });
     }
 
     if (isSubdomain) {
       // On subdomain, redirect to subdomain login page (not main app)
-      console.log('AdminProtectedRoute - Redirecting to subdomain login page');
       return <Navigate to="/login" replace />;
     } else {
       // On main app, redirect to /:restaurantSlug/login
@@ -224,14 +196,7 @@ const AdminProtectedRoute = ({ children }) => {
   // Allow users with administrator-level roles to access admin interface
   const hasAdminAccess = checkAdminAccess(user);
 
-  console.log('AdminProtectedRoute - hasAdminAccess:', hasAdminAccess);
-  console.log('AdminProtectedRoute - user.role:', user?.role);
-  console.log('AdminProtectedRoute - user.roles:', user?.roles);
-  console.log('AdminProtectedRoute - user.is_admin:', user?.is_admin);
-
   if (!hasAdminAccess) {
-    console.log('AdminProtectedRoute - User lacks admin access, showing access denied message');
-
     // Show access denied message with option to return to app
     return (
       <div
@@ -297,10 +262,6 @@ const AdminProtectedRoute = ({ children }) => {
       </div>
     );
   }
-
-  console.log('AdminProtectedRoute - All checks passed, rendering children');
-  console.log('AdminProtectedRoute - showInactiveModal:', showInactiveModal);
-  console.log('AdminProtectedRoute - inactiveRestaurantName:', inactiveRestaurantName);
 
   const handleCloseModal = () => {
     setShowInactiveModal(false);
