@@ -79,7 +79,6 @@ INSERT INTO user_roles (
     restaurant_id,
     location_id,
     assigned_by,
-    is_primary_role,
     is_active,
     valid_from,
     created_at
@@ -90,7 +89,6 @@ INSERT INTO user_roles (
     '550e8400-e29b-41d4-a716-446655440001', -- Pizzaria Bella Vista
     null, -- Restaurant-wide access
     '770e8400-e29b-41d4-a716-446655440005', -- Assigned by super admin
-    true, -- Primary role
     true,
     CURRENT_TIMESTAMP - INTERVAL '30 days',
     CURRENT_TIMESTAMP - INTERVAL '30 days'
@@ -104,7 +102,6 @@ INSERT INTO user_roles (
     restaurant_id,
     location_id,
     assigned_by,
-    is_primary_role,
     is_active,
     valid_from,
     created_at
@@ -117,7 +114,6 @@ INSERT INTO user_roles (
     '550e8400-e29b-41d4-a716-446655440001', -- Pizzaria Bella Vista
     null, -- Restaurant-wide access
     '770e8400-e29b-41d4-a716-446655440001', -- Assigned by João Silva
-    true, -- Primary role
     true,
     CURRENT_TIMESTAMP - INTERVAL '25 days',
     CURRENT_TIMESTAMP - INTERVAL '25 days'
@@ -130,7 +126,6 @@ INSERT INTO user_roles (
     '550e8400-e29b-41d4-a716-446655440001', -- Pizzaria Bella Vista
     null, -- Restaurant-wide access (no specific location)
     '770e8400-e29b-41d4-a716-446655440001', -- Assigned by João Silva
-    false, -- Secondary role
     true,
     CURRENT_TIMESTAMP - INTERVAL '20 days',
     CURRENT_TIMESTAMP - INTERVAL '20 days'
@@ -144,7 +139,6 @@ INSERT INTO user_roles (
     restaurant_id,
     location_id,
     assigned_by,
-    is_primary_role,
     is_active,
     valid_from,
     created_at
@@ -155,7 +149,6 @@ INSERT INTO user_roles (
     '550e8400-e29b-41d4-a716-446655440001', -- Pizzaria Bella Vista
     null, -- Restaurant-wide access (no specific location)
     '770e8400-e29b-41d4-a716-446655440001', -- Assigned by João Silva
-    true, -- Primary role
     true,
     CURRENT_TIMESTAMP - INTERVAL '15 days',
     CURRENT_TIMESTAMP - INTERVAL '15 days'
@@ -169,7 +162,6 @@ INSERT INTO user_roles (
     restaurant_id,
     location_id,
     assigned_by,
-    is_primary_role,
     is_active,
     valid_from,
     created_at
@@ -180,7 +172,6 @@ INSERT INTO user_roles (
     null, -- System-wide access
     null, -- System-wide access
     null, -- Self-assigned or system-assigned
-    true, -- Primary role
     true,
     CURRENT_TIMESTAMP - INTERVAL '60 days',
     CURRENT_TIMESTAMP - INTERVAL '60 days'

@@ -1377,7 +1377,6 @@ function RegisterPage() {
         // Single location: assign restaurant admin to the only location
         roleAssignments.push({
           role_name: 'restaurant_administrator',
-          is_primary_role: true, // First role is primary
           location_assignments: [
             {
               location_index: 0, // Index in the locations array
@@ -1394,7 +1393,6 @@ function RegisterPage() {
 
         roleAssignments.push({
           role_name: 'restaurant_administrator',
-          is_primary_role: true, // Restaurant admin is always primary role
           location_assignments: locationAssignments,
         });
       }

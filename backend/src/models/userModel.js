@@ -57,18 +57,19 @@ class UserModel extends BaseModel {
           primary_role.is_admin_role AS is_admin
         FROM users u
         LEFT JOIN restaurants r ON u.restaurant_id = r.id
-        LEFT JOIN (
+        LEFT JOIN LATERAL (
           SELECT
-            ur.user_id,
             roles.name as role_name,
             roles.display_name as role_display_name,
             roles.is_admin_role
           FROM user_roles ur
           JOIN roles ON ur.role_id = roles.id
-          WHERE ur.is_primary_role = true
+          WHERE ur.user_id = u.id
             AND ur.is_active = true
             AND (ur.valid_until IS NULL OR ur.valid_until > CURRENT_TIMESTAMP)
-        ) primary_role ON u.id = primary_role.user_id
+          ORDER BY roles.level DESC, ur.created_at ASC
+          LIMIT 1
+        ) primary_role ON true
         WHERE LOWER(u.email) = $1
         LIMIT 1
       `;
@@ -462,18 +463,19 @@ class UserModel extends BaseModel {
             primary_role.is_admin_role AS is_admin
           FROM users u
           LEFT JOIN restaurants r ON u.restaurant_id = r.id
-          LEFT JOIN (
+          LEFT JOIN LATERAL (
             SELECT
-              ur.user_id,
               roles.name as role_name,
               roles.display_name as role_display_name,
               roles.is_admin_role
             FROM user_roles ur
             JOIN roles ON ur.role_id = roles.id
-            WHERE ur.is_primary_role = true
+            WHERE ur.user_id = u.id
               AND ur.is_active = true
               AND (ur.valid_until IS NULL OR ur.valid_until > CURRENT_TIMESTAMP)
-          ) primary_role ON u.id = primary_role.user_id
+            ORDER BY roles.level DESC, ur.created_at ASC
+            LIMIT 1
+          ) primary_role ON true
           WHERE u.id = $1
           LIMIT 1
         `;
@@ -494,18 +496,19 @@ class UserModel extends BaseModel {
             primary_role.is_admin_role AS is_admin
           FROM users u
           LEFT JOIN restaurants r ON u.restaurant_id = r.id
-          LEFT JOIN (
+          LEFT JOIN LATERAL (
             SELECT
-              ur.user_id,
               roles.name as role_name,
               roles.display_name as role_display_name,
               roles.is_admin_role
             FROM user_roles ur
             JOIN roles ON ur.role_id = roles.id
-            WHERE ur.is_primary_role = true
+            WHERE ur.user_id = u.id
               AND ur.is_active = true
               AND (ur.valid_until IS NULL OR ur.valid_until > CURRENT_TIMESTAMP)
-          ) primary_role ON u.id = primary_role.user_id
+            ORDER BY roles.level DESC, ur.created_at ASC
+            LIMIT 1
+          ) primary_role ON true
           WHERE u.id = $1
           LIMIT 1
         `;

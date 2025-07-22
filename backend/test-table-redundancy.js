@@ -20,14 +20,14 @@ async function analyzeTableRedundancy() {
         u.full_name,
         ur.role_id,
         r.display_name as role_name,
+        r.level as role_level,
         ur.location_id,
-        rl.name as location_name,
-        ur.is_primary_role
+        rl.name as location_name
       FROM user_roles ur
       JOIN users u ON ur.user_id = u.id
       JOIN roles r ON ur.role_id = r.id
       LEFT JOIN restaurant_locations rl ON ur.location_id = rl.id
-      ORDER BY u.full_name, r.display_name
+      ORDER BY u.full_name, r.level DESC
       LIMIT 10;
     `;
 

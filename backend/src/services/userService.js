@@ -715,7 +715,6 @@ class UserService {
             restaurant_id: updatedUser.restaurant_id,
             location_id: pair.location_id,
             assigned_by: currentUser?.id,
-            is_primary_role: i === 0, // Set first role as primary
             is_active: true,
           };
 
@@ -1267,7 +1266,7 @@ class UserService {
       if (roleAssignments && roleAssignments.length > 0) {
         // Use role assignments from frontend
         for (const roleAssignment of roleAssignments) {
-          const { role_name, is_primary_role, location_assignments } = roleAssignment;
+          const { role_name, location_assignments } = roleAssignment;
 
           for (const locationAssignment of location_assignments) {
             const { location_index, is_primary_location } = locationAssignment;
@@ -1279,7 +1278,7 @@ class UserService {
                 roleName: role_name,
                 restaurantId: restaurantId,
                 locationId: location.id,
-                isPrimary: is_primary_role && is_primary_location, // Only first location gets primary role
+                isPrimary: is_primary_location, // Based on location priority
               });
             }
           }
@@ -1368,7 +1367,6 @@ class UserService {
           role_id: role.id,
           restaurant_id: restaurantId,
           location_id: locationId,
-          is_primary_role: isPrimary,
           assigned_by: assignedBy,
         });
       }
@@ -1466,25 +1464,25 @@ class UserService {
           rl.address_city,
           rl.address_state,
           rl.restaurant_id,
-          ur.is_primary_role as is_primary_location,
           ur.created_at
         FROM user_roles ur
         JOIN restaurant_locations rl ON ur.location_id = rl.id
+        JOIN roles r ON ur.role_id = r.id
         WHERE ur.user_id = $1 AND ur.is_active = true
-        ORDER BY ur.is_primary_role DESC, ur.created_at ASC
+        ORDER BY r.level DESC, ur.created_at ASC
       `;
 
       const result = await this.db.query(query, [userId]);
 
       // Transform the data to match the expected format
-      const locations = result.rows.map((assignment) => ({
+      const locations = result.rows.map((assignment, index) => ({
         id: assignment.location_id,
         name: assignment.location_name,
         address_street: assignment.address_street,
         address_city: assignment.address_city,
         address_state: assignment.address_state,
         restaurant_id: assignment.restaurant_id,
-        is_primary_location: assignment.is_primary_location,
+        is_primary_location: index === 0, // First location (highest level role) is primary
         access_level: 'full', // Users with roles have full access
         via_assignment: 'role_assignment',
         assigned_at: assignment.created_at,
@@ -1532,40 +1530,6 @@ class UserService {
     } catch (error) {
       this.logger.error('Failed to check user admin access', {
         userId,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Update user's primary role
-   * @param {String} userId - User ID
-   * @param {String} roleName - Role name to set as primary
-   * @returns {Boolean} True if successful
-   */
-  async setUserPrimaryRole(userId, roleName) {
-    this.logger.info('Setting user primary role', { userId, roleName });
-
-    try {
-      const role = await this.roleModel.findByName(roleName);
-      if (!role) {
-        throw new Error(`Role '${roleName}' not found`);
-      }
-
-      const success = await this.UserRoleModel.setPrimaryRole(userId, role.id);
-
-      if (success) {
-        this.logger.info('Primary role set successfully', { userId, roleName });
-      } else {
-        this.logger.warn('Failed to set primary role', { userId, roleName });
-      }
-
-      return success;
-    } catch (error) {
-      this.logger.error('Failed to set user primary role', {
-        userId,
-        roleName,
         error: error.message,
       });
       throw error;
@@ -1622,11 +1586,6 @@ class UserService {
         return allRoles;
       }
 
-      // DEBUG: Log the currentUser object to see its structure
-      this.logger.info('DEBUG: currentUser object in getAvailableRoles', {
-        currentUser: JSON.stringify(currentUser, null, 2),
-      });
-
       // Filter roles based on current user's permissions
       const currentUserRole = currentUser.role || currentUser.primaryRole?.role_name;
 
@@ -1637,64 +1596,7 @@ class UserService {
 
       // Restaurant administrators can assign all roles except superadmin
       if (currentUserRole === 'restaurant_administrator') {
-        let availableRoles = allRoles.filter((role) => role.name !== 'superadmin');
-
-        // IMPORTANT: Filter out location_administrator role for single-location restaurants
-        // Location administrators should only be available for multi-location restaurants
-        try {
-          const RestaurantLocationModel = require('../models/RestaurantLocationModel');
-          const restaurantId = currentUser.restaurant_id;
-
-          this.logger.info('DEBUG: Checking restaurant location count for filtering', {
-            restaurantId,
-            restaurantName: currentUser.restaurant?.name,
-            businessType: currentUser.restaurant?.business_type,
-          });
-
-          if (restaurantId) {
-            const locations = await RestaurantLocationModel.getByRestaurantId(restaurantId);
-
-            this.logger.info('DEBUG: Location filtering decision', {
-              restaurantId,
-              locationCount: locations.length,
-              shouldFilterOut: locations.length <= 1,
-              currentRoleCount: availableRoles.length,
-            });
-
-            if (locations.length <= 1) {
-              const beforeCount = availableRoles.length;
-              availableRoles = availableRoles.filter(
-                (role) => role.name !== 'location_administrator'
-              );
-              const afterCount = availableRoles.length;
-
-              this.logger.info(
-                'Filtered out location_administrator role for single-location restaurant',
-                {
-                  restaurantId,
-                  locationCount: locations.length,
-                  rolesBeforeFilter: beforeCount,
-                  rolesAfterFilter: afterCount,
-                  filteredOut: beforeCount - afterCount,
-                }
-              );
-            } else {
-              this.logger.info(
-                'Keeping location_administrator role for multi-location restaurant',
-                {
-                  restaurantId,
-                  locationCount: locations.length,
-                }
-              );
-            }
-          }
-        } catch (error) {
-          this.logger.warn('Failed to check restaurant location count, allowing all roles', {
-            error: error.message,
-          });
-        }
-
-        return availableRoles;
+        return allRoles.filter((role) => role.name !== 'superadmin');
       }
 
       // Location administrators cannot see restaurant_administrator or superadmin roles
@@ -1854,10 +1756,10 @@ class UserService {
           ur.created_at
         FROM user_roles ur
         JOIN restaurant_locations rl ON ur.location_id = rl.id
+        JOIN roles r ON ur.role_id = r.id
         WHERE ur.user_id = $1
           AND ur.is_active = true
-          AND ur.is_primary_role = true
-        ORDER BY ur.created_at ASC
+        ORDER BY r.level DESC, ur.created_at ASC
         LIMIT 1
       `;
 

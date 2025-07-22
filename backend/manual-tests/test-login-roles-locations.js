@@ -39,9 +39,9 @@ async function testLoginWithRolesAndLocations() {
         loginResult.user.roles.forEach((role, index) => {
           console.log(`  ${index + 1}. Role: ${role.role_name}`);
           console.log(`     Display: ${role.role_display_name}`);
+          console.log(`     Level: ${role.role_level || 'N/A'}`);
           console.log(`     Restaurant: ${role.restaurant_name || 'N/A'}`);
           console.log(`     Location: ${role.location_name || 'N/A'}`);
-          console.log(`     Is Primary: ${role.is_primary_role}`);
           console.log(`     Is Admin: ${role.is_admin_role}`);
           console.log('');
         });
