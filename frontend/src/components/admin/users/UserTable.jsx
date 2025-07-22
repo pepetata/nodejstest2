@@ -220,7 +220,7 @@ const UserTable = ({
           <thead>
             <tr>
               <th>Nome</th>
-              <th>Email</th>
+              <th>Email/Nome Usuário</th>
               <th>Perfil</th>
               <th>Localização</th>
               <th>Status</th>

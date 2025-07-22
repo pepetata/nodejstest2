@@ -512,12 +512,27 @@ class UserService {
       // Build query filters
       const filters = {};
 
-      // Restrict access based on current user's role and restaurant
-      if (currentUser.role === 'restaurant_administrator') {
+      // SECURITY: Restrict access based on current user's role and restaurant
+      // All restaurant staff should only see users from their own restaurant
+      if (currentUser.role === 'superadmin') {
+        // Super admin can see all users, no restaurant restriction
+        if (restaurant_id) {
+          filters.restaurant_id = restaurant_id;
+        }
+      } else {
+        // All non-superadmin users must be restricted to their own restaurant
+        if (!currentUser.restaurant_id) {
+          throw new Error('User does not belong to any restaurant');
+        }
         filters.restaurant_id = currentUser.restaurant_id;
-      } else if (restaurant_id && currentUser.role !== 'restaurant_administrator') {
-        await this.validateRestaurantAccess(restaurant_id, currentUser);
-        filters.restaurant_id = restaurant_id;
+
+        // Log security enforcement
+        this.logger.info('SECURITY: Restaurant access restricted', {
+          currentUserRole: currentUser.role,
+          currentUserRestaurant: currentUser.restaurant_id,
+          requestedRestaurant: restaurant_id,
+          enforcedRestaurant: filters.restaurant_id,
+        });
       }
 
       if (role) filters.role = role;
@@ -1058,22 +1073,40 @@ class UserService {
       return true;
     }
 
-    // Restaurant administrators can manage users in their restaurant
-    if (currentUser.role === 'restaurant_administrator') {
+    // All restaurant staff can only access users from their own restaurant
+    if (currentUser.restaurant_id) {
       if (targetUser.restaurant_id !== currentUser.restaurant_id) {
         // Translate error for end user
         const error = new Error('Permissões insuficientes para acessar este usuário.');
         error.statusCode = 403;
         serviceLogger.warn('Access denied - different restaurant', {
+          currentUserRole: currentUser.role,
           currentUserRestaurant: currentUser.restaurant_id,
           targetUserRestaurant: targetUser.restaurant_id,
         });
         throw error;
       }
+
+      // Additional role-based restrictions for update/delete operations
+      if (operation !== 'read') {
+        // Only restaurant administrators can update/delete other users
+        if (currentUser.role !== 'restaurant_administrator' && currentUser.id !== targetUser.id) {
+          const error = new Error(
+            'Apenas administradores do restaurante podem modificar outros usuários.'
+          );
+          error.statusCode = 403;
+          serviceLogger.warn('Access denied - insufficient role permissions for modification', {
+            currentUserRole: currentUser.role,
+            operation,
+          });
+          throw error;
+        }
+      }
+
       return true;
     }
 
-    // Users can only access their own data
+    // Users can only access their own data if they don't belong to a restaurant
     if (currentUser.id === targetUser.id) {
       return true;
     }
@@ -1094,10 +1127,8 @@ class UserService {
       return true;
     }
 
-    if (
-      currentUser.role === 'restaurant_administrator' &&
-      currentUser.restaurant_id === restaurantId
-    ) {
+    // All restaurant staff can only access their own restaurant
+    if (currentUser.restaurant_id && currentUser.restaurant_id === restaurantId) {
       return true;
     }
 
