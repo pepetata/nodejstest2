@@ -32,6 +32,7 @@ const UserFormPage = () => {
   const roles = useSelector(selectRoles);
   const locations = useSelector(selectLocations);
   const currentUser = useSelector((state) => state.auth.user);
+  const restaurant = useSelector((state) => state.auth.restaurant);
 
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
@@ -286,7 +287,7 @@ const UserFormPage = () => {
 
     // IMPORTANT: Filter out location_administrator role for single-location restaurants
     // Location administrators should only be available for multi-location restaurants
-    if (locations.length <= 1) {
+    if (restaurant?.business_type === 'single') {
       availableRoles = availableRoles.filter((role) => role.name !== 'location_administrator');
     }
 
@@ -314,10 +315,15 @@ const UserFormPage = () => {
     }
   }, [roles.length, locations.length, dispatch]);
 
-  // Initialize role_location_pairs based on location count (only for new users)
+  // Initialize role_location_pairs based on restaurant business type (only for new users)
   useEffect(() => {
-    if (!isEditing && locations.length > 0 && formData.role_location_pairs.length === 0) {
-      if (locations.length === 1) {
+    if (
+      !isEditing &&
+      restaurant &&
+      locations.length > 0 &&
+      formData.role_location_pairs.length === 0
+    ) {
+      if (restaurant.business_type === 'single') {
         // Single location: start with empty array (roles will be added via checkboxes)
         setFormData((prev) => ({
           ...prev,
@@ -331,7 +337,7 @@ const UserFormPage = () => {
         }));
       }
     }
-  }, [locations.length, isEditing, formData.role_location_pairs.length]);
+  }, [restaurant?.business_type, locations.length, isEditing, formData.role_location_pairs.length]);
 
   // Separate useEffect for loading user data to avoid infinite loops
   useEffect(() => {
@@ -640,7 +646,7 @@ const UserFormPage = () => {
 
       if (validPairs.length === 0) {
         newErrors.role_location_pairs =
-          locations.length === 1
+          restaurant?.business_type === 'single'
             ? 'Selecione pelo menos um perfil'
             : 'Pelo menos uma combinação de perfil e localização é obrigatória';
       } else {
@@ -981,10 +987,10 @@ const UserFormPage = () => {
             {/* Role and Location Pairs */}
             <div className="form-section">
               <h3 className="section-title">
-                {locations.length === 1 ? 'Perfis' : 'Perfis e Unidades'}
+                {restaurant?.business_type === 'single' ? 'Perfis' : 'Perfis e Unidades'}
               </h3>
 
-              {locations.length === 1 ? (
+              {restaurant?.business_type === 'single' ? (
                 /* Single Location Mode: Multi-role selection */
                 <div className="single-location-mode">
                   <div className="form-group">

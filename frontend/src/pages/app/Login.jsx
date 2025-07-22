@@ -58,6 +58,14 @@ const LoginPage = ({ subdomain: _subdomain }) => {
     performLogout();
   }, [dispatch]); // Run once when component mounts
 
+  // Smooth scroll to top when entering the page
+  React.useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -125,26 +133,37 @@ const LoginPage = ({ subdomain: _subdomain }) => {
         login({ email: formData.email, password: formData.password, rememberMe })
       );
 
-      // If login was successful, redirect to admin page
+      // If login was successful, redirect based on user role
       if (login.fulfilled.match(resultAction)) {
-        // Get the user's restaurant subdomain from the login response
+        const user = resultAction.payload.user;
         const userRestaurantSubdomain = resultAction.payload?.restaurant?.url;
 
         console.log('Login successful, payload:', resultAction.payload); // Debug
         console.log('User restaurant subdomain:', userRestaurantSubdomain); // Debug
+        console.log('User roles:', user.roles); // Debug
 
-        if (userRestaurantSubdomain) {
-          // User has a restaurant associated, redirect to their restaurant subdomain admin
+        // Check user roles to determine where to redirect
+        const hasAdminRole = user.roles?.some(
+          (role) =>
+            role.is_admin_role ||
+            role.role_name === 'restaurant_administrator' ||
+            role.role_name === 'location_administrator'
+        );
+
+        if (hasAdminRole && userRestaurantSubdomain) {
+          // User is an admin (restaurant or location administrator), redirect to admin page
           const token = resultAction.payload.token;
           const redirectUrl = `http://${userRestaurantSubdomain}.localhost:3000/admin?token=${encodeURIComponent(token)}&auth=true`;
-          console.log('Redirecting to:', redirectUrl); // Debug
+          console.log('Redirecting admin to:', redirectUrl); // Debug
           window.location.href = redirectUrl;
-        } else if (restaurantSlug) {
+        } else if (hasAdminRole && restaurantSlug) {
           // Fallback: if we have a restaurant slug (user is on restaurant page), redirect to restaurant admin
           navigate(`/${restaurantSlug}/admin`);
         } else {
-          // No restaurant association, redirect to home
-          navigate('/');
+          // For other user types (non-admin roles), redirect to a placeholder page
+          console.log('Non-admin user, redirecting to placeholder page'); // Debug
+          // TODO: Create appropriate pages for different user roles (waiter, cook, etc.)
+          navigate('/dashboard'); // Placeholder for now
         }
       } else if (login.rejected.match(resultAction)) {
         // Check if it's a pending confirmation error
@@ -180,23 +199,23 @@ const LoginPage = ({ subdomain: _subdomain }) => {
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label" htmlFor="email">
-                Email
+                E-mail ou Nome de Usuário
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
                 className="form-input"
-                placeholder="Enter your email"
+                placeholder="Digite seu e-mail ou nome de usuário"
               />
             </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="password">
-                Password
+                Senha
               </label>
               <input
                 type="password"
@@ -206,7 +225,7 @@ const LoginPage = ({ subdomain: _subdomain }) => {
                 onChange={handleChange}
                 required
                 className="form-input"
-                placeholder="Enter your password"
+                placeholder="Digite sua senha"
               />
             </div>
 

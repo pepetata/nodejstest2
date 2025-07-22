@@ -72,7 +72,7 @@ class AuthService {
 
   async login(credentials) {
     const { email, password } = credentials;
-    const serviceLogger = this.logger.child({ operation: 'login', email });
+    const serviceLogger = this.logger.child({ operation: 'login', emailOrUsername: email });
     try {
       // TEMPORARY TEST: Simulate pending status for test email
       if (email === 'test@pending.com') {
@@ -86,26 +86,29 @@ class AuthService {
         throw error;
       }
 
-      // Find user (with password, for login only)
+      // Find user (with password, for login only) - now supports both email and username
       const user = await userModel.findUserForLogin(email);
       if (!user) {
-        serviceLogger.warn('Invalid credentials: user not found', { email });
-        const error = new Error('Credenciais inválidas. Verifique seu e-mail e senha.');
+        serviceLogger.warn('Invalid credentials: user not found', { emailOrUsername: email });
+        const error = new Error('Credenciais inválidas. Verifique seu e-mail/usuário e senha.');
         error.statusCode = 401;
         throw error;
       }
       // Check password
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        serviceLogger.warn('Invalid credentials: wrong password', { email });
-        const error = new Error('Credenciais inválidas. Verifique seu e-mail e senha.');
+        serviceLogger.warn('Invalid credentials: wrong password', { emailOrUsername: email });
+        const error = new Error('Credenciais inválidas. Verifique seu e-mail/usuário e senha.');
         error.statusCode = 401;
         throw error;
       }
 
       // Check if user status is pending (needs email confirmation)
       if (user.status === 'pending') {
-        serviceLogger.warn('Login attempt with pending status', { email, userId: user.id });
+        serviceLogger.warn('Login attempt with pending status', {
+          emailOrUsername: email,
+          userId: user.id,
+        });
         const error = new Error(
           'Sua conta ainda não foi confirmada. Verifique seu e-mail para confirmar sua conta.'
         );
@@ -115,16 +118,34 @@ class AuthService {
         throw error;
       }
 
-      // Check if user is active
-      if (user.status !== 'active') {
-        serviceLogger.warn('Login attempt with inactive status', {
-          email,
+      // Check if user status allows login (inactive, suspended cannot login)
+      if (!['active'].includes(user.status)) {
+        serviceLogger.warn('Login attempt with non-active status', {
+          emailOrUsername: email,
           userId: user.id,
           status: user.status,
         });
-        const error = new Error('Sua conta não está ativa. Entre em contato com o suporte.');
+        let errorMessage = 'Você não tem acesso a esta página.';
+        if (user.status === 'inactive') {
+          errorMessage = 'Você não tem acesso a esta página.';
+        } else if (user.status === 'suspended') {
+          errorMessage = 'Você não tem acesso a esta página.';
+        }
+        const error = new Error(errorMessage);
         error.statusCode = 403;
         throw error;
+      }
+
+      // Update last login information in the database
+      try {
+        await userModel.updateLastLogin(user.id);
+        serviceLogger.info('Updated last login time', { userId: user.id });
+      } catch (updateError) {
+        serviceLogger.warn('Failed to update last login time', {
+          userId: user.id,
+          error: updateError.message,
+        });
+        // Don't fail login if we can't update last login time
       }
 
       // Generate token
@@ -171,7 +192,7 @@ class AuthService {
 
       let mensagemErro = error.message;
       if (mensagemErro === 'Invalid credentials') {
-        mensagemErro = 'Credenciais inválidas. Verifique seu e-mail e senha.';
+        mensagemErro = 'Credenciais inválidas. Verifique seu e-mail/usuário e senha.';
       }
       const err = new Error(mensagemErro);
       err.statusCode = error.statusCode || 401;

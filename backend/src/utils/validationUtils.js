@@ -35,11 +35,11 @@ const validateLogin = (req, res, next) => {
   const errors = [];
 
   if (!email) {
-    errors.push('Email is required');
+    errors.push('E-mail ou nome de usuário é obrigatório');
   }
 
   if (!password) {
-    errors.push('Password is required');
+    errors.push('Senha é obrigatória');
   }
 
   if (errors.length > 0) {

@@ -14,6 +14,14 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // Smooth scroll to top when entering the page
+  React.useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');

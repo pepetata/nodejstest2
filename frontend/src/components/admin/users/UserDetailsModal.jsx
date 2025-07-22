@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { FaTimes, FaCheck } from 'react-icons/fa';
 import '../../../styles/admin/users/userDetailsModal.scss';
 
-const UserDetailsModal = ({ user, onClose, roles = [], locations = [] }) => {
+const UserDetailsModal = ({ user, onClose, roles = [], locations = [], restaurant = null }) => {
   // Debug: Log user data to check created_by_name field
   useEffect(() => {
     console.log('=== UserDetailsModal Debug ===');
@@ -151,14 +151,28 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [] }) => {
             <div className="detail-card">
               <div className="detail-content">
                 <h4>Último Login</h4>
-                <p>{formatDate(user.last_login) || 'Nunca logou'}</p>
+                <p>{formatDate(user.last_login_at) || 'Nunca logou'}</p>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <div className="detail-content">
+                <h4>Telefone</h4>
+                <p>{user.phone || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <div className="detail-content">
+                <h4>WhatsApp</h4>
+                <p>{user.whatsapp || 'N/A'}</p>
               </div>
             </div>
           </div>
 
           {/* Enhanced Role-Location Display */}
           <div className="roles-locations-section">
-            <h4>{locations.length === 1 ? 'Perfis' : 'Perfis e Unidades'}</h4>
+            <h4>{restaurant?.business_type === 'single' ? 'Perfis' : 'Perfis e Unidades'}</h4>
             {getGroupedRoleLocations(user).length > 0 ? (
               <div className="role-location-list">
                 {getGroupedRoleLocations(user).map((roleGroup) => (
@@ -167,7 +181,7 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [] }) => {
                       <h5 className="role-name">{roleGroup.role_name}</h5>
                       <p className="role-description">{roleGroup.role_description}</p>
                     </div>
-                    {locations.length > 1 && (
+                    {restaurant?.business_type !== 'single' && (
                       <div className="role-locations">
                         <span className="locations-label">Unidades:</span>
                         <div className="location-tags">
@@ -215,6 +229,8 @@ UserDetailsModal.propTypes = {
     full_name: PropTypes.string.isRequired,
     email: PropTypes.string, // Email can be null, not required
     username: PropTypes.string,
+    phone: PropTypes.string,
+    whatsapp: PropTypes.string,
     role_id: PropTypes.string,
     role_display_name: PropTypes.string,
     role_description: PropTypes.string,
@@ -233,7 +249,7 @@ UserDetailsModal.propTypes = {
     created_at: PropTypes.string,
     created_by: PropTypes.string,
     created_by_name: PropTypes.string,
-    last_login: PropTypes.string,
+    last_login_at: PropTypes.string,
   }).isRequired, // The user object itself is required
   roles: PropTypes.arrayOf(
     PropTypes.shape({
@@ -249,6 +265,10 @@ UserDetailsModal.propTypes = {
       name: PropTypes.string.isRequired,
     })
   ).isRequired,
+  restaurant: PropTypes.shape({
+    business_type: PropTypes.string,
+    name: PropTypes.string,
+  }),
   onClose: PropTypes.func.isRequired,
   show: PropTypes.bool.isRequired,
 };

@@ -35,11 +35,14 @@ class UserModel extends BaseModel {
   }
 
   /**
-   * Find user by email for login (returns full user object, including password)
+   * Find user by email or username for login (returns full user object, including password)
    * Use ONLY for authentication logic, never expose result to client
    */
-  async findUserForLogin(email) {
-    this.logger.debug('Finding user for login by email (with restaurant and role data)', { email });
+  async findUserForLogin(emailOrUsername) {
+    this.logger.debug(
+      'Finding user for login by email or username (with restaurant and role data)',
+      { emailOrUsername }
+    );
     try {
       // Join users with restaurants and primary role to get full data for authentication
       const query = `
@@ -70,10 +73,10 @@ class UserModel extends BaseModel {
           ORDER BY roles.level DESC, ur.created_at ASC
           LIMIT 1
         ) primary_role ON true
-        WHERE LOWER(u.email) = $1
+        WHERE (LOWER(u.email) = $1 OR LOWER(u.username) = $1)
         LIMIT 1
       `;
-      const values = [email.toLowerCase()];
+      const values = [emailOrUsername.toLowerCase()];
       const result = await this.executeQuery(query, values);
       if (result.rows.length > 0) {
         const row = result.rows[0];
@@ -113,8 +116,8 @@ class UserModel extends BaseModel {
       }
       return null;
     } catch (error) {
-      this.logger.error('Failed to find user for login by email (with joins)', {
-        email,
+      this.logger.error('Failed to find user for login by email or username (with joins)', {
+        emailOrUsername,
         error: error.message,
       });
       throw error;
@@ -890,6 +893,30 @@ class UserModel extends BaseModel {
     `;
     const result = await this.executeQuery(query, [token, expires, userId]);
     return result.rows[0] ? this.sanitizeOutput(result.rows[0], this.sensitiveFields) : null;
+  }
+
+  /**
+   * Update last login timestamp for a user
+   */
+  async updateLastLogin(userId) {
+    this.logger.debug('Updating last login time', { userId });
+    try {
+      const query = `
+        UPDATE ${this.tableName}
+        SET last_login_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING id, last_login_at
+      `;
+      const result = await this.executeQuery(query, [userId]);
+      return result.rows[0] || null;
+    } catch (error) {
+      this.logger.error('Failed to update last login time', {
+        userId,
+        error: error.message,
+      });
+      throw error;
+    }
   }
 
   /**

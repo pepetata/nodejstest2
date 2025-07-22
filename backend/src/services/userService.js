@@ -1464,7 +1464,8 @@ class UserService {
           rl.address_city,
           rl.address_state,
           rl.restaurant_id,
-          ur.created_at
+          ur.created_at,
+          r.level
         FROM user_roles ur
         JOIN restaurant_locations rl ON ur.location_id = rl.id
         JOIN roles r ON ur.role_id = r.id

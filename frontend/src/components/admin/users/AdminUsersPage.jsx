@@ -38,6 +38,7 @@ const AdminUsersPage = () => {
   const roles = useSelector(selectRoles);
   const locations = useSelector(selectLocations);
   const currentUser = useSelector((state) => state.auth.user);
+  const restaurant = useSelector((state) => state.auth.restaurant);
 
   // State for modals and forms
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -314,6 +315,7 @@ const AdminUsersPage = () => {
         user={userToView}
         roles={roles || []}
         locations={locations || []}
+        restaurant={restaurant}
         show={showUserDetails}
         onClose={() => {
           setShowUserDetails(false);
