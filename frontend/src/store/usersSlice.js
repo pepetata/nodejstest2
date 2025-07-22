@@ -63,6 +63,31 @@ export const updateUser = createAsyncThunk(
   }
 );
 
+export const getProfile = createAsyncThunk('users/getProfile', async (_, { rejectWithValue }) => {
+  try {
+    const response = await userService.getProfile();
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(
+      error.response?.data?.error || error.message || 'Erro ao carregar perfil'
+    );
+  }
+});
+
+export const updateProfile = createAsyncThunk(
+  'users/updateProfile',
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await userService.updateProfile(userData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || error.message || 'Erro ao atualizar perfil'
+      );
+    }
+  }
+);
+
 export const toggleUserStatus = createAsyncThunk(
   'users/toggleUserStatus',
   async ({ userId, status }, { rejectWithValue }) => {
@@ -183,6 +208,9 @@ const usersSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    clearErrors: (state) => {
+      state.error = null;
+    },
     clearSuccessMessage: (state) => {
       state.successMessage = '';
     },
@@ -270,6 +298,34 @@ const usersSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Get profile
+      .addCase(getProfile.pending, (state) => {
+        state.loading.fetching = true;
+        state.error = null;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        state.loading.fetching = false;
+        state.currentUser = action.payload.data;
+      })
+      .addCase(getProfile.rejected, (state, action) => {
+        state.loading.fetching = false;
+        state.error = action.payload;
+      })
+
+      // Update profile
+      .addCase(updateProfile.pending, (state) => {
+        state.loading.updating = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state) => {
+        state.loading.updating = false;
+        state.successMessage = 'Perfil atualizado com sucesso';
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading.updating = false;
+        state.error = action.payload;
+      })
+
       // Toggle user status
       .addCase(toggleUserStatus.pending, (state) => {
         state.loading.updating = true;
@@ -339,6 +395,7 @@ export const {
   setSorting,
   setPagination,
   clearError,
+  clearErrors,
   clearSuccessMessage,
   setIsCreating,
   setIsEditing,

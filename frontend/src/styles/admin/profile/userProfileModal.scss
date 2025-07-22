@@ -1,0 +1,388 @@
+// User Profile Modal Styles (shared with UserDetailsModal)
+@use '../../variables.scss' as vars;
+
+.user-profile-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 1000 !important;
+  padding: 20px !important;
+}
+
+.user-profile-modal {
+  background: white !important;
+  border-radius: 16px !important;
+  width: 100% !important;
+  max-width: 700px !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3) !important;
+  border: 2px solid vars.$logoO !important;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 2px solid vars.$logoO;
+    background: linear-gradient(135deg, vars.$primary-light 0%, vars.$logoO 100%);
+    border-radius: 16px 16px 0 0;
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: vars.$logoB;
+      margin: 0;
+    }
+
+    .modal-header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+
+      .back-button,
+      .edit-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+
+        &:hover {
+          transform: translateY(-1px);
+        }
+
+        svg {
+          font-size: 14px;
+        }
+
+        span {
+          font-size: 14px;
+        }
+      }
+
+      .back-button {
+        background: white;
+        color: vars.$logoB;
+        border: 2px solid vars.$logoB;
+
+        &:hover {
+          background: vars.$logoB;
+          color: white;
+        }
+      }
+
+      .edit-button {
+        background: vars.$logoO;
+        color: vars.$logoB;
+        border: 2px solid vars.$logoO;
+
+        &:hover {
+          background: vars.$primary-dark;
+          border-color: vars.$primary-dark;
+        }
+      }
+
+      .close-button {
+        background: #f7fafc;
+        border: 2px solid #e2e8f0;
+        font-size: 18px;
+        color: #4a5568;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #fed7d7;
+          border-color: #fc8181;
+          color: #c53030;
+        }
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 20px 24px;
+
+    .user-profile-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      border: 1px solid #dee2e6;
+
+      .user-avatar {
+        flex-shrink: 0;
+
+        img {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid vars.$logoO;
+        }
+
+        .avatar-placeholder {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, vars.$logoO 0%, vars.$primary-dark 100%);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 32px;
+          font-weight: bold;
+          border: 3px solid vars.$logoO;
+        }
+      }
+
+      .user-basic-info {
+        flex: 1;
+
+        .user-name {
+          font-size: 24px;
+          font-weight: 700;
+          color: vars.$logoB;
+          margin: 0 0 8px 0;
+        }
+
+        .user-email {
+          font-size: 16px;
+          color: #6c757d;
+          margin: 0 0 12px 0;
+        }
+
+        .user-status {
+          .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+
+            &.active {
+              background: #d4edda;
+              color: #155724;
+              border: 1px solid #c3e6cb;
+            }
+
+            &.inactive {
+              background: #f8d7da;
+              color: #721c24;
+              border: 1px solid #f5c6cb;
+            }
+
+            &.pending {
+              background: #fff3cd;
+              color: #856404;
+              border: 1px solid #ffeeba;
+            }
+
+            &.suspended {
+              background: #f8d7da;
+              color: #721c24;
+              border: 1px solid #f5c6cb;
+            }
+          }
+        }
+      }
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+
+      .detail-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 16px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: vars.$logoO;
+          box-shadow: 0 2px 8px rgba(255, 170, 0, 0.1);
+        }
+
+        .detail-content {
+          h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: vars.$logoB;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          p {
+            font-size: 16px;
+            color: #495057;
+            margin: 0;
+            word-wrap: break-word;
+          }
+        }
+      }
+    }
+
+    .roles-locations-section {
+      h4 {
+        font-size: 18px;
+        font-weight: 700;
+        color: vars.$logoB;
+        margin: 0 0 16px 0;
+      }
+
+      .role-location-list {
+        .role-card {
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 12px;
+
+          .role-header {
+            .role-name {
+              font-size: 16px;
+              font-weight: 600;
+              color: vars.$logoB;
+              margin: 0 0 4px 0;
+            }
+
+            .role-description {
+              font-size: 14px;
+              color: #6c757d;
+              margin: 0 0 12px 0;
+            }
+          }
+
+          .role-locations {
+            .locations-label {
+              font-size: 14px;
+              font-weight: 600;
+              color: vars.$logoB;
+              margin-right: 8px;
+            }
+
+            .location-tags {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              margin-top: 8px;
+
+              .location-tag {
+                background: vars.$logoO;
+                color: vars.$logoB;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
+
+      .no-roles-message {
+        text-align: center;
+        padding: 20px;
+        color: #6c757d;
+        font-style: italic;
+      }
+    }
+
+    .admin-badge-section {
+      margin-top: 20px;
+      text-align: center;
+
+      .admin-badge {
+        background: linear-gradient(135deg, vars.$logoO 0%, vars.$primary-dark 100%);
+        color: vars.$logoB;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 2px solid vars.$logoO;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .user-profile-modal {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+
+    .modal-header {
+      padding: 16px;
+
+      .modal-title {
+        font-size: 20px;
+      }
+
+      .modal-header-actions {
+        .back-button,
+        .edit-button {
+          span {
+            display: none;
+          }
+        }
+      }
+    }
+
+    .modal-body {
+      padding: 16px;
+
+      .user-profile-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+
+        .user-avatar {
+          img,
+          .avatar-placeholder {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+          }
+        }
+
+        .user-basic-info {
+          .user-name {
+            font-size: 20px;
+          }
+        }
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+  }
+}

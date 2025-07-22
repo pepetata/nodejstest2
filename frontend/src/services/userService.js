@@ -55,6 +55,12 @@ const userService = {
   // Update user
   updateUser: (id, userData) => api.put(`${API_BASE}/${id}`, userData),
 
+  // Get current user's profile
+  getProfile: () => api.get(`${API_BASE}/profile`),
+
+  // Update current user's profile
+  updateProfile: (userData) => api.put(`${API_BASE}/profile`, userData),
+
   // Toggle user status (activate/deactivate)
   toggleStatus: (id, status) => api.patch(`${API_BASE}/${id}/status`, { status }),
 

@@ -100,6 +100,28 @@ router.get('/roles', authMiddleware, userController.getRoles);
 router.get('/locations', authMiddleware, userController.getRestaurantLocations);
 
 /**
+ * @route GET /api/v1/users/profile
+ * @desc Get current user's profile
+ * @access Private - Self only
+ * @middleware authMiddleware
+ */
+router.get('/profile', authMiddleware, userController.getProfile);
+
+/**
+ * @route PUT /api/v1/users/profile
+ * @desc Update current user's profile
+ * @access Private - Self only
+ * @middleware authMiddleware, ValidationMiddleware, XSSMiddleware
+ */
+router.put(
+  '/profile',
+  authMiddleware,
+  userManagementLimiter,
+  ValidationMiddleware.validate(userValidationSchemas.updateProfile, 'body'),
+  userController.updateProfile
+);
+
+/**
  * @route GET /api/v1/users/:id
  * @desc Get user by ID
  * @access Private - Admin or self
