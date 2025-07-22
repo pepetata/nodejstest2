@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FaSearch, FaTimes } from 'react-icons/fa';
 
-const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => {
+const UserFilters = ({ filters, roles, locations, restaurant, onFilterChange, loading }) => {
   const [localFilters, setLocalFilters] = useState({
     search: '',
     status: '',
@@ -12,6 +12,11 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
     sortOrder: 'asc',
     ...filters,
   });
+
+  // Helper function to determine if location filter should be shown
+  const shouldShowLocationFilter = () => {
+    return restaurant?.business_type === 'multi';
+  };
 
   // Update local filters when props change
   useEffect(() => {
@@ -121,19 +126,21 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
               ))}
           </select>
 
-          <select
-            className="form-control"
-            value={localFilters.location}
-            onChange={(e) => handleFilterChange('location', e.target.value)}
-            disabled={loading}
-          >
-            <option value="">Todas as Unidades</option>
-            {locations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
+          {shouldShowLocationFilter() && (
+            <select
+              className="form-control"
+              value={localFilters.location}
+              onChange={(e) => handleFilterChange('location', e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Todas as Unidades</option>
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Clear Filters */}
@@ -227,7 +234,7 @@ const UserFilters = ({ filters, roles, locations, onFilterChange, loading }) => 
                 </button>
               </span>
             )}
-            {localFilters.location && (
+            {localFilters.location && shouldShowLocationFilter() && (
               <span className="filter-tag">
                 Localização:{' '}
                 {locations.find((l) => String(l.id) === String(localFilters.location))?.name ||
@@ -266,6 +273,11 @@ UserFilters.propTypes = {
       name: PropTypes.string.isRequired,
     })
   ).isRequired,
+  restaurant: PropTypes.shape({
+    id: PropTypes.string,
+    business_type: PropTypes.string,
+    name: PropTypes.string,
+  }),
   onFilterChange: PropTypes.func.isRequired,
   loading: PropTypes.bool.isRequired,
 };

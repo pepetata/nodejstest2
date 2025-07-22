@@ -269,10 +269,14 @@ const UserFormPage = () => {
     else if (currentUserRole === 'restaurant_administrator') {
       availableRoles = roles.filter((role) => role.name !== 'superadmin');
     }
-    // If current user is location_administrator, they cannot see restaurant_administrator or superadmin
+    // If current user is location_administrator, they cannot see restaurant_administrator, superadmin,
+    // or assign location_administrator role to other users
     else if (currentUserRole === 'location_administrator') {
       availableRoles = roles.filter(
-        (role) => role.name !== 'superadmin' && role.name !== 'restaurant_administrator'
+        (role) =>
+          role.name !== 'superadmin' &&
+          role.name !== 'restaurant_administrator' &&
+          role.name !== 'location_administrator' // Location admins cannot assign location admin role
       );
     }
     // For other roles, show only roles below their level
@@ -337,7 +341,7 @@ const UserFormPage = () => {
         }));
       }
     }
-  }, [restaurant?.business_type, locations.length, isEditing, formData.role_location_pairs.length]);
+  }, [restaurant, locations.length, isEditing, formData.role_location_pairs.length]);
 
   // Separate useEffect for loading user data to avoid infinite loops
   useEffect(() => {

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { FaTimes, FaExclamationTriangle, FaEye, FaEyeSlash, FaSave } from 'react-icons/fa';
 import { createUser, updateUser } from '../../../store/usersSlice';
 
-const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
+const UserForm = ({ user = null, roles, locations, currentUser, onClose, onSuccess }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +23,26 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const isEditing = !!user;
+
+  // Helper function to filter roles based on current user permissions
+  const getAvailableRoles = () => {
+    if (!roles || !currentUser) return roles || [];
+
+    // If current user is location administrator, filter out location administrator role
+    if (
+      currentUser.role === 'location_administrator' ||
+      (currentUser.role_location_pairs &&
+        currentUser.role_location_pairs.some((pair) => pair.role_name === 'location_administrator'))
+    ) {
+      return roles.filter(
+        (role) =>
+          role.name !== 'location_administrator' &&
+          role.display_name !== 'Administrador de Localização'
+      );
+    }
+
+    return roles;
+  };
 
   // Initialize form data
   useEffect(() => {
@@ -459,7 +479,7 @@ const UserForm = ({ user = null, roles, locations, onClose, onSuccess }) => {
                     disabled={loading}
                   >
                     <option value="">Selecione um perfil</option>
-                    {roles.map((role) => (
+                    {getAvailableRoles().map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
                       </option>
@@ -587,6 +607,11 @@ UserForm.propTypes = {
       name: PropTypes.string.isRequired,
     })
   ).isRequired,
+  currentUser: PropTypes.shape({
+    id: PropTypes.string,
+    role: PropTypes.string,
+    role_location_pairs: PropTypes.array,
+  }),
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func.isRequired,
 };

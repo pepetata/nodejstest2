@@ -157,7 +157,7 @@ const RestaurantFeaturesTab = ({ onSave }) => {
   // Calculate recommended plan based on features
   const getRecommendedPlan = () => {
     const totalFeatures = currentData?.selected_features?.length || 0;
-    const isMultiLocation = currentData?.business_type === 'multi-location';
+    const isMultiLocation = currentData?.business_type === 'multi';
 
     if (isMultiLocation || totalFeatures >= 6) return 'enterprise';
     if (totalFeatures >= 4) return 'professional';

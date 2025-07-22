@@ -19,6 +19,7 @@ const UserTable = ({
   locations,
   loading,
   currentUser,
+  restaurant,
   currentPage,
   totalPages,
   totalCount,
@@ -28,6 +29,12 @@ const UserTable = ({
   onDelete,
   onPageChange,
 }) => {
+  console.log(`restaurant =`, restaurant); // Full restaurant object
+  console.log(`restaurant?.business_type =`, restaurant?.business_type); // Specific business_type
+  // Helper function to determine if location column should be shown
+  const shouldShowLocationColumn = () => {
+    return restaurant?.business_type === 'multi';
+  };
   // Helper function to get role name by ID
   const getRoleName = (roleId) => {
     const role = roles.find((r) => String(r.id) === String(roleId));
@@ -222,7 +229,7 @@ const UserTable = ({
               <th>Nome</th>
               <th>Email/Nome Usuário</th>
               <th>Perfil</th>
-              <th>Localização</th>
+              {shouldShowLocationColumn() && <th>Localização</th>}
               <th>Status</th>
               <th>Ações</th>
             </tr>
@@ -243,9 +250,11 @@ const UserTable = ({
                     {getUserRoleName(user)}
                   </span>
                 </td>
-                <td>
-                  <span className="location-badge">{getUserLocationNames(user)}</span>
-                </td>
+                {shouldShowLocationColumn() && (
+                  <td>
+                    <span className="location-badge">{getUserLocationNames(user)}</span>
+                  </td>
+                )}
                 <td>
                   <span
                     className={`status-badge ${user.status === 'active' ? 'active' : 'inactive'}`}
@@ -342,6 +351,11 @@ UserTable.propTypes = {
     full_name: PropTypes.string,
     email: PropTypes.string,
     username: PropTypes.string,
+  }),
+  restaurant: PropTypes.shape({
+    id: PropTypes.string,
+    business_type: PropTypes.string,
+    name: PropTypes.string,
   }),
   currentPage: PropTypes.number.isRequired,
   totalPages: PropTypes.number.isRequired,

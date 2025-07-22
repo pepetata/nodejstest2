@@ -243,6 +243,7 @@ const AdminUsersPage = () => {
         filters={filters}
         roles={roles}
         locations={locations}
+        restaurant={restaurant}
         onFilterChange={handleFilterChange}
         loading={loading}
       />
@@ -254,6 +255,7 @@ const AdminUsersPage = () => {
         locations={locations || []}
         loading={loading}
         currentUser={currentUser}
+        restaurant={restaurant}
         currentPage={pagination?.page || 1}
         totalPages={pagination?.totalPages || 1}
         totalCount={pagination?.total || 0}
