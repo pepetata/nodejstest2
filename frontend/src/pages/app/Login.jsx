@@ -150,14 +150,25 @@ const LoginPage = ({ subdomain: _subdomain }) => {
             role.role_name === 'location_administrator'
         );
 
-        if (hasAdminRole) {
+        if (hasAdminRole && userRestaurantSubdomain) {
+          // User is an admin (restaurant or location administrator), redirect to admin page
+          const token = resultAction.payload.token;
+          const redirectUrl = `http://${userRestaurantSubdomain}.localhost:3000/admin?token=${encodeURIComponent(token)}&auth=true`;
+          console.log('Redirecting admin to:', redirectUrl); // Debug
+          window.location.href = redirectUrl;
+        } else if (hasAdminRole && restaurantSlug) {
           // Fallback: if we have a restaurant slug (user is on restaurant page), redirect to restaurant admin
           navigate(`/${restaurantSlug}/admin`);
-        } else {
+        } else if (userRestaurantSubdomain) {
           // For non-admin users with a restaurant, redirect to coming-soon page
           const redirectUrl = `http://${userRestaurantSubdomain}.localhost:3000/coming-soon`;
           console.log('Redirecting non-admin user to coming-soon page:', redirectUrl); // Debug
           window.location.href = redirectUrl;
+        } else {
+          // For other user types without a restaurant, redirect to a placeholder page
+          console.log('Non-admin user without restaurant, redirecting to placeholder page'); // Debug
+          // TODO: Create appropriate pages for different user roles (waiter, cook, etc.)
+          navigate('/dashboard'); // Placeholder for now
         }
       } else if (login.rejected.match(resultAction)) {
         // Check if it's a pending confirmation error

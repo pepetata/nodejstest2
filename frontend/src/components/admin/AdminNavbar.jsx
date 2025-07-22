@@ -78,12 +78,9 @@ const AdminNavbar = () => {
       // Then dispatch logout action (no unwrap needed for regular actions)
       dispatch(logout());
 
-      // Redirect to restaurant-specific login page
+      // Redirect to restaurant-specific login page (ALL users go to login)
       if (restaurantUrl) {
-        const redirectUrl = isAdmin
-          ? `http://${restaurantUrl}.localhost:3000/login`
-          : `http://${restaurantUrl}.localhost:3000/coming-soon`;
-
+        const redirectUrl = `http://${restaurantUrl}.localhost:3000/login`;
         console.log('🚀 Redirecting to:', redirectUrl);
         window.location.href = redirectUrl;
       } else {
@@ -103,14 +100,11 @@ const AdminNavbar = () => {
       // Try to get restaurant URL from localStorage backup
       const logoutRedirect = localStorage.getItem('logoutRedirect');
       if (logoutRedirect) {
-        const { restaurantUrl, isAdmin } = JSON.parse(logoutRedirect);
+        const { restaurantUrl } = JSON.parse(logoutRedirect);
         localStorage.removeItem('logoutRedirect');
 
-        if (isAdmin) {
-          window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
-        } else {
-          window.location.href = `http://${restaurantUrl}.localhost:3000/coming-soon`;
-        }
+        // ALL users go to restaurant login page
+        window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
       } else {
         window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
       }
@@ -148,8 +142,26 @@ const AdminNavbar = () => {
     return false;
   };
 
+  // Helper function to check if user is specifically a restaurant administrator
+  const isRestaurantAdministrator = (user) => {
+    if (!user) return false;
+
+    // Check primary role (backward compatibility)
+    if (user.role === 'restaurant_administrator') {
+      return true;
+    }
+
+    // Check all roles if available
+    if (user.roles && Array.isArray(user.roles)) {
+      return user.roles.some((roleObj) => roleObj.role_name === 'restaurant_administrator');
+    }
+
+    return false;
+  };
+
   // Check if user is restaurant administrator
   const isRestaurantAdmin = checkAdminAccess(user);
+  const canAccessRestaurantProfile = isRestaurantAdministrator(user);
 
   // Helper function to check if a route is active
   const isActiveRoute = (path) => {
@@ -179,7 +191,14 @@ const AdminNavbar = () => {
                   e.target.src = '/public/logos/padre/logo.svg'; // TODO: use the field
                 }}
               /> */}
-              <span className="admin-restaurant-name">{restaurant?.name || 'Restaurant Name'}</span>
+              <div className="admin-restaurant-info">
+                <span className="admin-restaurant-name">
+                  {restaurant?.name || 'Restaurant Name'}
+                </span>
+                <span className="admin-user-name">
+                  {user?.full_name || user?.username || 'User'}
+                </span>
+              </div>
             </div>
 
             <div className="admin-nav-links">
@@ -201,7 +220,7 @@ const AdminNavbar = () => {
               >
                 Usuários
               </Link>
-              {isRestaurantAdmin && (
+              {canAccessRestaurantProfile && (
                 <Link
                   to={`${basePath}/admin/restaurant-profile`}
                   className={`admin-nav-link ${isActiveRoute(`${basePath}/admin/restaurant-profile`) ? 'active' : ''}`}

@@ -49,15 +49,10 @@ const AppNavbar = () => {
       // Then dispatch logout action (no unwrap needed for regular actions)
       dispatch(logout());
 
-      // Redirect to restaurant-specific page
+      // Redirect to restaurant-specific page (ALL users go to login)
       if (restaurantUrl) {
-        if (isAdmin) {
-          // Admin users go to restaurant login page
-          window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
-        } else {
-          // Non-admin users go to temporary page
-          window.location.href = `http://${restaurantUrl}.localhost:3000/coming-soon`;
-        }
+        // ALL users go to restaurant login page
+        window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
       } else {
         // Fallback to main app
         window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
@@ -74,14 +69,11 @@ const AppNavbar = () => {
       // Try to get restaurant URL from localStorage backup
       const logoutRedirect = localStorage.getItem('logoutRedirect');
       if (logoutRedirect) {
-        const { restaurantUrl, isAdmin } = JSON.parse(logoutRedirect);
+        const { restaurantUrl } = JSON.parse(logoutRedirect);
         localStorage.removeItem('logoutRedirect');
 
-        if (isAdmin) {
-          window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
-        } else {
-          window.location.href = `http://${restaurantUrl}.localhost:3000/coming-soon`;
-        }
+        // ALL users go to restaurant login page
+        window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
       } else {
         window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
       }
