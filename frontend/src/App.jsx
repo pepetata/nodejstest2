@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useState, useMemo } from 'react';
@@ -15,6 +15,7 @@ import Login from './pages/app/Login.jsx';
 import ConfirmEmail from './pages/app/ConfirmEmail.jsx';
 import ForgotPassword from './pages/app/ForgotPassword.jsx';
 import ResetPassword from './pages/app/ResetPassword.jsx';
+import ComingSoon from './pages/ComingSoon.jsx';
 
 // Admin Components
 import AdminLayout from './components/admin/AdminLayout';
@@ -32,6 +33,7 @@ function App({ getSubdomain }) {
   const { user, token, restaurant } = useSelector((state) => state.auth);
   const isAuthenticated = !!user && !!token;
   const dispatch = useDispatch();
+  const location = useLocation();
 
   // Memoize the subdomain to prevent unnecessary re-renders
   const subdomain = useMemo(() => {
@@ -46,6 +48,9 @@ function App({ getSubdomain }) {
   // Check if authenticated user's restaurant matches current subdomain
   useEffect(() => {
     if (isAuthenticated && restaurant) {
+      // Allow users to complete login process on main domain
+      const isOnLoginPage = location.pathname === '/login' || location.pathname === '/register';
+
       if (subdomain) {
         // If user is authenticated and we're on a subdomain, check if it matches their restaurant
         if (restaurant.url !== subdomain) {
@@ -64,8 +69,8 @@ function App({ getSubdomain }) {
           // Dispatch logout action
           dispatch(logout());
         }
-      } else {
-        // If user is authenticated with a restaurant but on main domain, they should be logged out
+      } else if (!isOnLoginPage) {
+        // If user is authenticated with a restaurant but on main domain (and not on login page), they should be logged out
         // This prevents restaurant admin from accessing main domain while logged in
         console.log(`Restaurant admin on main domain detected. Logging out...`);
 
@@ -81,7 +86,7 @@ function App({ getSubdomain }) {
         dispatch(logout());
       }
     }
-  }, [isAuthenticated, subdomain, restaurant, dispatch]);
+  }, [isAuthenticated, subdomain, restaurant, dispatch, location.pathname]);
 
   // Validate restaurant existence for subdomains
   useEffect(() => {
@@ -240,6 +245,16 @@ function App({ getSubdomain }) {
               }
             />
 
+            {/* Coming Soon page for non-admin users */}
+            <Route
+              path="/coming-soon"
+              element={
+                <Layout>
+                  <ComingSoon />
+                </Layout>
+              }
+            />
+
             {/* Register page */}
             <Route
               path="/register"
@@ -289,6 +304,7 @@ function App({ getSubdomain }) {
             <Route path="register" element={<Register />} />
             <Route path="register-restaurant" element={<Register />} />
             <Route path="confirm-email" element={<ConfirmEmail />} />
+            <Route path="coming-soon" element={<ComingSoon />} />
             {/* Forgot/Reset password routes must be top-level, not nested */}
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />

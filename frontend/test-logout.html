@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logout Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .test-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .test-section h3 {
+        color: #555;
+        margin-top: 0;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .result {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        background: #f8f9fa;
+        border-left: 4px solid #28a745;
+      }
+      .info {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="test-container">
+      <h1>🔐 Logout Functionality Test</h1>
+
+      <div class="info">
+        <strong>Test Scenarios:</strong><br />
+        1. Admin user should redirect to: <code>[restaurant].localhost:3000/login</code><br />
+        2. Non-admin user should redirect to: <code>[restaurant].localhost:3000/coming-soon</code>
+      </div>
+
+      <div class="test-section">
+        <h3>🧪 Test 1: Admin User (flavio_luiz_ferreira@hotmail.com)</h3>
+        <p><strong>Restaurant:</strong> padre (single location)</p>
+        <p><strong>Role:</strong> restaurant_administrator</p>
+        <p><strong>Expected Redirect:</strong> <code>http://padre.localhost:3000/login</code></p>
+
+        <button onclick="testLogin('flavio_luiz_ferreira@hotmail.com', 'padre', true)">
+          🔑 Test Admin Logout Flow
+        </button>
+        <div id="result1" class="result" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>🧪 Test 2: Regular User (joaores)</h3>
+        <p><strong>Restaurant:</strong> padre (single location)</p>
+        <p><strong>Role:</strong> restaurant_administrator (but testing non-admin scenario)</p>
+        <p>
+          <strong>Expected Redirect:</strong> <code>http://padre.localhost:3000/coming-soon</code>
+        </p>
+
+        <button onclick="testLogin('joaores', 'padre', false)">
+          👤 Test Non-Admin Logout Flow
+        </button>
+        <div id="result2" class="result" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>🧪 Test 3: Multi-Location Admin (flavio_luiz_ferreira_chain@hotmail.com)</h3>
+        <p><strong>Restaurant:</strong> padre2 (multiple locations)</p>
+        <p><strong>Role:</strong> restaurant_administrator</p>
+        <p><strong>Expected Redirect:</strong> <code>http://padre2.localhost:3000/login</code></p>
+
+        <button onclick="testLogin('flavio_luiz_ferreira_chain@hotmail.com', 'padre2', true)">
+          🏢 Test Multi-Location Admin Logout
+        </button>
+        <div id="result3" class="result" style="display: none"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>📋 Manual Testing Steps</h3>
+        <ol>
+          <li>
+            Open
+            <a href="http://padre.localhost:3000/login" target="_blank"
+              >http://padre.localhost:3000/login</a
+            >
+          </li>
+          <li>Login with: <code>flavio_luiz_ferreira@hotmail.com</code> / <code>12345678</code></li>
+          <li>
+            Go to
+            <a href="http://padre.localhost:3000/admin" target="_blank"
+              >http://padre.localhost:3000/admin</a
+            >
+          </li>
+          <li>Click the logout button in the navbar</li>
+          <li>Confirm logout</li>
+          <li>Check if redirected to <code>http://padre.localhost:3000/login</code></li>
+        </ol>
+
+        <button onclick="openLogin()">🚀 Open Login Page</button>
+        <button onclick="openAdmin()">⚙️ Open Admin Panel</button>
+        <button onclick="openComingSoon()">🚧 Open Coming Soon Page</button>
+      </div>
+    </div>
+
+    <script>
+      function testLogin(email, restaurant, isAdmin) {
+        const resultId =
+          email === 'flavio_luiz_ferreira@hotmail.com'
+            ? 'result1'
+            : email === 'joaores'
+              ? 'result2'
+              : 'result3';
+
+        const expectedUrl = isAdmin
+          ? `http://${restaurant}.localhost:3000/login`
+          : `http://${restaurant}.localhost:3000/coming-soon`;
+
+        document.getElementById(resultId).style.display = 'block';
+        document.getElementById(resultId).innerHTML = `
+                <strong>Test Configuration:</strong><br>
+                • Email: ${email}<br>
+                • Restaurant: ${restaurant}<br>
+                • Expected Redirect: ${expectedUrl}<br>
+                • Admin Status: ${isAdmin ? 'Yes' : 'No'}<br><br>
+                <em>Please manually test by logging in and checking the logout behavior.</em>
+            `;
+      }
+
+      function openLogin() {
+        window.open('http://padre.localhost:3000/login', '_blank');
+      }
+
+      function openAdmin() {
+        window.open('http://padre.localhost:3000/admin', '_blank');
+      }
+
+      function openComingSoon() {
+        window.open('http://padre.localhost:3000/coming-soon', '_blank');
+      }
+
+      // Show test info on page load
+      document.addEventListener('DOMContentLoaded', function () {
+        console.log('🧪 Logout Test Page Loaded');
+        console.log('Available test users:');
+        console.log('1. flavio_luiz_ferreira@hotmail.com (padre, admin)');
+        console.log('2. joaores (padre, admin but can test as non-admin)');
+        console.log('3. flavio_luiz_ferreira_chain@hotmail.com (padre2, multi-location admin)');
+      });
+    </script>
+  </body>
+</html>

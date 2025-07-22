@@ -28,17 +28,40 @@ const AppNavbar = () => {
 
   const handleLogoutConfirm = async () => {
     try {
+      // Get restaurant URL and admin status before clearing state
+      const restaurantUrl = restaurant?.url;
+      const isAdmin =
+        user?.role === 'restaurant_administrator' ||
+        user?.role === 'superadmin' ||
+        (user?.role_location_pairs &&
+          user.role_location_pairs.some(
+            (pair) =>
+              pair.role_name === 'restaurant_administrator' ||
+              pair.role_name === 'location_administrator'
+          ));
+
       // Clear authentication data from localStorage first
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('persist:auth');
       localStorage.removeItem('persist:root');
 
-      // Then dispatch logout action
-      await dispatch(logout()).unwrap();
+      // Then dispatch logout action (no unwrap needed for regular actions)
+      dispatch(logout());
 
-      // Redirect to main app with logout parameter to force clear auth state
-      window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
+      // Redirect to restaurant-specific page
+      if (restaurantUrl) {
+        if (isAdmin) {
+          // Admin users go to restaurant login page
+          window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
+        } else {
+          // Non-admin users go to temporary page
+          window.location.href = `http://${restaurantUrl}.localhost:3000/coming-soon`;
+        }
+      } else {
+        // Fallback to main app
+        window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
+      }
     } catch (error) {
       console.error('Logout error:', error);
 
@@ -47,7 +70,21 @@ const AppNavbar = () => {
       localStorage.removeItem('user');
       localStorage.removeItem('persist:auth');
       localStorage.removeItem('persist:root');
-      window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
+
+      // Try to get restaurant URL from localStorage backup
+      const logoutRedirect = localStorage.getItem('logoutRedirect');
+      if (logoutRedirect) {
+        const { restaurantUrl, isAdmin } = JSON.parse(logoutRedirect);
+        localStorage.removeItem('logoutRedirect');
+
+        if (isAdmin) {
+          window.location.href = `http://${restaurantUrl}.localhost:3000/login`;
+        } else {
+          window.location.href = `http://${restaurantUrl}.localhost:3000/coming-soon`;
+        }
+      } else {
+        window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
+      }
     }
   };
 

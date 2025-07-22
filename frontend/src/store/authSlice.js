@@ -87,6 +87,18 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     logout(state) {
+      // Store restaurant URL before clearing state for redirect
+      const restaurantUrl = state.restaurant?.url;
+      const isAdmin =
+        state.user?.role === 'restaurant_administrator' ||
+        state.user?.role === 'superadmin' ||
+        (state.user?.role_location_pairs &&
+          state.user.role_location_pairs.some(
+            (pair) =>
+              pair.role_name === 'restaurant_administrator' ||
+              pair.role_name === 'location_administrator'
+          ));
+
       state.user = null;
       state.token = null;
       state.restaurant = null;
@@ -95,6 +107,15 @@ const authSlice = createSlice({
       state.rememberMe = false;
       storage.remove('token');
       storage.remove('rememberMe');
+
+      // Store logout info for redirect
+      if (restaurantUrl) {
+        storage.set('logoutRedirect', {
+          restaurantUrl,
+          isAdmin,
+          timestamp: Date.now(),
+        });
+      }
     },
     setUser(state, action) {
       state.user = action.payload;

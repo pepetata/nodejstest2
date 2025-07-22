@@ -1,0 +1,244 @@
+// Coming Soon Page Styles
+.coming-soon-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.coming-soon-container {
+  max-width: 600px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.coming-soon-content {
+  padding: 3rem 2rem 2rem;
+  text-align: center;
+}
+
+// Header Styles
+.coming-soon-header {
+  margin-bottom: 2.5rem;
+}
+
+.coming-soon-icon {
+  font-size: 4rem;
+  color: #667eea;
+  margin-bottom: 1rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.coming-soon-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.coming-soon-subtitle {
+  font-size: 1.2rem;
+  color: #4a5568;
+  font-weight: 400;
+  margin: 0;
+}
+
+// Message Styles
+.coming-soon-message {
+  margin-bottom: 2.5rem;
+  text-align: left;
+
+  p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #4a5568;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.coming-soon-features {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border-left: 4px solid #667eea;
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1rem;
+    margin-top: 0;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      position: relative;
+      padding-left: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #4a5568;
+      font-size: 0.95rem;
+
+      &:before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: #667eea;
+        font-weight: bold;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// Contact Styles
+.coming-soon-contact {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #edf2f7;
+  border-radius: 12px;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: #4a5568;
+
+  svg {
+    color: #667eea;
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+
+    &:hover {
+      color: #764ba2;
+      text-decoration: underline;
+    }
+  }
+}
+
+// Actions Styles
+.coming-soon-actions {
+  margin-bottom: 1rem;
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+
+    &.btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      }
+    }
+  }
+}
+
+// Footer Styles
+.coming-soon-footer {
+  padding: 1.5rem 2rem;
+  background: #f7fafc;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #718096;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .coming-soon-page {
+    padding: 1rem;
+  }
+
+  .coming-soon-content {
+    padding: 2rem 1.5rem 1.5rem;
+  }
+
+  .coming-soon-title {
+    font-size: 2rem;
+  }
+
+  .coming-soon-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .contact-info {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .coming-soon-title {
+    font-size: 1.75rem;
+  }
+
+  .coming-soon-icon {
+    font-size: 3rem;
+  }
+
+  .coming-soon-content {
+    padding: 1.5rem 1rem;
+  }
+}
