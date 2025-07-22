@@ -24,7 +24,6 @@ const userService = {
 
   // User registration (for restaurant creation)
   register: (data) => {
-    console.log(`register data=`, data);
     return api.post(`${API_BASE}/register`, data);
   },
 

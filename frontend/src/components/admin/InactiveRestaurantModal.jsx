@@ -3,8 +3,6 @@ import PropTypes from 'prop-types';
 import '../../styles/admin/inactiveRestaurantModal.scss';
 
 const InactiveRestaurantModal = ({ show, restaurantName, onClose }) => {
-  console.log('InactiveRestaurantModal - show:', show, 'restaurantName:', restaurantName);
-
   if (!show) return null;
 
   return (

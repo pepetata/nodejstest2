@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -59,14 +59,6 @@ const AdminUsersPage = () => {
     limit: 10,
   });
 
-  // Statistics
-  const [statistics, setStatistics] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    admins: 0,
-  });
-
   // Load initial data
   useEffect(() => {
     // Load roles and locations with error handling
@@ -92,55 +84,59 @@ const AdminUsersPage = () => {
     dispatch(fetchUsers(filters));
   }, [dispatch, filters]);
 
-  // Update statistics when users change
-  useEffect(() => {
-    if (users) {
-      const stats = users.reduce(
-        (acc, user) => {
-          acc.total++;
-          if (user.status === 'active') acc.active++;
-          else acc.inactive++;
-          if (user.is_admin) acc.admins++;
-          return acc;
-        },
-        { total: 0, active: 0, inactive: 0, admins: 0 }
-      );
-      setStatistics(stats);
+  // Calculate statistics using useMemo to avoid recalculation on every render
+  const statistics = useMemo(() => {
+    if (!users) {
+      return { total: 0, active: 0, inactive: 0, admins: 0 };
     }
+
+    return users.reduce(
+      (acc, user) => {
+        acc.total++;
+        if (user.status === 'active') acc.active++;
+        else acc.inactive++;
+        if (user.is_admin) acc.admins++;
+        return acc;
+      },
+      { total: 0, active: 0, inactive: 0, admins: 0 }
+    );
   }, [users]);
 
   // Handlers
-  const handleFilterChange = (newFilters) => {
+  const handleFilterChange = useCallback((newFilters) => {
     setFilters((prev) => ({
       ...prev,
       ...newFilters,
       page: 1, // Reset page when filters change
     }));
-  };
+  }, []);
 
   const handlePageChange = (page) => {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  const handleCreateUser = () => {
+  const handleCreateUser = useCallback(() => {
     navigate('/admin/users/new');
-  };
+  }, [navigate]);
 
-  const handleEditUser = (user) => {
-    navigate(`/admin/users/${user.id}/edit`);
-  };
+  const handleEditUser = useCallback(
+    (user) => {
+      navigate(`/admin/users/${user.id}/edit`);
+    },
+    [navigate]
+  );
 
-  const handleViewUser = (user) => {
+  const handleViewUser = useCallback((user) => {
     setUserToView(user);
     setShowUserDetails(true);
-  };
+  }, []);
 
-  const handleDeleteUser = (user) => {
+  const handleDeleteUser = useCallback((user) => {
     setUserToDelete(user);
     setShowDeleteConfirm(true);
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (userToDelete) {
       try {
         await dispatch(deleteUser(userToDelete.id)).unwrap();
@@ -153,17 +149,20 @@ const AdminUsersPage = () => {
         // Error handling is managed by the slice
       }
     }
-  };
+  }, [userToDelete, dispatch, filters]);
 
-  const handleToggleStatus = async (userId, currentStatus) => {
-    try {
-      await dispatch(toggleUserStatus({ userId, status: !currentStatus })).unwrap();
-      // Refresh users list
-      dispatch(fetchUsers(filters));
-    } catch (error) {
-      console.error('Error toggling user status:', error);
-    }
-  };
+  const handleToggleStatus = useCallback(
+    async (userId, currentStatus) => {
+      try {
+        await dispatch(toggleUserStatus({ userId, status: !currentStatus })).unwrap();
+        // Refresh users list
+        dispatch(fetchUsers(filters));
+      } catch (error) {
+        console.error('Error toggling user status:', error);
+      }
+    },
+    [dispatch, filters]
+  );
 
   if (error) {
     return (

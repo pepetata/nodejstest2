@@ -29,8 +29,7 @@ const UserTable = ({
   onDelete,
   onPageChange,
 }) => {
-  console.log(`restaurant =`, restaurant); // Full restaurant object
-  console.log(`restaurant?.business_type =`, restaurant?.business_type); // Specific business_type
+  // Removed excessive console logging for performance
   // Helper function to determine if location column should be shown
   const shouldShowLocationColumn = () => {
     return restaurant?.business_type === 'multi';

@@ -19,20 +19,12 @@ const AdminProtectedRoute = ({ children }) => {
   const restaurant = useSelector((state) => state.auth.restaurant);
   const authStatus = useSelector((state) => state.auth.status);
 
-  console.log('AdminProtectedRoute - isAuthenticated:', isAuthenticated);
-  console.log('AdminProtectedRoute - user:', user);
-  console.log('AdminProtectedRoute - restaurant:', restaurant);
-  console.log('AdminProtectedRoute - restaurantSlug:', restaurantSlug);
-  console.log('AdminProtectedRoute - authStatus:', authStatus);
-
   // Check if we're on a subdomain (no restaurantSlug in URL params)
   const isSubdomain =
     !restaurantSlug &&
     typeof window !== 'undefined' &&
     window.location.hostname !== 'localhost' &&
     window.location.hostname.includes('.localhost');
-
-  console.log('AdminProtectedRoute - isSubdomain:', isSubdomain);
 
   // Helper function to check if user has admin access
   const checkAdminAccess = (user) => {
@@ -95,13 +87,7 @@ const AdminProtectedRoute = ({ children }) => {
   // Check restaurant status for already authenticated users
   useEffect(() => {
     if (isAuthenticated && user && restaurant) {
-      console.log('AdminProtectedRoute - Checking restaurant status for authenticated user');
-      console.log('AdminProtectedRoute - Restaurant from Redux:', restaurant);
-      console.log('AdminProtectedRoute - Restaurant status:', restaurant?.status);
-      console.log('AdminProtectedRoute - User is_admin:', user?.is_admin);
-
       if (restaurant.status === 'inactive' && user?.is_admin) {
-        console.log('AdminProtectedRoute - Restaurant is inactive, showing modal');
         setInactiveRestaurantName(restaurant.name || 'Restaurante');
         setShowInactiveModal(true);
       }

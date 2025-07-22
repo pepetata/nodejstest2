@@ -1,17 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import { FaTimes, FaCheck } from 'react-icons/fa';
 import '../../../styles/admin/users/userDetailsModal.scss';
 
 const UserDetailsModal = ({ user, onClose, roles = [], locations = [], restaurant = null }) => {
-  // Debug: Log user data to check created_by_name field
-  useEffect(() => {
-    console.log('=== UserDetailsModal Debug ===');
-    console.log('User data received:', user);
-    console.log('created_by field:', user?.created_by);
-    console.log('created_by_name field:', user?.created_by_name);
-    console.log('================================');
-  }, [user]);
+  // Removed excessive debug logging for performance
 
   if (!user) {
     return null;

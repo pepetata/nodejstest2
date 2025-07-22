@@ -13,8 +13,7 @@ const AdminNavbar = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
   const restaurant = useSelector((state) => state.auth.restaurant);
-  console.log(`AdminNavbar - user:`, user);
-  // console.log(`AdminNavbar - restaurant:`, restaurant);
+  // Removed excessive console logging for performance
 
   // Check authentication state consistency - use useMemo to prevent flickering
   const authState = useMemo(() => {
@@ -63,12 +62,6 @@ const AdminNavbar = () => {
               pair.role_name === 'location_administrator'
           ));
 
-      console.log('🔓 Logout Debug Info:');
-      console.log('- User:', user);
-      console.log('- Restaurant:', restaurant);
-      console.log('- Restaurant URL:', restaurantUrl);
-      console.log('- Is Admin:', isAdmin);
-
       // Clear authentication data from localStorage first
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -81,10 +74,8 @@ const AdminNavbar = () => {
       // Redirect to restaurant-specific login page (ALL users go to login)
       if (restaurantUrl) {
         const redirectUrl = `http://${restaurantUrl}.localhost:3000/login`;
-        console.log('🚀 Redirecting to:', redirectUrl);
         window.location.href = redirectUrl;
       } else {
-        console.log('❌ No restaurant URL found, redirecting to main app');
         // Fallback to main app
         window.location.href = `${import.meta.env.VITE_APP_URL || 'http://localhost:3000'}?logout=true`;
       }
