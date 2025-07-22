@@ -31,8 +31,6 @@ const RestaurantMediaTab = () => {
   // Load media when component mounts or restaurant changes
   useEffect(() => {
     if (restaurant?.id) {
-      console.log('🔍 Fetching media for restaurant:', restaurant.id);
-      console.log('🔍 Restaurant object:', restaurant);
       dispatch(fetchRestaurantMedia({ restaurantId: restaurant.id }));
     }
   }, [dispatch, restaurant]);
@@ -98,18 +96,6 @@ const RestaurantMediaTab = () => {
     [media]
   );
 
-  // Debug logging for current media state
-  useEffect(() => {
-    console.log('🎯 Current Media State:', {
-      media,
-      currentMedia,
-      loading,
-      isLoadingMedia,
-      restaurant: restaurant?.id,
-      editingTabs,
-    });
-  }, [media, currentMedia, loading, isLoadingMedia, restaurant?.id, editingTabs]);
-
   // Set default location when switching to location-required media types
   useEffect(() => {
     const requiresLocation = mediaTypes[selectedMediaType]?.requiresLocation;
@@ -124,11 +110,6 @@ const RestaurantMediaTab = () => {
 
   const handleFileSelect = (event) => {
     const files = Array.from(event.target.files);
-    console.log(
-      'Files selected:',
-      files.length,
-      files.map((f) => f.name)
-    );
     handleFiles(files);
 
     // Clear the input so the same file can be selected again

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchRestaurantProfile,
@@ -41,18 +41,14 @@ const AdminRestaurantProfilePage = () => {
   const [pendingTabChange, setPendingTabChange] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
 
-  useEffect(() => {
-    console.log('AdminRestaurantProfilePage - restaurant data:', restaurant);
-    console.log('AdminRestaurantProfilePage - profile loading state:', loading);
-    console.log('AdminRestaurantProfilePage - profile data:', profile);
+  // Memoize restaurant ID to prevent unnecessary re-renders
+  const restaurantId = useMemo(() => restaurant?.id, [restaurant?.id]);
 
+  useEffect(() => {
     // Load restaurant data when component mounts
-    if (restaurant?.id) {
-      console.log('Fetching restaurant profile for ID:', restaurant.id);
-      dispatch(fetchRestaurantProfile(restaurant.id));
-      dispatch(fetchRestaurantLocations(restaurant.id));
-    } else {
-      console.log('No restaurant ID found in auth store');
+    if (restaurantId) {
+      dispatch(fetchRestaurantProfile(restaurantId));
+      dispatch(fetchRestaurantLocations(restaurantId));
     }
 
     // Clear any previous errors
@@ -62,8 +58,7 @@ const AdminRestaurantProfilePage = () => {
       // Clean up on unmount
       dispatch(clearAllErrors());
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, restaurant?.id]);
+  }, [dispatch, restaurantId]);
 
   useEffect(() => {
     // Clear success message after 5 seconds
@@ -74,7 +69,7 @@ const AdminRestaurantProfilePage = () => {
   }, [successMessage]);
 
   // Show error if no restaurant is found
-  if (!restaurant?.id) {
+  if (!restaurantId) {
     return (
       <div className="admin-page">
         <div className="admin-page-header">
@@ -267,25 +262,6 @@ const AdminRestaurantProfilePage = () => {
   };
 
   if (loading.profile || loading.locations) {
-    console.log('AdminRestaurantProfilePage - Loading state:', {
-      profileLoading: loading.profile,
-      locationsLoading: loading.locations,
-      restaurant: restaurant,
-      profile: profile,
-      locations: locations,
-      error: error,
-    });
-    console.log('AdminRestaurantProfilePage - Full restaurant state:', {
-      profile,
-      locations,
-      activeTab,
-      selectedLocationIndex,
-      editingTabs,
-      editData,
-      hasUnsavedChanges,
-      loading,
-      error,
-    });
     return (
       <div className="admin-page">
         <div className="admin-page-header">

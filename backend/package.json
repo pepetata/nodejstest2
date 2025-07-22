@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "cross-env LOG_LEVEL=DEBUG nodemon server.js --env development",
+    "dev": "cross-env LOG_LEVEL=INFO nodemon server.js --env development",
     "start:test": "nodemon server.js --env test",
     "test": "jest --runInBand --config jest.config.json",
     "test:watch": "jest --runInBand --config jest.config.json --watch",
