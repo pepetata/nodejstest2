@@ -1,0 +1,23 @@
+.simple-profile-edit .form-control::placeholder {
+  font-style: italic !important;
+  color: #007bff !important;
+  opacity: 0.8 !important;
+}
+
+.simple-profile-edit .form-control::-webkit-input-placeholder {
+  font-style: italic !important;
+  color: #007bff !important;
+  opacity: 0.8 !important;
+}
+
+.simple-profile-edit .form-control::-moz-placeholder {
+  font-style: italic !important;
+  color: #007bff !important;
+  opacity: 0.8 !important;
+}
+
+.simple-profile-edit .form-control:-ms-input-placeholder {
+  font-style: italic !important;
+  color: #007bff !important;
+  opacity: 0.8 !important;
+}

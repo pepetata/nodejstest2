@@ -1,8 +1,149 @@
 // User form styles (create/edit)
+
+// Modal overlay for user forms
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 20px;
+}
+
+// Modal container for user forms
+.modal.user-form-modal {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+
+  .modal-header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+
+    h3 {
+      margin: 0;
+      color: #2c3e50;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: #495057;
+        background-color: #e9ecef;
+      }
+    }
+  }
+
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .modal-footer {
+    padding: 20px 32px;
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .btn {
+      min-width: 120px;
+      padding: 10px 20px;
+      font-weight: 500;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+
+      &.btn-secondary {
+        background-color: #6c757d;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: #5a6268;
+        }
+
+        &:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+      }
+
+      &.btn-primary {
+        background-color: #007bff;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: #0056b3;
+        }
+
+        &:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+      }
+
+      &.btn-blank {
+        background-color: transparent;
+        color: #6c757d;
+        border: 1px solid #6c757d;
+
+        &:hover:not(:disabled) {
+          background-color: #6c757d;
+          color: white;
+          border-color: #6c757d;
+        }
+
+        &:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+      }
+
+      .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+      }
+    }
+  }
+}
+
 .user-form {
-  padding: 24px;
-  background-color: #f8f9fa;
-  min-height: 100vh;
+  padding: 32px;
+  background-color: white;
+  min-height: auto;
 
   &-header {
     margin-bottom: 32px;
@@ -100,6 +241,31 @@
           border-color: #dc3545;
           box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
+      }
+
+      // Placeholder styling - italic font with blue color
+      &::placeholder {
+        font-style: italic !important;
+        color: #007bff !important;
+        opacity: 0.8 !important;
+      }
+
+      &::-webkit-input-placeholder {
+        font-style: italic !important;
+        color: #007bff !important;
+        opacity: 0.8 !important;
+      }
+
+      &::-moz-placeholder {
+        font-style: italic !important;
+        color: #007bff !important;
+        opacity: 0.8 !important;
+      }
+
+      &:-ms-input-placeholder {
+        font-style: italic !important;
+        color: #007bff !important;
+        opacity: 0.8 !important;
       }
     }
 
@@ -394,6 +560,12 @@
     border: 1px solid #f5c6cb;
     color: #721c24;
   }
+
+  &.alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+  }
 }
 
 // Responsive design
@@ -431,6 +603,59 @@
         .btn {
           width: 100%;
         }
+      }
+    }
+  }
+
+  .role-assignment {
+    grid-template-columns: 1fr;
+    gap: 12px;
+
+    &-actions {
+      justify-content: center;
+    }
+  }
+}
+
+// Modal responsive design
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal.user-form-modal {
+    max-width: 100%;
+    max-height: 95vh;
+
+    .modal-header {
+      padding: 16px 20px 12px;
+
+      h3 {
+        font-size: 18px;
+      }
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      flex-direction: column;
+      gap: 8px;
+
+      .btn {
+        width: 100%;
+        min-width: auto;
+      }
+    }
+  }
+
+  .user-form {
+    padding: 20px;
+
+    &-row {
+      grid-template-columns: 1fr;
+      gap: 16px;
+
+      &.triple {
+        grid-template-columns: 1fr;
       }
     }
   }

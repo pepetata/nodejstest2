@@ -24,7 +24,8 @@ import AdminProtectedRoute from './components/admin/AdminProtectedRoute';
 import AdminUsersPage from './components/admin/users/AdminUsersPage';
 import UserFormPage from './pages/admin/users/UserFormPage';
 import AdminRestaurantProfilePage from './pages/admin/restaurant/AdminRestaurantProfilePage';
-import AdminUserProfilePage from './pages/admin/restaurant/AdminUserProfilePage';
+import AdminUserProfilePage from './pages/AdminUserProfilePage';
+import SimpleProfileEdit from './pages/SimpleProfileEdit';
 
 // Cache for restaurant validation to avoid repeated API calls
 const restaurantValidationCache = new Map();
@@ -197,6 +198,7 @@ function App({ getSubdomain }) {
               <Route path="users/:id/edit" element={<UserFormPage />} />
               <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
               <Route path="user-profile" element={<AdminUserProfilePage />} />
+              <Route path="user-profile/edit" element={<SimpleProfileEdit />} />
             </Route>
 
             {/* Waiter portal for subdomain */}
@@ -331,6 +333,7 @@ function App({ getSubdomain }) {
             <Route path="users/:id/edit" element={<UserFormPage />} />
             <Route path="restaurant-profile" element={<AdminRestaurantProfilePage />} />
             <Route path="user-profile" element={<AdminUserProfilePage />} />
+            <Route path="user-profile/edit" element={<SimpleProfileEdit />} />
           </Route>
 
           {/* Waiter portal */}

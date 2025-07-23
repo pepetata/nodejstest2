@@ -65,6 +65,61 @@
         transform: scale(1.05);
       }
     }
+
+    .modal-header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+
+      .back-button,
+      .edit-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 2px solid;
+        cursor: pointer;
+
+        &:hover {
+          transform: translateY(-1px);
+        }
+
+        svg {
+          font-size: 14px;
+        }
+
+        span {
+          font-size: 14px;
+        }
+      }
+
+      .back-button {
+        background: white;
+        color: vars.$logoB;
+        border-color: vars.$logoB;
+
+        &:hover {
+          background: vars.$logoB;
+          color: white;
+        }
+      }
+
+      .edit-button {
+        background: vars.$logoO;
+        color: vars.$logoB;
+        border-color: vars.$logoO;
+
+        &:hover {
+          background: vars.$primary-dark;
+          border-color: vars.$primary-dark;
+        }
+      }
+    }
   }
 
   .modal-body {

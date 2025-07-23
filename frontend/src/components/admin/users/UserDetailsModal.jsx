@@ -1,9 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { FaTimes, FaCheck } from 'react-icons/fa';
+import { FaTimes, FaCheck, FaEdit, FaArrowLeft } from 'react-icons/fa';
 import '../../../styles/admin/users/userDetailsModal.scss';
 
-const UserDetailsModal = ({ user, onClose, roles = [], locations = [], restaurant = null }) => {
+const UserDetailsModal = ({
+  user,
+  onClose,
+  onEdit,
+  roles = [],
+  locations = [],
+  restaurant = null,
+  showBackButton = false,
+  isProfileView = false,
+}) => {
   // Removed excessive debug logging for performance
 
   if (!user) {
@@ -93,10 +102,40 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [], restauran
     <div className="user-details-modal-overlay">
       <div className="user-details-modal" role="dialog" aria-modal="true" tabIndex={-1}>
         <div className="modal-header">
-          <h2 className="modal-title">Detalhes do Usuário</h2>
-          <button className="close-button" onClick={onClose}>
-            <FaTimes />
-          </button>
+          <h2 className="modal-title">{isProfileView ? 'Meu Perfil' : 'Detalhes do Usuário'}</h2>
+          <div className="modal-header-actions">
+            {console.log('Button visibility check:', {
+              isProfileView,
+              hasOnEdit: !!onEdit,
+              showBackButton,
+              shouldShowEditButton: isProfileView && onEdit,
+            })}
+            {showBackButton && (
+              <button className="back-button" onClick={onClose} title="Voltar">
+                <FaArrowLeft />
+                <span>Voltar</span>
+              </button>
+            )}
+            {isProfileView && onEdit && (
+              <button
+                className="edit-button"
+                onClick={() => {
+                  console.log('🔥 EDIT BUTTON CLICKED!');
+                  console.log('onEdit function:', onEdit);
+                  onEdit();
+                }}
+                title="Editar Perfil"
+              >
+                <FaEdit />
+                <span>Editar</span>
+              </button>
+            )}
+            {!showBackButton && (
+              <button className="close-button" onClick={onClose}>
+                <FaTimes />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="modal-body">
@@ -120,6 +159,20 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [], restauran
           </div>
 
           <div className="details-grid">
+            <div className="detail-card">
+              <div className="detail-content">
+                <h4>Nome Completo</h4>
+                <p>{user.full_name || 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <div className="detail-content">
+                <h4>Email</h4>
+                <p>{user.email || 'N/A'}</p>
+              </div>
+            </div>
+
             <div className="detail-card">
               <div className="detail-content">
                 <h4>Nome de Usuário</h4>
@@ -206,10 +259,17 @@ const UserDetailsModal = ({ user, onClose, roles = [], locations = [], restauran
         </div>
 
         <div className="modal-footer">
-          <button type="button" className="btn-ok" onClick={onClose}>
-            <FaCheck />
-            OK
-          </button>
+          {isProfileView ? (
+            <button type="button" className="btn-ok" onClick={onClose}>
+              <FaCheck />
+              OK
+            </button>
+          ) : (
+            <button type="button" className="btn-ok" onClick={onClose}>
+              <FaCheck />
+              OK
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -243,7 +303,7 @@ UserDetailsModal.propTypes = {
     created_by: PropTypes.string,
     created_by_name: PropTypes.string,
     last_login_at: PropTypes.string,
-  }).isRequired, // The user object itself is required
+  }), // Made user optional since component handles null gracefully
   roles: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
@@ -263,7 +323,9 @@ UserDetailsModal.propTypes = {
     name: PropTypes.string,
   }),
   onClose: PropTypes.func.isRequired,
-  show: PropTypes.bool.isRequired,
+  onEdit: PropTypes.func,
+  showBackButton: PropTypes.bool,
+  isProfileView: PropTypes.bool,
 };
 
 export default UserDetailsModal;

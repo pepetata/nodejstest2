@@ -4,7 +4,23 @@ import PropTypes from 'prop-types';
 import { FaTimes, FaExclamationTriangle, FaEye, FaEyeSlash, FaSave } from 'react-icons/fa';
 import { createUser, updateUser } from '../../../store/usersSlice';
 
-const UserForm = ({ user = null, roles, locations, currentUser, onClose, onSuccess }) => {
+const UserForm = ({
+  user = null,
+  roles,
+  locations,
+  currentUser,
+  onClose,
+  onSuccess,
+  isModal = true,
+}) => {
+  console.log('🔥 USERFORM COMPONENT MOUNTED/RENDERED', {
+    hasUser: !!user,
+    userId: user?.id,
+    isModal,
+    rolesLength: roles?.length,
+    locationsLength: locations?.length,
+  });
+
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     name: '',
@@ -292,14 +308,25 @@ const UserForm = ({ user = null, roles, locations, currentUser, onClose, onSucce
   };
 
   return (
-    <div className="modal-overlay">
+    <div className={isModal ? 'modal-overlay' : ''}>
       <div className="modal user-form-modal">
-        <div className="modal-header">
-          <h3>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Fechar modal">
-            <FaTimes />
-          </button>
-        </div>
+        {isModal && (
+          <div className="modal-header">
+            <h3>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</h3>
+            <button className="modal-close" onClick={onClose} aria-label="Fechar modal">
+              <FaTimes />
+            </button>
+          </div>
+        )}
+
+        {!isModal && (
+          <div className="modal-header">
+            <h3>Meu Perfil</h3>
+            <button className="modal-close" onClick={onClose} aria-label="Voltar">
+              <FaTimes />
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="user-form" key={isEditing ? 'edit' : 'create'}>
           <div className="modal-body">
@@ -557,7 +584,7 @@ const UserForm = ({ user = null, roles, locations, currentUser, onClose, onSucce
               onClick={onClose}
               disabled={loading}
             >
-              Cancelar
+              {isModal ? 'Cancelar' : 'Voltar'}
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? (
@@ -572,7 +599,11 @@ const UserForm = ({ user = null, roles, locations, currentUser, onClose, onSucce
               ) : (
                 <>
                   <FaSave />
-                  {isEditing ? 'Atualizar Usuário' : 'Criar Usuário'}
+                  {isModal
+                    ? isEditing
+                      ? 'Atualizar Usuário'
+                      : 'Criar Usuário'
+                    : 'Atualizar Perfil'}
                 </>
               )}
             </button>
@@ -614,6 +645,7 @@ UserForm.propTypes = {
   }),
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func.isRequired,
+  isModal: PropTypes.bool,
 };
 
 export default UserForm;

@@ -102,16 +102,16 @@ router.get('/locations', authMiddleware, userController.getRestaurantLocations);
 /**
  * @route GET /api/v1/users/profile
  * @desc Get current user's profile
- * @access Private - Self only
+ * @access Private - Any authenticated user
  * @middleware authMiddleware
  */
 router.get('/profile', authMiddleware, userController.getProfile);
 
 /**
  * @route PUT /api/v1/users/profile
- * @desc Update current user's profile
- * @access Private - Self only
- * @middleware authMiddleware, ValidationMiddleware, XSSMiddleware
+ * @desc Update current user's profile (limited fields)
+ * @access Private - Any authenticated user
+ * @middleware authMiddleware, ValidationMiddleware
  */
 router.put(
   '/profile',

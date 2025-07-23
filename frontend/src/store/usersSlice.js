@@ -49,6 +49,36 @@ export const createUser = createAsyncThunk(
   }
 );
 
+export const getProfile = createAsyncThunk('users/getProfile', async (_, { rejectWithValue }) => {
+  try {
+    console.log('=== getProfile: Making API call ===');
+    const response = await userService.getProfile();
+    console.log('=== getProfile: API response ===', response);
+    console.log('=== getProfile: Response data ===', response.data);
+    console.log('=== getProfile: Actual user data ===', response.data.data);
+    return response.data.data; // Extract the actual user data from the wrapped response
+  } catch (error) {
+    console.error('=== getProfile: Error ===', error);
+    return rejectWithValue(
+      error.response?.data?.error || error.message || 'Erro ao carregar perfil'
+    );
+  }
+});
+
+export const updateProfile = createAsyncThunk(
+  'users/updateProfile',
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const response = await userService.updateProfile(profileData);
+      return response.data.data; // Extract the actual user data from the wrapped response
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.error || error.message || 'Erro ao atualizar perfil'
+      );
+    }
+  }
+);
+
 export const updateUser = createAsyncThunk(
   'users/updateUser',
   async ({ userId, userData }, { rejectWithValue }) => {
@@ -58,31 +88,6 @@ export const updateUser = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.error || error.message || 'Erro ao atualizar usuário'
-      );
-    }
-  }
-);
-
-export const getProfile = createAsyncThunk('users/getProfile', async (_, { rejectWithValue }) => {
-  try {
-    const response = await userService.getProfile();
-    return response.data;
-  } catch (error) {
-    return rejectWithValue(
-      error.response?.data?.error || error.message || 'Erro ao carregar perfil'
-    );
-  }
-});
-
-export const updateProfile = createAsyncThunk(
-  'users/updateProfile',
-  async (userData, { rejectWithValue }) => {
-    try {
-      const response = await userService.updateProfile(userData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.error || error.message || 'Erro ao atualizar perfil'
       );
     }
   }
@@ -160,6 +165,8 @@ const initialState = {
     deleting: false,
     roles: false,
     locations: false,
+    profile: false,
+    updatingProfile: false,
   },
 
   // Filters and pagination
@@ -208,9 +215,6 @@ const usersSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    clearErrors: (state) => {
-      state.error = null;
-    },
     clearSuccessMessage: (state) => {
       state.successMessage = '';
     },
@@ -224,7 +228,7 @@ const usersSlice = createSlice({
     clearCurrentUser: (state) => {
       state.currentUser = null;
     },
-    resetState: (state) => {
+    resetState: (_state) => {
       return { ...initialState };
     },
   },
@@ -298,34 +302,6 @@ const usersSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Get profile
-      .addCase(getProfile.pending, (state) => {
-        state.loading.fetching = true;
-        state.error = null;
-      })
-      .addCase(getProfile.fulfilled, (state, action) => {
-        state.loading.fetching = false;
-        state.currentUser = action.payload.data;
-      })
-      .addCase(getProfile.rejected, (state, action) => {
-        state.loading.fetching = false;
-        state.error = action.payload;
-      })
-
-      // Update profile
-      .addCase(updateProfile.pending, (state) => {
-        state.loading.updating = true;
-        state.error = null;
-      })
-      .addCase(updateProfile.fulfilled, (state) => {
-        state.loading.updating = false;
-        state.successMessage = 'Perfil atualizado com sucesso';
-      })
-      .addCase(updateProfile.rejected, (state, action) => {
-        state.loading.updating = false;
-        state.error = action.payload;
-      })
-
       // Toggle user status
       .addCase(toggleUserStatus.pending, (state) => {
         state.loading.updating = true;
@@ -386,6 +362,39 @@ const usersSlice = createSlice({
       .addCase(fetchLocations.rejected, (state, action) => {
         state.loading.locations = false;
         state.error = action.payload;
+      })
+
+      // Get profile
+      .addCase(getProfile.pending, (state) => {
+        console.log('=== getProfile.pending ===');
+        state.loading.profile = true;
+        state.error = null;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        console.log('=== getProfile.fulfilled ===', action.payload);
+        state.loading.profile = false;
+        state.currentUser = action.payload;
+        console.log('=== currentUser after set ===', state.currentUser);
+      })
+      .addCase(getProfile.rejected, (state, action) => {
+        console.log('=== getProfile.rejected ===', action.payload);
+        state.loading.profile = false;
+        state.error = action.payload;
+      })
+
+      // Update profile
+      .addCase(updateProfile.pending, (state) => {
+        state.loading.updatingProfile = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading.updatingProfile = false;
+        state.currentUser = action.payload;
+        state.successMessage = 'Perfil atualizado com sucesso';
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading.updatingProfile = false;
+        state.error = action.payload;
       });
   },
 });
@@ -395,7 +404,6 @@ export const {
   setSorting,
   setPagination,
   clearError,
-  clearErrors,
   clearSuccessMessage,
   setIsCreating,
   setIsEditing,
@@ -417,5 +425,7 @@ export const selectIsCreating = (state) => state.users.isCreating;
 export const selectIsEditing = (state) => state.users.isEditing;
 export const selectEditingUserId = (state) => state.users.editingUserId;
 export const selectSuccessMessage = (state) => state.users.successMessage;
+export const selectProfileLoading = (state) => state.users.loading.profile;
+export const selectUpdatingProfile = (state) => state.users.loading.updatingProfile;
 
 export default usersSlice.reducer;

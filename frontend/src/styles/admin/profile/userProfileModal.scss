@@ -1,387 +1,503 @@
-// User Profile Modal Styles (shared with UserDetailsModal)
-@use '../../variables.scss' as vars;
+@import '../../../styles/variables.scss';
 
 .user-profile-modal-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(8px) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 1000 !important;
-  padding: 20px !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
 }
 
 .user-profile-modal {
-  background: white !important;
-  border-radius: 16px !important;
-  width: 100% !important;
-  max-width: 700px !important;
-  max-height: 80vh !important;
-  overflow-y: auto !important;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3) !important;
-  border: 2px solid vars.$logoO !important;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  min-width: 500px;
+  max-width: 800px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.3s ease-out;
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 95vw;
+    max-height: 95vh;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, rgba($logoO, 0.05) 0%, rgba($logoB, 0.05) 100%);
+  border-radius: 12px 12px 0 0;
+
+  .modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: $logoB;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .modal-header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .edit-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: $logoO;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: darken($logoO, 10%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba($logoO, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: transparent;
+    color: $logoB;
+    border: 2px solid $logoB;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: $logoB;
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba($logoB, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .close-button {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+
+    &:hover {
+      color: #dc2626;
+      background: rgba(#dc2626, 0.1);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.modal-body {
+  padding: 28px;
+}
+
+.user-profile-section {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba($logoO, 0.03) 0%, rgba($logoB, 0.03) 100%);
+  border-radius: 12px;
+  margin-bottom: 28px;
+  border: 1px solid rgba($logoO, 0.1);
+
+  .user-avatar {
+    img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid $logoO;
+    }
+
+    .avatar-placeholder {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, $logoO 0%, $logoB 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 600;
+      color: white;
+      border: 3px solid white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .user-basic-info {
+    flex: 1;
+
+    .user-name {
+      font-size: 28px;
+      font-weight: 600;
+      color: $logoB;
+      margin: 0 0 8px 0;
+    }
+
+    .user-email {
+      font-size: 16px;
+      color: #6b7280;
+      margin: 0 0 12px 0;
+    }
+
+    .user-status {
+      .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &.active {
+          background: rgba(#10b981, 0.1);
+          color: #10b981;
+          border: 1px solid rgba(#10b981, 0.2);
+        }
+
+        &.inactive {
+          background: rgba(#6b7280, 0.1);
+          color: #6b7280;
+          border: 1px solid rgba(#6b7280, 0.2);
+        }
+
+        &.pending {
+          background: rgba($logoO, 0.1);
+          color: $logoO;
+          border: 1px solid rgba($logoO, 0.2);
+        }
+
+        &.suspended {
+          background: rgba(#dc2626, 0.1);
+          color: #dc2626;
+          border: 1px solid rgba(#dc2626, 0.2);
+        }
+      }
+    }
+  }
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.detail-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, $logoO 0%, $logoB 100%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover {
+    border-color: rgba($logoO, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+
+    &::before {
+      opacity: 1;
+    }
+  }
+
+  .detail-content {
+    h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: $logoB;
+      margin: 0 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #374151;
+      margin: 0;
+      word-break: break-word;
+      font-weight: 500;
+    }
+  }
+}
+
+.roles-locations-section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #e5e7eb;
+
+  h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: $logoB;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .role-location-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .role-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, $logoO 0%, $logoB 100%);
+    }
+
+    &:hover {
+      border-color: rgba($logoO, 0.3);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .role-header {
+      margin-bottom: 16px;
+
+      .role-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: $logoB;
+        margin: 0 0 6px 0;
+      }
+
+      .role-description {
+        font-size: 14px;
+        color: #6b7280;
+        margin: 0;
+        font-style: italic;
+      }
+    }
+
+    .role-locations {
+      .locations-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: $logoB;
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .location-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+
+        .location-tag {
+          background: linear-gradient(135deg, rgba($logoO, 0.1) 0%, rgba($logoB, 0.1) 100%);
+          color: $logoB;
+          padding: 6px 12px;
+          border-radius: 16px;
+          font-size: 12px;
+          font-weight: 500;
+          border: 1px solid rgba($logoO, 0.2);
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: linear-gradient(135deg, rgba($logoO, 0.2) 0%, rgba($logoB, 0.2) 100%);
+            transform: translateY(-1px);
+          }
+        }
+      }
+    }
+  }
+
+  .no-roles-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+    font-style: italic;
+    background: rgba(#f3f4f6, 0.5);
+    border-radius: 10px;
+    border: 2px dashed #d1d5db;
+
+    p {
+      margin: 0;
+      font-size: 16px;
+    }
+  }
+}
+
+.admin-badge-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, $logoO 0%, $logoB 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba($logoO, 0.3);
+
+    .status-text {
+      font-weight: 700;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .user-profile-modal {
+    margin: 10px;
+  }
 
   .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 2px solid vars.$logoO;
-    background: linear-gradient(135deg, vars.$primary-light 0%, vars.$logoO 100%);
-    border-radius: 16px 16px 0 0;
+    padding: 16px 20px 12px;
 
     .modal-title {
-      font-size: 24px;
-      font-weight: 800;
-      color: vars.$logoB;
-      margin: 0;
+      font-size: 20px;
     }
 
     .modal-header-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+      gap: 8px;
 
-      .back-button,
-      .edit-button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.2s ease;
-        border: none;
-        cursor: pointer;
-
-        &:hover {
-          transform: translateY(-1px);
-        }
-
-        svg {
-          font-size: 14px;
-        }
+      .edit-button,
+      .back-button {
+        padding: 8px 12px;
+        font-size: 12px;
 
         span {
-          font-size: 14px;
-        }
-      }
-
-      .back-button {
-        background: white;
-        color: vars.$logoB;
-        border: 2px solid vars.$logoB;
-
-        &:hover {
-          background: vars.$logoB;
-          color: white;
-        }
-      }
-
-      .edit-button {
-        background: vars.$logoO;
-        color: vars.$logoB;
-        border: 2px solid vars.$logoO;
-
-        &:hover {
-          background: vars.$primary-dark;
-          border-color: vars.$primary-dark;
-        }
-      }
-
-      .close-button {
-        background: #f7fafc;
-        border: 2px solid #e2e8f0;
-        font-size: 18px;
-        color: #4a5568;
-        width: 40px;
-        height: 40px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-
-        &:hover {
-          background: #fed7d7;
-          border-color: #fc8181;
-          color: #c53030;
+          display: none;
         }
       }
     }
   }
 
   .modal-body {
-    padding: 20px 24px;
+    padding: 20px;
+  }
 
-    .user-profile-section {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-      border-radius: 12px;
-      border: 1px solid #dee2e6;
+  .user-profile-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+    padding: 20px;
 
-      .user-avatar {
-        flex-shrink: 0;
-
-        img {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid vars.$logoO;
-        }
-
-        .avatar-placeholder {
-          width: 80px;
-          height: 80px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, vars.$logoO 0%, vars.$primary-dark 100%);
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 32px;
-          font-weight: bold;
-          border: 3px solid vars.$logoO;
-        }
-      }
-
-      .user-basic-info {
-        flex: 1;
-
-        .user-name {
-          font-size: 24px;
-          font-weight: 700;
-          color: vars.$logoB;
-          margin: 0 0 8px 0;
-        }
-
-        .user-email {
-          font-size: 16px;
-          color: #6c757d;
-          margin: 0 0 12px 0;
-        }
-
-        .user-status {
-          .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-
-            &.active {
-              background: #d4edda;
-              color: #155724;
-              border: 1px solid #c3e6cb;
-            }
-
-            &.inactive {
-              background: #f8d7da;
-              color: #721c24;
-              border: 1px solid #f5c6cb;
-            }
-
-            &.pending {
-              background: #fff3cd;
-              color: #856404;
-              border: 1px solid #ffeeba;
-            }
-
-            &.suspended {
-              background: #f8d7da;
-              color: #721c24;
-              border: 1px solid #f5c6cb;
-            }
-          }
-        }
-      }
-    }
-
-    .details-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      margin-bottom: 30px;
-
-      .detail-card {
-        background: white;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 16px;
-        transition: all 0.2s ease;
-
-        &:hover {
-          border-color: vars.$logoO;
-          box-shadow: 0 2px 8px rgba(255, 170, 0, 0.1);
-        }
-
-        .detail-content {
-          h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: vars.$logoB;
-            margin: 0 0 8px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-
-          p {
-            font-size: 16px;
-            color: #495057;
-            margin: 0;
-            word-wrap: break-word;
-          }
-        }
-      }
-    }
-
-    .roles-locations-section {
-      h4 {
-        font-size: 18px;
-        font-weight: 700;
-        color: vars.$logoB;
-        margin: 0 0 16px 0;
-      }
-
-      .role-location-list {
-        .role-card {
-          background: #f8f9fa;
-          border: 1px solid #dee2e6;
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 12px;
-
-          .role-header {
-            .role-name {
-              font-size: 16px;
-              font-weight: 600;
-              color: vars.$logoB;
-              margin: 0 0 4px 0;
-            }
-
-            .role-description {
-              font-size: 14px;
-              color: #6c757d;
-              margin: 0 0 12px 0;
-            }
-          }
-
-          .role-locations {
-            .locations-label {
-              font-size: 14px;
-              font-weight: 600;
-              color: vars.$logoB;
-              margin-right: 8px;
-            }
-
-            .location-tags {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 6px;
-              margin-top: 8px;
-
-              .location-tag {
-                background: vars.$logoO;
-                color: vars.$logoB;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: 500;
-              }
-            }
-          }
-        }
-      }
-
-      .no-roles-message {
-        text-align: center;
-        padding: 20px;
-        color: #6c757d;
-        font-style: italic;
-      }
-    }
-
-    .admin-badge-section {
-      margin-top: 20px;
-      text-align: center;
-
-      .admin-badge {
-        background: linear-gradient(135deg, vars.$logoO 0%, vars.$primary-dark 100%);
-        color: vars.$logoB;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        border: 2px solid vars.$logoO;
+    .user-basic-info {
+      .user-name {
+        font-size: 24px;
       }
     }
   }
-}
 
-// Responsive design
-@media (max-width: 768px) {
-  .user-profile-modal {
-    margin: 10px;
-    max-width: calc(100vw - 20px);
+  .details-grid {
+    gap: 12px;
+  }
 
-    .modal-header {
-      padding: 16px;
+  .detail-card {
+    padding: 16px;
+  }
 
-      .modal-title {
-        font-size: 20px;
-      }
+  .role-card {
+    padding: 16px;
 
-      .modal-header-actions {
-        .back-button,
-        .edit-button {
-          span {
-            display: none;
-          }
-        }
-      }
-    }
-
-    .modal-body {
-      padding: 16px;
-
-      .user-profile-section {
-        flex-direction: column;
-        text-align: center;
-        gap: 16px;
-
-        .user-avatar {
-          img,
-          .avatar-placeholder {
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-          }
-        }
-
-        .user-basic-info {
-          .user-name {
-            font-size: 20px;
-          }
-        }
-      }
-
-      .details-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
+    .role-locations {
+      .location-tags {
+        justify-content: center;
       }
     }
   }

@@ -1,171 +1,170 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  fetchRoles,
-  fetchLocations,
   getProfile,
   updateProfile,
-  clearErrors,
+  fetchRoles,
+  fetchLocations,
+  clearError,
+  clearSuccessMessage,
+  selectCurrentUser,
+  selectProfileLoading,
+  selectUpdatingProfile,
+  selectRoles,
+  selectLocations,
+  selectUsersError,
+  selectSuccessMessage,
 } from '../../../store/usersSlice';
-import { setUser } from '../../../store/authSlice';
 import UserProfileModal from '../../../components/admin/profile/UserProfileModal';
 import UserProfileEditForm from '../../../components/admin/profile/UserProfileEditForm';
-import LoadingSpinner from '../../../components/common/LoadingSpinner';
-import ErrorMessage from '../../../components/common/ErrorMessage';
-import SuccessMessage from '../../../components/common/SuccessMessage';
 import '../../../styles/admin/adminPage.scss';
 
 const AdminUserProfilePage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, restaurant } = useSelector((state) => state.auth);
-  const { roles, locations, loading, error, currentUser } = useSelector((state) => state.users);
 
-  // Use currentUser from users slice if available (fresh data), otherwise fallback to auth user
-  const profileUser = currentUser || user;
+  // State
+  const [isEditing, setIsEditing] = useState(false);
+  const [returnPath, setReturnPath] = useState('/admin');
 
-  const [mode, setMode] = useState('view'); // 'view' or 'edit'
-  const [successMessage, setSuccessMessage] = useState('');
-  const [saving, setSaving] = useState(false);
+  // Redux state
+  const currentUser = useSelector(selectCurrentUser);
+  const loading = useSelector(selectProfileLoading);
+  const updatingProfile = useSelector(selectUpdatingProfile);
+  const roles = useSelector(selectRoles);
+  const locations = useSelector(selectLocations);
+  const error = useSelector(selectUsersError);
+  const successMessage = useSelector(selectSuccessMessage);
+  const restaurant = useSelector((state) => state.auth.restaurant);
 
-  // Get the previous page path for back navigation
-  const fromPath = location.state?.from || '/admin';
-
+  // Set return path from state or default to admin dashboard
   useEffect(() => {
-    // Load fresh profile data, roles and locations for display
+    if (location.state?.from) {
+      setReturnPath(location.state.from);
+    }
+  }, [location.state]);
+
+  // Load profile data on mount
+  useEffect(() => {
     dispatch(getProfile());
     dispatch(fetchRoles());
     dispatch(fetchLocations());
-
-    // Clear any previous errors
-    dispatch(clearErrors());
-
-    return () => {
-      dispatch(clearErrors());
-    };
+    dispatch(clearError());
   }, [dispatch]);
 
+  // Clear success message after some time
   useEffect(() => {
-    // Clear success message after 5 seconds
     if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      const timer = setTimeout(() => {
+        dispatch(clearSuccessMessage());
+      }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [successMessage]);
+  }, [successMessage, dispatch]);
+
+  // Scroll to top when editing mode changes
+  useEffect(() => {
+    if (isEditing) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isEditing]);
 
   const handleEdit = () => {
-    setMode('edit');
+    setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
-    setMode('view');
+    setIsEditing(false);
+    dispatch(clearError());
   };
 
-  const handleBack = () => {
-    navigate(fromPath);
+  const handleSaveProfile = async (formData) => {
+    await dispatch(updateProfile(formData)).unwrap();
+    setIsEditing(false);
+    // Refresh profile data after update
+    dispatch(getProfile());
   };
 
-  const handleSave = async (formData) => {
-    setSaving(true);
-    try {
-      // Update user profile
-      const updatedUserData = await dispatch(
-        updateProfile({
-          ...formData,
-          updated_at: new Date().toISOString(),
-        })
-      ).unwrap();
-
-      // Update the user in auth state with the new data
-      dispatch(
-        setUser({
-          ...user,
-          ...updatedUserData,
-          full_name: formData.full_name,
-          email: formData.email,
-          phone: formData.phone,
-          whatsapp: formData.whatsapp,
-          updated_at: new Date().toISOString(),
-        })
-      );
-
-      // Refresh profile data to ensure consistency
-      dispatch(getProfile());
-
-      setSuccessMessage('Perfil atualizado com sucesso!');
-      setMode('view');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      // Don't set error message here, let the form handle validation errors
-      throw error;
-    } finally {
-      setSaving(false);
-    }
+  const handleReturn = () => {
+    navigate(returnPath);
   };
 
-  if (!user) {
+  if (loading || !currentUser) {
     return (
       <div className="admin-page">
         <div className="admin-page-header">
           <h1 className="admin-page-title">Meu Perfil</h1>
+          <p className="admin-page-subtitle">
+            Atualize suas informações pessoais, altere sua senha e configure suas preferências.
+          </p>
         </div>
         <div className="admin-page-content">
-          <ErrorMessage
-            message="Usuário não encontrado. Você precisa estar logado para acessar seu perfil."
-            onRetry={() => window.location.reload()}
-          />
+          <div className="loading-spinner">
+            <div className="spinner"></div>
+            <p>Carregando perfil...</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (loading && (loading.fetching || loading.roles || loading.locations)) {
+  if (error) {
     return (
       <div className="admin-page">
         <div className="admin-page-header">
           <h1 className="admin-page-title">Meu Perfil</h1>
         </div>
         <div className="admin-page-content">
-          <LoadingSpinner message="Carregando dados do perfil..." />
+          <div className="error-message">
+            <h3>Erro ao carregar perfil</h3>
+            <p>{error}</p>
+            <button className="btn btn-primary" onClick={() => dispatch(getProfile())}>
+              Tentar novamente
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-page">
+    <>
+      {/* Success Message */}
       {successMessage && (
-        <SuccessMessage message={successMessage} onClose={() => setSuccessMessage('')} />
+        <div className="success-banner">
+          <p>{successMessage}</p>
+          <button className="close-btn" onClick={() => dispatch(clearSuccessMessage())}>
+            ×
+          </button>
+        </div>
       )}
 
-      {error && error.updating && (
-        <ErrorMessage message={error.updating} onClose={() => dispatch(clearErrors())} />
-      )}
-
-      {mode === 'view' && (
+      {/* Profile View Modal */}
+      {!isEditing && (
         <UserProfileModal
-          user={profileUser}
+          user={currentUser}
           roles={roles}
           locations={locations}
           restaurant={restaurant}
-          onClose={handleBack}
           onEdit={handleEdit}
+          onClose={handleReturn}
           showBackButton={true}
         />
       )}
 
-      {mode === 'edit' && (
+      {/* Profile Edit Form */}
+      {isEditing && (
         <UserProfileEditForm
-          user={profileUser}
-          onSave={handleSave}
+          user={currentUser}
+          onSave={handleSaveProfile}
           onCancel={handleCancelEdit}
-          loading={saving}
+          loading={updatingProfile}
           showBackButton={true}
         />
       )}
-    </div>
+    </>
   );
 };
 

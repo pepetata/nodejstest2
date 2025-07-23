@@ -424,88 +424,6 @@ class UserController {
   });
 
   /**
-   * Update current user's profile
-   * PUT /api/v1/users/profile
-   *
-   * @route PUT /api/v1/users/profile
-   * @access Private - Self only
-   * @body {Object} updateData - Profile update data
-   * @returns {Object} 200 - Updated user data
-   * @returns {Object} 400 - Validation error
-   * @returns {Object} 409 - Conflict (email/username exists)
-   */
-  updateProfile = asyncHandler(async (req, res) => {
-    const requestId = req.requestId || `req_${Date.now()}`;
-    const updateData = req.body;
-    const userId = req.user.id;
-
-    const controllerLogger = this.logger.child({
-      operation: 'updateProfile',
-      requestId,
-      userId,
-      method: req.method,
-      path: req.path,
-    });
-
-    controllerLogger.info('Updating user profile', {
-      fieldsToUpdate: Object.keys(updateData),
-    });
-
-    try {
-      // Update the user profile
-      const updatedUser = await this.userService.updateUser(userId, updateData, req.user, true);
-
-      controllerLogger.info('Profile updated successfully', {
-        userId,
-      });
-
-      return res
-        .status(200)
-        .json(
-          ResponseFormatter.success(updatedUser, 'Profile updated successfully', null, requestId)
-        );
-    } catch (error) {
-      controllerLogger.error('Profile update failed', {
-        error: error.message,
-        stack: error.stack,
-        userId,
-      });
-
-      if (error.statusCode === 400) {
-        return res.status(400).json(ResponseFormatter.error(error.message, 400, null, requestId));
-      }
-
-      if (error.message.includes('Email already exists')) {
-        return res
-          .status(409)
-          .json(
-            ResponseFormatter.error(
-              'Email address is already in use',
-              409,
-              { field: 'email' },
-              requestId
-            )
-          );
-      }
-
-      if (error.message.includes('Username already exists')) {
-        return res
-          .status(409)
-          .json(
-            ResponseFormatter.error(
-              'Username is already in use',
-              409,
-              { field: 'username' },
-              requestId
-            )
-          );
-      }
-
-      throw error;
-    }
-  });
-
-  /**
    * Delete user (soft delete with idempotency)
    * DELETE /api/v1/users/:id
    *
@@ -696,217 +614,6 @@ class UserController {
   });
 
   /**
-   * Get current user's profile
-   * GET /api/v1/users/profile
-   *
-   * @route GET /api/v1/users/profile
-   * @access Private - Self only
-   * @returns {Object} 200 - User profile data
-   * @returns {Object} 401 - Unauthorized
-   * @returns {Object} 404 - User not found
-   */
-  getProfile = asyncHandler(async (req, res) => {
-    const requestId = req.requestId || `req_${Date.now()}`;
-
-    // Debug logging
-    console.log('[getProfile] req.user:', req.user);
-    console.log('[getProfile] req.user type:', typeof req.user);
-    console.log('[getProfile] req.user keys:', req.user ? Object.keys(req.user) : 'null');
-
-    const userId = req.user?.id || req.user?.user_id; // Try both possible properties
-
-    console.log(
-      '[getProfile] Extracted userId:',
-      userId,
-      'from req.user.id:',
-      req.user?.id,
-      'or req.user.user_id:',
-      req.user?.user_id
-    );
-
-    const controllerLogger = this.logger.child({
-      operation: 'getProfile',
-      requestId,
-      userId,
-      method: req.method,
-      path: req.path,
-    });
-
-    controllerLogger.info('Getting user profile', { userId });
-
-    if (!userId) {
-      controllerLogger.error('No user ID found in request');
-      return res.status(401).json(ResponseFormatter.error('User not authenticated', 401));
-    }
-
-    console.log('[getProfile] About to enter try block, userId:', userId);
-
-    try {
-      const userService = new UserService();
-      // For profile endpoint, user is accessing their own data, so pass req.user as currentUser
-      console.log('[getProfile] About to call userService.getUserById with:', {
-        userId,
-        currentUserId: req.user?.id,
-        currentUserRole: req.user?.role,
-      });
-
-      const user = await userService.getUserById(userId, req.user);
-
-      console.log('[getProfile] User object returned from service:', {
-        userId: user?.id,
-        hasRoleLocationPairs: !!user?.role_location_pairs,
-        roleLocationPairsCount: user?.role_location_pairs?.length || 0,
-        roleLocationPairs: user?.role_location_pairs,
-        userKeys: user ? Object.keys(user) : 'null',
-      });
-
-      controllerLogger.info('User object from service:', {
-        userId: user?.id,
-        hasRoleLocationPairs: !!user?.role_location_pairs,
-        roleLocationPairsCount: user?.role_location_pairs?.length || 0,
-        roleLocationPairs: user?.role_location_pairs,
-      });
-
-      if (!user) {
-        controllerLogger.warn('User not found', { userId });
-        return res
-          .status(404)
-          .json(ResponseFormatter.error('Usuário não encontrado', 404, null, requestId));
-      }
-
-      controllerLogger.info('Profile retrieved successfully', { userId });
-
-      // Return profile fields including role assignments
-      return res.status(200).json(
-        ResponseFormatter.success(
-          {
-            id: user.id,
-            full_name: user.full_name,
-            email: user.email,
-            username: user.username,
-            phone: user.phone,
-            whatsapp: user.whatsapp,
-            status: user.status,
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-            last_login_at: user.last_login_at,
-            role_location_pairs: user.role_location_pairs,
-            is_admin: user.is_admin,
-            permission_level: user.permission_level,
-          },
-          'Perfil obtido com sucesso',
-          requestId
-        )
-      );
-    } catch (error) {
-      controllerLogger.error('Error retrieving profile', {
-        userId,
-        error: error.message,
-        stack: error.stack,
-      });
-
-      return res
-        .status(500)
-        .json(ResponseFormatter.error('Erro interno do servidor', 500, null, requestId));
-    }
-  });
-
-  /**
-   * Update current user's profile
-   * PUT /api/v1/users/profile
-   *
-   * @route PUT /api/v1/users/profile
-   * @access Private - Self only
-   * @body {Object} profileData - Profile update data
-   * @returns {Object} 200 - Updated user data
-   * @returns {Object} 400 - Validation error
-   * @returns {Object} 404 - User not found
-   */
-  updateProfile = asyncHandler(async (req, res) => {
-    const requestId = req.requestId || `req_${Date.now()}`;
-
-    // Debug logging
-    console.log('[updateProfile] req.user:', req.user);
-    console.log('[updateProfile] req.user type:', typeof req.user);
-    console.log('[updateProfile] req.user keys:', req.user ? Object.keys(req.user) : 'null');
-
-    const userId = req.user?.id || req.user?.user_id; // Try both possible properties
-    const updateData = req.body;
-
-    const controllerLogger = this.logger.child({
-      operation: 'updateProfile',
-      requestId,
-      userId,
-      method: req.method,
-      path: req.path,
-    });
-
-    controllerLogger.info('Updating user profile', { userId });
-
-    if (!userId) {
-      controllerLogger.error('No user ID found in request');
-      return res.status(401).json(ResponseFormatter.error('User not authenticated', 401));
-    }
-
-    try {
-      const userService = new UserService();
-
-      // Only allow updating specific fields for profile
-      const allowedFields = ['full_name', 'email', 'phone', 'whatsapp', 'password'];
-      const filteredData = {};
-
-      for (const field of allowedFields) {
-        if (updateData[field] !== undefined) {
-          filteredData[field] = updateData[field];
-        }
-      }
-
-      // Validate email uniqueness if email is being updated
-      if (filteredData.email) {
-        // Note: Email uniqueness validation will be handled by database constraints
-        // and the userService.updateUser method
-      }
-
-      const updatedUser = await userService.updateUser(
-        userId,
-        {
-          ...filteredData,
-          updated_at: new Date().toISOString(),
-        },
-        req.user
-      );
-
-      controllerLogger.info('Profile updated successfully', { userId });
-
-      return res.status(200).json(
-        ResponseFormatter.success(
-          {
-            id: updatedUser.id,
-            full_name: updatedUser.full_name,
-            email: updatedUser.email,
-            phone: updatedUser.phone,
-            whatsapp: updatedUser.whatsapp,
-            updated_at: updatedUser.updated_at,
-          },
-          'Perfil atualizado com sucesso'
-        )
-      );
-    } catch (error) {
-      if (error.statusCode === 404) {
-        return res
-          .status(404)
-          .json(ResponseFormatter.error('Usuário não encontrado', 404, null, requestId));
-      }
-
-      if (error.statusCode === 400) {
-        return res.status(400).json(ResponseFormatter.error(error.message, 400, null, requestId));
-      }
-
-      throw error;
-    }
-  });
-
-  /**
    * Confirm email address
    * POST /api/v1/users/confirm-email
    *
@@ -990,6 +697,166 @@ class UserController {
             null,
             requestId
           )
+        );
+    }
+  });
+
+  /**
+   * Get current user's profile
+   * GET /api/v1/users/profile
+   *
+   * @route GET /api/v1/users/profile
+   * @access Private - Any authenticated user
+   * @returns {Object} 200 - Current user's profile data
+   * @returns {Object} 401 - Unauthorized
+   * @returns {Object} 404 - User not found
+   */
+  getProfile = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const currentUserId = req.user?.id;
+
+    const controllerLogger = this.logger.child({
+      operation: 'getProfile',
+      requestId,
+      currentUserId,
+      method: req.method,
+      path: req.path,
+    });
+
+    controllerLogger.info('Getting current user profile');
+
+    try {
+      if (!currentUserId) {
+        return res
+          .status(401)
+          .json(ResponseFormatter.error('Authentication required', 401, null, requestId));
+      }
+
+      const userProfile = await this.userService.getUserById(currentUserId, req.user);
+
+      controllerLogger.info('User profile retrieved successfully', {
+        userId: userProfile.id,
+      });
+
+      return res.status(200).json(
+        ResponseFormatter.success(userProfile, 'Profile retrieved successfully', {
+          requestId,
+        })
+      );
+    } catch (error) {
+      if (error.statusCode === 404) {
+        controllerLogger.warn('Current user not found', { currentUserId });
+        return res
+          .status(404)
+          .json(ResponseFormatter.error('User profile not found', 404, null, requestId));
+      }
+
+      controllerLogger.error('Failed to get user profile', { error: error.message });
+      return res
+        .status(500)
+        .json(
+          ResponseFormatter.error('Internal server error while retrieving profile', 500, {
+            requestId,
+            timestamp: new Date().toISOString(),
+          })
+        );
+    }
+  });
+
+  /**
+   * Update current user's profile (limited fields)
+   * PUT /api/v1/users/profile
+   *
+   * @route PUT /api/v1/users/profile
+   * @access Private - Any authenticated user
+   * @body {Object} profileData - Profile update data (full_name, email, phone, whatsapp, password)
+   * @returns {Object} 200 - Updated profile data
+   * @returns {Object} 400 - Validation error
+   * @returns {Object} 401 - Unauthorized
+   * @returns {Object} 409 - Email already exists
+   */
+  updateProfile = asyncHandler(async (req, res) => {
+    const requestId = req.requestId || `req_${Date.now()}`;
+    const currentUserId = req.user?.id;
+    const updateData = req.body;
+
+    const controllerLogger = this.logger.child({
+      operation: 'updateProfile',
+      requestId,
+      currentUserId,
+      method: req.method,
+      path: req.path,
+    });
+
+    controllerLogger.info('Updating current user profile', {
+      fieldsToUpdate: Object.keys(updateData),
+    });
+
+    try {
+      if (!currentUserId) {
+        return res
+          .status(401)
+          .json(ResponseFormatter.error('Authentication required', 401, null, requestId));
+      }
+
+      // Add the updated_at field
+      updateData.updated_at = new Date();
+
+      const updatedProfile = await this.userService.updateUser(currentUserId, updateData, req.user);
+
+      controllerLogger.info('User profile updated successfully', {
+        userId: updatedProfile.id,
+        updatedFields: Object.keys(updateData),
+      });
+
+      return res.status(200).json(
+        ResponseFormatter.success(updatedProfile, 'Profile updated successfully', {
+          requestId,
+        })
+      );
+    } catch (error) {
+      if (error.statusCode === 404) {
+        controllerLogger.warn('Current user not found for profile update', { currentUserId });
+        return res
+          .status(404)
+          .json(ResponseFormatter.error('User profile not found', 404, null, requestId));
+      }
+
+      if (error.message.includes('Email já cadastrado')) {
+        return res
+          .status(409)
+          .json(
+            ResponseFormatter.error(
+              'Email address is already in use',
+              409,
+              { field: 'email' },
+              requestId
+            )
+          );
+      }
+
+      if (error.message.includes('Nome de usuário já cadastrado')) {
+        return res
+          .status(409)
+          .json(
+            ResponseFormatter.error(
+              'Username is already in use',
+              409,
+              { field: 'username' },
+              requestId
+            )
+          );
+      }
+
+      controllerLogger.error('Failed to update profile', {
+        error: error.message,
+        currentUserId,
+      });
+
+      return res
+        .status(400)
+        .json(
+          ResponseFormatter.error(error.message || 'Failed to update profile', 400, null, requestId)
         );
     }
   });

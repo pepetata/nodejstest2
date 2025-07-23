@@ -168,33 +168,28 @@ const userValidationSchemas = {
       'object.min': 'At least one field must be provided for update',
     }),
 
-  // Profile update schema (for current user updating their own profile)
+  // Profile update schema (for current user to update their own profile)
   updateProfile: Joi.object({
-    full_name: Joi.string().trim().min(2).max(255).messages({
+    full_name: Joi.string().trim().min(2).max(255).required().messages({
       'string.min': 'Full name must be at least 2 characters long',
       'string.max': 'Full name cannot exceed 255 characters',
+      'any.required': 'Full name is required',
     }),
 
     email: Joi.string().email().allow(null, '').messages({
       'string.email': 'Please provide a valid email address',
     }),
 
-    phone: Joi.string()
-      .pattern(/^[\+]?[1-9][\d]{0,15}$/)
-      .allow(null, '')
-      .messages({
-        'string.pattern.base': 'Please provide a valid phone number',
-      }),
+    phone: Joi.string().allow('', null).messages({
+      'string.base': 'Phone must be a string',
+    }),
 
-    whatsapp: Joi.string()
-      .pattern(/^[\+]?[1-9][\d]{0,15}$/)
-      .allow(null, '')
-      .messages({
-        'string.pattern.base': 'Please provide a valid WhatsApp number',
-      }),
+    whatsapp: Joi.string().allow('', null).messages({
+      'string.base': 'WhatsApp must be a string',
+    }),
 
-    password: Joi.string().min(6).max(255).messages({
-      'string.min': 'Password must be at least 6 characters long',
+    password: Joi.string().min(8).max(255).messages({
+      'string.min': 'Password must be at least 8 characters long',
       'string.max': 'Password cannot exceed 255 characters',
     }),
   })
@@ -411,101 +406,6 @@ const userValidationSchemas = {
       'string.max': 'Search term cannot exceed 100 characters',
     }),
   }),
-
-  // Update user schema (for admin updating users)
-  updateUser: Joi.object({
-    full_name: Joi.string().trim().min(2).max(255).optional().messages({
-      'string.min': 'Full name must be at least 2 characters long',
-      'string.max': 'Full name cannot exceed 255 characters',
-    }),
-
-    email: Joi.string().email().optional().allow(null, '').messages({
-      'string.email': 'Please provide a valid email address',
-    }),
-
-    username: Joi.string().alphanum().min(3).max(100).optional().allow(null, '').messages({
-      'string.alphanum': 'Username must contain only alphanumeric characters',
-      'string.min': 'Username must be at least 3 characters long',
-      'string.max': 'Username cannot exceed 100 characters',
-    }),
-
-    phone: Joi.string().allow('', null).messages({
-      'string.base': 'Phone must be a string',
-    }),
-
-    whatsapp: Joi.string().allow('', null).messages({
-      'string.base': 'WhatsApp must be a string',
-    }),
-
-    password: Joi.string().min(6).max(255).optional().messages({
-      'string.min': 'Password must be at least 6 characters long',
-      'string.max': 'Password cannot exceed 255 characters',
-    }),
-
-    role_location_pairs: Joi.array()
-      .items(
-        Joi.object({
-          role_id: Joi.string().uuid().required(),
-          location_id: Joi.string().uuid().required(),
-        })
-      )
-      .optional()
-      .messages({
-        'array.base': 'Role location pairs must be an array',
-      }),
-
-    status: Joi.string().valid('pending', 'active', 'inactive', 'suspended').optional().messages({
-      'any.only': 'Status must be one of: pending, active, inactive, suspended',
-    }),
-
-    updated_at: Joi.date().iso().optional().messages({
-      'date.base': 'Updated at must be a valid date',
-      'date.format': 'Updated at must be in ISO format',
-    }),
-  })
-    .min(1)
-    .messages({
-      'object.min': 'At least one field must be provided for update',
-    }),
-
-  // Update profile schema (for current user updating their own profile)
-  updateProfile: Joi.object({
-    full_name: Joi.string().trim().min(2).max(255).required().messages({
-      'string.min': 'Full name must be at least 2 characters long',
-      'string.max': 'Full name cannot exceed 255 characters',
-      'any.required': 'Full name is required',
-    }),
-
-    email: Joi.string().email().optional().allow(null, '').messages({
-      'string.email': 'Please provide a valid email address',
-    }),
-
-    phone: Joi.string().allow('', null).messages({
-      'string.base': 'Phone must be a string',
-    }),
-
-    whatsapp: Joi.string().allow('', null).messages({
-      'string.base': 'WhatsApp must be a string',
-    }),
-
-    password: Joi.string().min(6).max(255).optional().messages({
-      'string.min': 'Password must be at least 6 characters long',
-      'string.max': 'Password cannot exceed 255 characters',
-    }),
-
-    updated_at: Joi.date().iso().optional().messages({
-      'date.base': 'Updated at must be a valid date',
-      'date.format': 'Updated at must be in ISO format',
-    }),
-  })
-    .custom((value, helpers) => {
-      // Either email or username must exist (validate against existing user data)
-      // This will be enforced in the service layer since we need access to current user data
-      return value;
-    })
-    .messages({
-      'object.base': 'Request body must be a valid object',
-    }),
 
   // Resend confirmation email schema
   resendConfirmation: Joi.object({

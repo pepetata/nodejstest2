@@ -55,12 +55,6 @@ const userService = {
   // Update user
   updateUser: (id, userData) => api.put(`${API_BASE}/${id}`, userData),
 
-  // Get current user's profile
-  getProfile: () => api.get(`${API_BASE}/profile`),
-
-  // Update current user's profile
-  updateProfile: (userData) => api.put(`${API_BASE}/profile`, userData),
-
   // Toggle user status (activate/deactivate)
   toggleStatus: (id, status) => api.patch(`${API_BASE}/${id}/status`, { status }),
 
@@ -89,6 +83,10 @@ const userService = {
   // Bulk operations
   bulkUpdateStatus: (userIds, status) => api.patch(`${API_BASE}/bulk/status`, { userIds, status }),
   bulkDelete: (userIds) => api.delete(`${API_BASE}/bulk`, { data: { userIds } }),
+
+  // Profile management
+  getProfile: () => api.get(`${API_BASE}/profile`),
+  updateProfile: (profileData) => api.put(`${API_BASE}/profile`, profileData),
 
   // Deprecated legacy methods (kept for compatibility)
   getAll: () => api.get(API_BASE),
