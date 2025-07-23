@@ -50,11 +50,7 @@ const UserForm = ({
       (currentUser.role_location_pairs &&
         currentUser.role_location_pairs.some((pair) => pair.role_name === 'location_administrator'))
     ) {
-      return roles.filter(
-        (role) =>
-          role.name !== 'location_administrator' &&
-          role.display_name !== 'Administrador de Localização'
-      );
+      return roles.filter((role) => role.name !== 'location_administrator');
     }
 
     return roles;

@@ -84,48 +84,20 @@ const UserFormPage = () => {
     };
   }, [hasUnsavedChanges, showUnsavedModal]);
 
-  // Role display names and descriptions in Portuguese
-  const roleDisplayInfo = {
-    superadmin: {
-      name: 'Super Administrador',
-      description: 'Acesso total ao sistema, gerencia todas as funcionalidades',
-    },
-    restaurant_administrator: {
-      name: 'Administrador do Restaurante',
-      description: 'Gerencia o restaurante, usuários e configurações',
-    },
-    location_administrator: {
-      name: 'Administrador de unidade',
-      description: 'Gerencia uma unidade específica do restaurante',
-    },
-    manager: {
-      name: 'Gerente',
-      description: 'Supervisiona operações e equipe',
-    },
-    waiter: {
-      name: 'Garçom',
-      description: 'Atende clientes e gerencia pedidos',
-    },
-    kitchen: {
-      name: 'Cozinha',
-      description: 'Prepara pedidos e gerencia estoque',
-    },
-    cashier: {
-      name: 'Caixa',
-      description: 'Processa pagamentos e fechamento de contas',
-    },
-    food_runner: {
-      name: 'Corredor',
-      description: 'Entrega pratos da cozinha para os clientes',
-    },
-    kds_operator: {
-      name: 'Operador KDS',
-      description: 'Gerencia o sistema de display da cozinha',
-    },
-    pos_operator: {
-      name: 'Operador POS',
-      description: 'Opera o sistema de ponto de venda',
-    },
+  // Helper function to get role display information from database
+  const getRoleDisplayInfo = (roleName) => {
+    const role = roles.find((r) => r.name === roleName);
+    if (role) {
+      return {
+        name: role.display_name || role.name,
+        description: role.description || '',
+      };
+    }
+    // Fallback if role not found in database
+    return {
+      name: roleName,
+      description: '',
+    };
   };
 
   // Helper function to deeply compare form data for changes
@@ -1016,7 +988,7 @@ const UserFormPage = () => {
                               disabled={loading}
                             />
                             <label htmlFor={`role_${role.id}`} className="role-label">
-                              {roleDisplayInfo[role.name]?.name || role.name}
+                              {getRoleDisplayInfo(role.name).name || role.name}
                             </label>
                           </div>
                         );
@@ -1080,30 +1052,29 @@ const UserFormPage = () => {
                               <option
                                 key={role.id}
                                 value={role.id}
-                                title={roleDisplayInfo[role.name]?.description}
+                                title={getRoleDisplayInfo(role.name).description}
                               >
-                                {roleDisplayInfo[role.name]?.name || role.name}
+                                {getRoleDisplayInfo(role.name).name || role.name}
                               </option>
                             ))}
                           </select>
-                          {pair.role_id &&
-                            roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name] && (
-                              <small className="form-text text-muted">
-                                <FaInfoCircle />
-                                <span
-                                  className="role-description"
-                                  title={
-                                    roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name]
-                                      ?.description
-                                  }
-                                >
-                                  {
-                                    roleDisplayInfo[roles.find((r) => r.id === pair.role_id)?.name]
-                                      ?.description
-                                  }
-                                </span>
-                              </small>
-                            )}
+                          {pair.role_id && roles.find((r) => r.id === pair.role_id) && (
+                            <small className="form-text text-muted">
+                              <FaInfoCircle />
+                              <span
+                                className="role-description"
+                                title={
+                                  getRoleDisplayInfo(roles.find((r) => r.id === pair.role_id)?.name)
+                                    ?.description
+                                }
+                              >
+                                {
+                                  getRoleDisplayInfo(roles.find((r) => r.id === pair.role_id)?.name)
+                                    ?.description
+                                }
+                              </span>
+                            </small>
+                          )}
                         </div>
 
                         <div className="form-group">

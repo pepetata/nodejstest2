@@ -140,7 +140,7 @@ const UserDetailsModal = ({
 
         <div className="modal-body">
           <div className="user-profile-section">
-            <div className="user-avatar">
+            {/* <div className="user-avatar">
               {user.profile_picture ? (
                 <img src={user.profile_picture} alt={user.full_name} />
               ) : (
@@ -148,7 +148,7 @@ const UserDetailsModal = ({
                   {user.full_name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
-            </div>
+            </div> */}
             <div className="user-basic-info">
               <h3 className="user-name">{user.full_name}</h3>
               <p className="user-email">{user.email || 'Email não informado'}</p>
