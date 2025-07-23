@@ -11,7 +11,7 @@ async function seedLanguages() {
     // Languages with native names
     const languages = [
       // Default language (order 10)
-      { name: 'Português Brasileiro', code: 'pt-BR', icon: 'br.svg', order: 10, isDefault: true },
+      { name: 'Português', code: 'pt-BR', icon: 'br.svg', order: 10, isDefault: true },
 
       // Main international languages (order 20-80)
       { name: 'English', code: 'en', icon: 'us.svg', order: 20, isDefault: false },

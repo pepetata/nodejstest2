@@ -9,7 +9,7 @@ TRUNCATE TABLE languages RESTART IDENTITY CASCADE;
 -- Insert languages with native names, proper ordering and flag icons
 INSERT INTO languages (name, language_code, icon_file, display_order, is_default, is_active) VALUES
     -- Default language (order 10)
-    ('Português Brasileiro', 'pt-BR', 'br.svg', 10, true, true),
+    ('Português', 'pt-BR', 'br.svg', 10, true, true),
 
     -- Main international languages (order 20-80)
     ('English', 'en', 'us.svg', 20, false, true),

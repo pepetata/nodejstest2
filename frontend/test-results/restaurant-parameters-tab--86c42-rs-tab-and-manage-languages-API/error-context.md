@@ -1,0 +1,58 @@
+# Page snapshot
+
+```yaml
+- navigation:
+  - button "Home"
+  - link "A la carte":
+    - /url: /
+    - img "A la carte"
+  - button "Entrar"
+  - button "Registrar"
+- main:
+  - heading "Login" [level=1]
+  - text: E-mail ou Nome de Usuário
+  - textbox "E-mail ou Nome de Usuário"
+  - text: Senha
+  - textbox "Senha"
+  - checkbox "Lembrar de mim"
+  - text: Lembrar de mim
+  - img
+  - link "Esqueceu a senha?":
+    - /url: /forgot-password
+  - button "Entrar"
+  - paragraph:
+    - text: Don't have an account?
+    - link "Register here":
+      - /url: /register
+- contentinfo:
+  - heading "Restaurant Name" [level=3]
+  - paragraph: 123 Restaurant Street
+  - paragraph: City, State 12345
+  - paragraph: "Phone: (123) 456-7890"
+  - paragraph: "Email: info@restaurant.com"
+  - heading "Quick Links" [level=3]
+  - list:
+    - listitem:
+      - link "Home":
+        - /url: /
+    - listitem:
+      - link "Menu":
+        - /url: /menu
+    - listitem:
+      - link "About Us":
+        - /url: /about
+    - listitem:
+      - link "Contact":
+        - /url: /contact
+  - heading "Hours" [level=3]
+  - paragraph: "Monday - Friday: 11AM - 10PM"
+  - paragraph: "Saturday: 10AM - 11PM"
+  - paragraph: "Sunday: 10AM - 9PM"
+  - link "Facebook":
+    - /url: https://facebook.com
+  - link "Instagram":
+    - /url: https://instagram.com
+  - link "Twitter":
+    - /url: https://twitter.com
+  - paragraph: © 2025 Restaurant Name. All rights reserved.
+```

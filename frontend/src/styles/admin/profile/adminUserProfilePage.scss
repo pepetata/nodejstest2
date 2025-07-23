@@ -1,9 +1,9 @@
-@import '../../variables.scss';
+@use '../../variables.scss' as vars;
 
 .admin-user-profile-page {
   min-height: 100vh;
   padding: 0;
-  background-color: $bg-color;
+  background-color: vars.$bg-color;
 
   .loading-container {
     display: flex;
@@ -22,19 +22,19 @@
     padding: 2rem;
 
     p {
-      color: $warning;
+      color: vars.$warning;
       font-size: 1.1rem;
       margin-bottom: 1.5rem;
     }
 
     .btn-primary {
-      background-color: $logoO;
-      border-color: $logoO;
+      background-color: vars.$logoO;
+      border-color: vars.$logoO;
       color: white;
 
       &:hover {
-        background-color: $primary-dark;
-        border-color: $primary-dark;
+        background-color: vars.$primary-dark;
+        border-color: vars.$primary-dark;
       }
     }
   }

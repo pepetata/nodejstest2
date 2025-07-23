@@ -1,4 +1,4 @@
-@import '../../../styles/variables.scss';
+@use '../../../styles/variables.scss' as vars;
 
 .user-profile-modal-overlay {
   position: fixed;

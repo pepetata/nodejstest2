@@ -9,6 +9,7 @@ const orderRoutes = require('../orderRoutes');
 const restaurantRoutes = require('../restaurantRoutes');
 const userRoutes = require('../userRoutes');
 const testRoutes = require('../testRoutes');
+const languageRoutes = require('../languageRoutes');
 
 const restaurantCreationLimiter = RateLimitMiddleware.restaurantCreation();
 const router = express.Router();
@@ -49,6 +50,12 @@ router.use(
 // User routes with user-specific rate limiting
 router.use('/users', userRoutes);
 
+// Language routes
+router.use('/languages', languageRoutes);
+
+// Restaurant language routes (for endpoints like /restaurants/:id/languages)
+router.use('/restaurants', languageRoutes);
+
 // Test routes for debugging (development only)
 if (process.env.NODE_ENV !== 'production') {
   router.use('/test', testRoutes);
@@ -67,6 +74,9 @@ router.get('/docs', (req, res) => {
       'GET /restaurants/:id',
       'PUT /restaurants/:id',
       'DELETE /restaurants/:id',
+      'GET /restaurants/:id/languages',
+      'PUT /restaurants/:id/languages',
+      'GET /languages/available',
       'GET /locations',
       'POST /locations',
       'GET /menu',

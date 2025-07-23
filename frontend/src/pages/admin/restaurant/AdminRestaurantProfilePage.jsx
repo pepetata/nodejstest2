@@ -14,6 +14,7 @@ import RestaurantLocationsTab from '../../../components/admin/restaurant/Restaur
 import RestaurantFeaturesTab from '../../../components/admin/restaurant/RestaurantFeaturesTab';
 import RestaurantMediaTab from '../../../components/admin/restaurant/RestaurantMediaTab';
 import RestaurantPaymentTab from '../../../components/admin/restaurant/RestaurantPaymentTab';
+import RestaurantParametersTab from '../../../components/admin/restaurant/RestaurantParametersTab';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import ErrorMessage from '../../../components/common/ErrorMessage';
 import SuccessMessage from '../../../components/common/SuccessMessage';
@@ -25,7 +26,7 @@ const AdminRestaurantProfilePage = () => {
   const dispatch = useDispatch();
   const { restaurant } = useSelector((state) => state.auth);
   const {
-    profile,
+    profile: _profile,
     locations,
     activeTab,
     selectedLocationIndex,
@@ -115,6 +116,12 @@ const AdminRestaurantProfilePage = () => {
       name: 'Dados de Pagamento',
       // icon: '💳',
       // description: 'Configurações de cobrança e faturamento',
+    },
+    {
+      id: 'parameters',
+      name: 'Parâmetros',
+      // icon: '⚙️',
+      // description: 'Configurações avançadas do restaurante',
     },
   ];
 
@@ -256,6 +263,8 @@ const AdminRestaurantProfilePage = () => {
         return <RestaurantMediaTab onSave={(data) => handleSave('media', data)} />;
       case 'payment':
         return <RestaurantPaymentTab onSave={(data) => handleSave('payment', data)} />;
+      case 'parameters':
+        return <RestaurantParametersTab />;
       default:
         return <RestaurantGeneralTab onSave={(data) => handleSave('general', data)} />;
     }
