@@ -59,8 +59,8 @@ const RestaurantGeneralTab = ({ onSave }) => {
   ];
 
   const businessTypes = [
-    { value: 'single', label: 'Localização Única' },
-    { value: 'multi', label: 'Múltiplas unidades' },
+    { value: 'single', label: 'Única unidade' },
+    { value: 'multi', label: 'Várias unidades' },
   ];
 
   const handleFieldChange = (field, value) => {

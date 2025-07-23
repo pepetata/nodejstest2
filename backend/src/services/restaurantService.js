@@ -4,6 +4,7 @@ const RestaurantMediaModel = require('../models/restaurantMediaModel');
 const { logger } = require('../utils/logger');
 const ResponseFormatter = require('../utils/responseFormatter');
 const UserService = require('./userService');
+const RestaurantLanguagesAPI = require('../db/RestaurantLanguagesAPI');
 const userService = new UserService();
 const fs = require('fs').promises;
 const path = require('path');
@@ -285,6 +286,22 @@ class RestaurantService {
           'Erro ao criar o usuário. O restaurante foi removido. Detalhes: ' + mensagemErroUsuario
         );
       }
+
+      // --- ADD DEFAULT LANGUAGE (Brazilian Portuguese) ---
+      try {
+        await RestaurantLanguagesAPI.addLanguage(newRestaurant.id, 'pt-BR', 10, true);
+        serviceLogger.info('Default language (pt-BR) added to restaurant', {
+          restaurantId: newRestaurant.id,
+        });
+      } catch (languageError) {
+        serviceLogger.warn('Failed to add default language to restaurant', {
+          restaurantId: newRestaurant.id,
+          error: languageError.message,
+        });
+        // Note: We don't throw here as the restaurant was created successfully
+        // The language can be added manually later if needed
+      }
+      // --- END ADD DEFAULT LANGUAGE ---
 
       return newRestaurant;
     } catch (error) {

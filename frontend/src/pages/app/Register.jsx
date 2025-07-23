@@ -30,7 +30,7 @@ function RegisterPage() {
     locations: [
       {
         id: 1,
-        name: 'Localização Principal',
+        name: 'Unidade Principal',
         urlName: 'matriz', // URL-safe name for location
         phone: '1199999999', // Location-specific phone
         whatsapp: '1199999999', // Location-specific WhatsApp
@@ -1703,8 +1703,8 @@ function RegisterPage() {
           className="form-input"
           required
         >
-          <option value="single">Localização Única</option>
-          <option value="multi">Rede Multi-Localização</option>
+          <option value="single">Única unidade</option>
+          <option value="multi">Várias unidades</option>
         </select>
       </div>
 
