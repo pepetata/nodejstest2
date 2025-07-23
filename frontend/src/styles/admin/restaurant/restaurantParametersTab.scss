@@ -30,7 +30,7 @@
     margin-bottom: 1.5rem;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
-    overflow: hidden;
+    overflow: visible; // Allow dropdown to escape container
 
     .section-header {
       display: flex;
@@ -90,6 +90,7 @@
 
     .section-content {
       padding: 0.5rem 1.5rem;
+      overflow: visible; // Allow dropdown to escape container
 
       .loading-container {
         display: flex;
@@ -215,6 +216,23 @@
               align-items: center;
               gap: 0.5rem;
 
+              .language-icon {
+                width: 20px;
+                height: 15px;
+                border-radius: 2px;
+                object-fit: cover;
+                border: 1px solid #ddd;
+              }
+
+              .language-flag-emoji {
+                font-size: 16px;
+                width: 20px;
+                height: 15px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+              }
+
               .language-name {
                 font-weight: 600;
                 color: #333;
@@ -222,7 +240,8 @@
 
               .language-native {
                 color: #666;
-                font-style: italic;
+                // font-style: italic;
+                font-weight: bold;
               }
 
               .language-code {
@@ -257,6 +276,8 @@
         padding: 1rem;
         background: vars.$primary-lighter;
         border-radius: 6px;
+        position: relative; // Ensure dropdown positioning works
+        overflow: visible; // Allow dropdown to escape
 
         h4 {
           margin: 0 0 1rem 0;
@@ -275,6 +296,113 @@
           // background: #f8f9fa;
           border-radius: 6px;
           border: 1px solid #e0e0e0;
+          overflow: visible; // Ensure dropdown isn't clipped
+
+          .custom-language-select {
+            position: relative;
+            width: 100%;
+            overflow: visible; // Ensure dropdown isn't clipped
+
+            .language-select-trigger {
+              width: 100%;
+              padding: 0.75rem;
+              border: 2px solid vars.$logoB; // Blue border to make it more visible
+              border-radius: 6px;
+              font-size: 1rem;
+              background: white;
+              color: #333;
+              cursor: pointer;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              text-align: left;
+
+              &:focus {
+                outline: none;
+                border-color: vars.$logoO; // Orange border on focus
+                box-shadow: 0 0 0 3px rgba(255, 170, 0, 0.25);
+              }
+
+              &:hover {
+                border-color: vars.$logoO;
+              }
+
+              .dropdown-arrow {
+                color: vars.$logoB;
+                font-size: 0.8rem;
+              }
+            }
+
+            .language-dropdown-menu {
+              position: absolute;
+              top: 100%;
+              left: 0;
+              right: 0;
+              background: white;
+              border: 3px solid vars.$logoO; // Make border more visible with orange
+              border-top: none;
+              border-radius: 0 0 6px 6px;
+              max-height: 300px; // Increased height to show more options
+              overflow-y: auto;
+              z-index: 9999; // Increased z-index
+              box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); // Stronger shadow
+              display: block; // Ensure it's displayed
+
+              .no-options {
+                padding: 0.75rem;
+                color: #666;
+                font-style: italic;
+                text-align: center;
+              }
+
+              .language-dropdown-item {
+                width: 100%;
+                padding: 0.75rem;
+                border: none;
+                background: none;
+                cursor: pointer;
+                border-bottom: 1px solid #f0f0f0;
+                text-align: left;
+
+                &:hover {
+                  background: #f8f9fa;
+                }
+
+                &:last-child {
+                  border-bottom: none;
+                }
+
+                .language-option-content {
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+
+                  .language-icon {
+                    width: 20px;
+                    height: 15px;
+                    border-radius: 2px;
+                    object-fit: cover;
+                    border: 1px solid #ddd;
+                  }
+
+                  .language-flag-emoji {
+                    font-size: 16px;
+                    width: 20px;
+                    height: 15px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                  }
+
+                  .language-option-text {
+                    color: #333;
+                    font-size: 0.9rem;
+                    font-weight: bold;
+                  }
+                }
+              }
+            }
+          }
 
           .language-select {
             width: 100%;
@@ -628,6 +756,23 @@
           width: 100%;
           justify-content: center;
         }
+      }
+    }
+  }
+
+  // Disabled button styling for language deletion prevention
+  .language-controls {
+    .btn-danger:disabled {
+      background-color: #f8f9fa !important;
+      border-color: #dee2e6 !important;
+      color: #6c757d !important;
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      &:hover {
+        background-color: #f8f9fa !important;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
       }
     }
   }

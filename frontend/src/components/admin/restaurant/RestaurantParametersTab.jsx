@@ -24,6 +24,9 @@ const RestaurantParametersTab = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempLanguages, setTempLanguages] = useState([]);
 
+  // Custom dropdown state
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   const getAuthToken = () => {
     const token = localStorage.getItem('token');
     return token;
@@ -80,6 +83,20 @@ const RestaurantParametersTab = () => {
     }
   }, [fetchLanguages, restaurant?.id]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest('.custom-language-select')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const startEditing = () => {
     setIsEditing(true);
     setTempLanguages([...restaurantLanguages]);
@@ -100,7 +117,8 @@ const RestaurantParametersTab = () => {
       language_code: language.language_code,
       name: language.name,
       native_name: language.native_name,
-      display_order: tempLanguages.length + 1,
+      icon_file: language.icon_file, // Include icon file
+      display_order: language.display_order, // Use original language order value
       is_default: tempLanguages.length === 0, // First language is default
       is_active: true,
     };
@@ -109,6 +127,14 @@ const RestaurantParametersTab = () => {
   };
 
   const removeLanguage = (languageId) => {
+    // Prevent removing the last language
+    if (tempLanguages.length <= 1) {
+      setError(
+        'Não é possível remover o último idioma. Pelo menos um idioma deve estar configurado.'
+      );
+      return;
+    }
+
     const updatedLanguages = tempLanguages.filter((lang) => lang.language_id !== languageId);
 
     // If we removed the default language, make the first remaining language default
@@ -172,6 +198,104 @@ const RestaurantParametersTab = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getLanguageIconPath = (iconFile, _languageCode) => {
+    if (!iconFile) return null;
+
+    // Map database icon files to actual PNG file names
+    const iconMapping = {
+      'br.svg': 'brazil.png', // 🇧🇷 Brazil (Portuguese)
+      'es.svg': 'spain.png', // 🇪🇸 Spain (Spanish)
+      'us.svg': 'uk.png', // 🇬🇧 UK (English) - Using UK flag as requested
+      'en.svg': 'uk.png', // 🇬🇧 UK (English)
+      'fr.svg': 'france.png', // 🇫🇷 France (French)
+      'de.svg': 'germany.png', // 🇩🇪 Germany (German)
+      'it.svg': 'italy.png', // 🇮🇹 Italy (Italian)
+      'ru.svg': 'russia.png', // 🇷🇺 Russia (Russian)
+      'kr.svg': 'korea.png', // 🇰🇷 South Korea (Korean)
+      'nl.svg': 'netherlands.png', // 🇳🇱 Netherlands (Dutch)
+      'se.svg': 'sweden.png', // 🇸🇪 Sweden (Swedish)
+      'sv.svg': 'sweden.png', // 🇸🇪 Sweden (Swedish)
+      'jp.svg': 'japan.png', // 🇯🇵 Japan (Japanese)
+      'cn.svg': 'china.png', // 🇨🇳 China (Chinese)
+      'sa.svg': 'saudi-arabia.png', // 🇸🇦 Saudi Arabia (Arabic)
+      'il.svg': 'israel.png', // 🇮🇱 Israel (Hebrew)
+      'he.svg': 'israel.png', // 🇮🇱 Israel (Hebrew)
+      'tr.svg': 'turkey.png', // 🇹🇷 Turkey (Turkish)
+    };
+
+    const mappedIcon = iconMapping[iconFile];
+    if (mappedIcon) {
+      return `/images/languages/${mappedIcon}`;
+    }
+
+    // Return null if no specific image - we'll use flag emoji as fallback
+    return null;
+  };
+
+  const getLanguageFlagEmoji = (iconFile, languageCode) => {
+    // Debug: log the icon_file values we're getting
+    console.log('Flag emoji request:', { iconFile, languageCode });
+
+    // First try to get flag based on icon_file from database
+    if (iconFile) {
+      const iconToFlagMap = {
+        'br.svg': '🇧🇷', // Brazil (Portuguese)
+        'es.svg': '🇪🇸', // Spain (Spanish)
+        'us.svg': '��', // English - Changed to UK flag as requested
+        'en.svg': '🇬🇧', // UK (English)
+        'fr.svg': '🇫🇷', // France (French)
+        'jp.svg': '🇯🇵', // Japan (Japanese)
+        'cn.svg': '🇨🇳', // China (Chinese)
+        'sa.svg': '🇸🇦', // Saudi Arabia (Arabic)
+        'il.svg': '🇮🇱', // Israel (Hebrew) - Added missing mapping
+        'he.svg': '🇮🇱', // Israel (Hebrew)
+        'tr.svg': '🇹🇷', // Turkey (Turkish)
+        'de.svg': '🇩🇪', // Germany (German)
+        'it.svg': '🇮🇹', // Italy (Italian)
+        'ru.svg': '🇷🇺', // Russia (Russian)
+        'kr.svg': '🇰🇷', // Korea (Korean)
+        'nl.svg': '🇳🇱', // Netherlands (Dutch)
+        'se.svg': '🇸🇪', // Sweden (Swedish) - using SE from database
+        'sv.svg': '🇸🇪', // Sweden (Swedish) - fallback for SV
+      };
+
+      const flagFromIcon = iconToFlagMap[iconFile];
+      if (flagFromIcon) {
+        console.log('Found flag from icon_file:', flagFromIcon);
+        return flagFromIcon;
+      } else {
+        console.log('No mapping found for icon_file:', iconFile);
+      }
+    }
+
+    // Fallback to language code mapping
+    const flagMap = {
+      'pt-BR': '🇧🇷',
+      pt: '🇧🇷', // Portuguese
+      'en-US': '🇺🇸',
+      en: '🇬🇧', // English - this might be the problem
+      'es-ES': '🇪🇸',
+      es: '🇪🇸', // Spanish
+      'fr-FR': '🇫🇷',
+      fr: '🇫🇷', // French
+      ja: '🇯🇵', // Japanese
+      zh: '🇨🇳', // Chinese
+      ar: '🇸🇦', // Arabic
+      he: '🇮🇱', // Hebrew
+      tr: '🇹🇷', // Turkish
+      de: '🇩🇪', // German
+      it: '🇮🇹', // Italian
+      ru: '🇷🇺', // Russian
+      ko: '🇰🇷', // Korean
+      nl: '🇳🇱', // Dutch
+      sv: '🇸🇪', // Swedish
+    };
+
+    const fallbackFlag = flagMap[languageCode] || '🌐';
+    console.log('Using fallback flag for', languageCode, ':', fallbackFlag);
+    return fallbackFlag;
   };
 
   const getAvailableLanguagesToAdd = () => {
@@ -254,9 +378,24 @@ const RestaurantParametersTab = () => {
                           <div key={lang.language_id} className="language-item">
                             <div className="language-info">
                               <div className="language-names">
-                                <span className="language-name">{lang.name}</span>
-                                <span className="language-native">({lang.native_name})</span>
-                                <span className="language-code">{lang.language_code}</span>
+                                {lang.icon_file &&
+                                getLanguageIconPath(lang.icon_file, lang.language_code) ? (
+                                  <img
+                                    src={getLanguageIconPath(lang.icon_file, lang.language_code)}
+                                    alt={`${lang.native_name} flag`}
+                                    className="language-icon"
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                    }}
+                                  />
+                                ) : (
+                                  <span className="language-flag-emoji">
+                                    {getLanguageFlagEmoji(lang.icon_file, lang.language_code)}
+                                  </span>
+                                )}
+                                {/* <span className="language-name">{lang.name}</span> */}
+                                <span className="language-native">{lang.native_name}</span>
+                                {/* <span className="language-code">{lang.language_code}</span> */}
                               </div>
 
                               {lang.is_default && <span className="default-badge">Padrão</span>}
@@ -277,7 +416,12 @@ const RestaurantParametersTab = () => {
                                 <button
                                   className="btn btn-danger btn-sm"
                                   onClick={() => removeLanguage(lang.language_id)}
-                                  title="Remover idioma"
+                                  disabled={tempLanguages.length <= 1}
+                                  title={
+                                    tempLanguages.length <= 1
+                                      ? 'Não é possível remover o último idioma'
+                                      : 'Remover idioma'
+                                  }
                                 >
                                   🗑️
                                 </button>
@@ -306,23 +450,67 @@ const RestaurantParametersTab = () => {
                       </p>
                     ) : (
                       <div className="add-language-controls">
-                        <select
-                          className="language-select"
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              addLanguage(e.target.value);
-                              e.target.value = '';
-                            }
-                          }}
-                          defaultValue=""
-                        >
-                          <option value="">Clique para selecionar um idioma para adicionar</option>
-                          {getAvailableLanguagesToAdd().map((lang) => (
-                            <option key={lang.id} value={lang.id}>
-                              {lang.name} ({lang.native_name}) - {lang.language_code}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="custom-language-select">
+                          <button
+                            className="language-select-trigger"
+                            onClick={() => {
+                              console.log('Dropdown clicked, current state:', isDropdownOpen);
+                              console.log(
+                                'Available languages to add:',
+                                getAvailableLanguagesToAdd().length
+                              );
+                              setIsDropdownOpen(!isDropdownOpen);
+                            }}
+                            type="button"
+                          >
+                            <span>Clique para selecionar um idioma para adicionar</span>
+                            <span className="dropdown-arrow">{isDropdownOpen ? '▲' : '▼'}</span>
+                          </button>
+
+                          {isDropdownOpen && (
+                            <div className="language-dropdown-menu">
+                              {getAvailableLanguagesToAdd().length === 0 ? (
+                                <div className="no-options">Nenhuma opção disponível</div>
+                              ) : (
+                                getAvailableLanguagesToAdd().map((lang) => (
+                                  <button
+                                    key={lang.id}
+                                    className="language-dropdown-item"
+                                    onClick={() => {
+                                      addLanguage(lang.id);
+                                      setIsDropdownOpen(false);
+                                    }}
+                                    type="button"
+                                  >
+                                    <div className="language-option-content">
+                                      {lang.icon_file &&
+                                      getLanguageIconPath(lang.icon_file, lang.language_code) ? (
+                                        <img
+                                          src={getLanguageIconPath(
+                                            lang.icon_file,
+                                            lang.language_code
+                                          )}
+                                          alt={`${lang.native_name} flag`}
+                                          className="language-icon"
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                          }}
+                                        />
+                                      ) : (
+                                        <span className="language-flag-emoji">
+                                          {getLanguageFlagEmoji(lang.icon_file, lang.language_code)}
+                                        </span>
+                                      )}
+                                      <span className="language-option-text">
+                                        {lang.native_name}
+                                      </span>
+                                    </div>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
