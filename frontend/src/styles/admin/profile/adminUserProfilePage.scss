@@ -1,0 +1,135 @@
+@import '../../variables.scss';
+
+.admin-user-profile-page {
+  min-height: 100vh;
+  padding: 0;
+  background-color: $bg-color;
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+  }
+
+  .error-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    text-align: center;
+    padding: 2rem;
+
+    p {
+      color: $warning;
+      font-size: 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-primary {
+      background-color: $logoO;
+      border-color: $logoO;
+      color: white;
+
+      &:hover {
+        background-color: $primary-dark;
+        border-color: $primary-dark;
+      }
+    }
+  }
+
+  // Modal positioning for profile page when in overlay mode
+  .modal-overlay {
+    .modal.user-form-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      margin: 0;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+  }
+
+  // Non-modal positioning for profile page (edit mode without overlay)
+  > .modal.user-form-modal {
+    position: relative;
+    transform: none;
+    margin: 20px auto;
+    max-width: 800px;
+    width: 100%;
+    z-index: auto;
+  }
+
+  // Add overlay background only when there's a modal-overlay
+  &.has-modal-overlay::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  // Override modal positioning for user details modal (view mode)
+  .user-details-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .user-details-modal {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 800px;
+    max-height: calc(100vh - 40px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+  }
+}
+
+// Mobile responsiveness
+@media (max-width: 768px) {
+  .admin-user-profile-page {
+    .user-details-modal-overlay {
+      padding: 10px;
+    }
+
+    .user-details-modal {
+      max-width: 100%;
+      margin-top: 10px;
+      max-height: calc(100vh - 20px);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-user-profile-page {
+    .user-details-modal-overlay {
+      padding: 5px;
+    }
+
+    .user-details-modal {
+      margin-top: 5px;
+      max-height: calc(100vh - 10px);
+      border-radius: 4px;
+    }
+  }
+}
