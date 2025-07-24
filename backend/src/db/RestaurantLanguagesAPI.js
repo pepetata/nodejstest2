@@ -15,7 +15,8 @@ class RestaurantLanguagesAPI {
           id,
           name,
           language_code,
-          icon_file,
+          native_name,
+          flag_file,
           display_order
         FROM languages
         WHERE is_active = true
@@ -41,7 +42,8 @@ class RestaurantLanguagesAPI {
           rl.is_active,
           l.name as language_name,
           l.language_code,
-          l.icon_file
+          l.native_name,
+          l.flag_file
         FROM restaurant_languages rl
         JOIN languages l ON rl.language_id = l.id
         WHERE rl.restaurant_id = $1 AND rl.is_active = true
@@ -65,7 +67,8 @@ class RestaurantLanguagesAPI {
           rl.*,
           l.name as language_name,
           l.language_code,
-          l.icon_file
+          l.native_name,
+          l.flag_file
         FROM restaurant_languages rl
         JOIN languages l ON rl.language_id = l.id
         WHERE rl.restaurant_id = $1 AND rl.is_default = true AND rl.is_active = true

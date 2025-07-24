@@ -66,7 +66,8 @@ async function getRestaurantLanguages(restaurantId) {
         rl.*,
         l.name as language_name,
         l.language_code,
-        l.icon_file
+        l.native_name,
+        l.flag_file
       FROM restaurant_languages rl
       JOIN languages l ON rl.language_id = l.id
       WHERE rl.restaurant_id = $1 AND rl.is_active = true

@@ -117,7 +117,7 @@ const RestaurantParametersTab = () => {
       language_code: language.language_code,
       name: language.name,
       native_name: language.native_name,
-      icon_file: language.icon_file, // Include icon file
+      flag_file: language.flag_file,
       display_order: language.display_order, // Use original language order value
       is_default: tempLanguages.length === 0, // First language is default
       is_active: true,
@@ -200,37 +200,12 @@ const RestaurantParametersTab = () => {
     }
   };
 
-  const getLanguageIconPath = (iconFile, _languageCode) => {
-    if (!iconFile) return null;
-
-    // Map database icon files to actual PNG file names
-    const iconMapping = {
-      'br.svg': 'brazil.png', // 🇧🇷 Brazil (Portuguese)
-      'es.svg': 'spain.png', // 🇪🇸 Spain (Spanish)
-      'us.svg': 'uk.png', // 🇬🇧 UK (English) - Using UK flag as requested
-      'en.svg': 'uk.png', // 🇬🇧 UK (English)
-      'fr.svg': 'france.png', // 🇫🇷 France (French)
-      'de.svg': 'germany.png', // 🇩🇪 Germany (German)
-      'it.svg': 'italy.png', // 🇮🇹 Italy (Italian)
-      'ru.svg': 'russia.png', // 🇷🇺 Russia (Russian)
-      'kr.svg': 'korea.png', // 🇰🇷 South Korea (Korean)
-      'nl.svg': 'netherlands.png', // 🇳🇱 Netherlands (Dutch)
-      'se.svg': 'sweden.png', // 🇸🇪 Sweden (Swedish)
-      'sv.svg': 'sweden.png', // 🇸🇪 Sweden (Swedish)
-      'jp.svg': 'japan.png', // 🇯🇵 Japan (Japanese)
-      'cn.svg': 'china.png', // 🇨🇳 China (Chinese)
-      'sa.svg': 'saudi-arabia.png', // 🇸🇦 Saudi Arabia (Arabic)
-      'il.svg': 'israel.png', // 🇮🇱 Israel (Hebrew)
-      'he.svg': 'israel.png', // 🇮🇱 Israel (Hebrew)
-      'tr.svg': 'turkey.png', // 🇹🇷 Turkey (Turkish)
-    };
-
-    const mappedIcon = iconMapping[iconFile];
-    if (mappedIcon) {
-      return `/images/languages/${mappedIcon}`;
+  const getLanguageIconPath = (flagFile) => {
+    // Use the flag_file from database directly
+    if (flagFile) {
+      return `/images/languages/${flagFile}`;
     }
 
-    // Return null if no specific image - we'll use flag emoji as fallback
     return null;
   };
 
@@ -378,10 +353,9 @@ const RestaurantParametersTab = () => {
                           <div key={lang.language_id} className="language-item">
                             <div className="language-info">
                               <div className="language-names">
-                                {lang.icon_file &&
-                                getLanguageIconPath(lang.icon_file, lang.language_code) ? (
+                                {lang.flag_file && getLanguageIconPath(lang.flag_file) ? (
                                   <img
-                                    src={getLanguageIconPath(lang.icon_file, lang.language_code)}
+                                    src={getLanguageIconPath(lang.flag_file)}
                                     alt={`${lang.native_name} flag`}
                                     className="language-icon"
                                     onError={(e) => {
@@ -390,12 +364,13 @@ const RestaurantParametersTab = () => {
                                   />
                                 ) : (
                                   <span className="language-flag-emoji">
-                                    {getLanguageFlagEmoji(lang.icon_file, lang.language_code)}
+                                    {getLanguageFlagEmoji(lang.flag_file, lang.language_code)}
                                   </span>
                                 )}
-                                {/* <span className="language-name">{lang.name}</span> */}
                                 <span className="language-native">{lang.native_name}</span>
-                                {/* <span className="language-code">{lang.language_code}</span> */}
+                                {lang.name && lang.name !== lang.native_name && (
+                                  <span className="language-name"> ({lang.name})</span>
+                                )}
                               </div>
 
                               {lang.is_default && <span className="default-badge">Padrão</span>}
@@ -483,13 +458,9 @@ const RestaurantParametersTab = () => {
                                     type="button"
                                   >
                                     <div className="language-option-content">
-                                      {lang.icon_file &&
-                                      getLanguageIconPath(lang.icon_file, lang.language_code) ? (
+                                      {lang.flag_file && getLanguageIconPath(lang.flag_file) ? (
                                         <img
-                                          src={getLanguageIconPath(
-                                            lang.icon_file,
-                                            lang.language_code
-                                          )}
+                                          src={getLanguageIconPath(lang.flag_file)}
                                           alt={`${lang.native_name} flag`}
                                           className="language-icon"
                                           onError={(e) => {
@@ -498,11 +469,14 @@ const RestaurantParametersTab = () => {
                                         />
                                       ) : (
                                         <span className="language-flag-emoji">
-                                          {getLanguageFlagEmoji(lang.icon_file, lang.language_code)}
+                                          {getLanguageFlagEmoji(lang.flag_file, lang.language_code)}
                                         </span>
                                       )}
                                       <span className="language-option-text">
                                         {lang.native_name}
+                                        {lang.name && lang.name !== lang.native_name && (
+                                          <span> ({lang.name})</span>
+                                        )}
                                       </span>
                                     </div>
                                   </button>

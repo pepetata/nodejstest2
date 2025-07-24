@@ -27,6 +27,7 @@ import AdminRestaurantProfilePage from './pages/admin/restaurant/AdminRestaurant
 import AdminUserProfilePage from './pages/AdminUserProfilePage';
 import SimpleProfileEdit from './pages/SimpleProfileEdit';
 import MenuManagementHub from './pages/admin/menu/MenuManagementHub';
+import MenuCategoriesPage from './pages/admin/menu/MenuCategoriesPage';
 
 // Cache for restaurant validation to avoid repeated API calls
 const restaurantValidationCache = new Map();
@@ -216,6 +217,7 @@ function App({ getSubdomain }) {
               <Route path="user-profile" element={<AdminUserProfilePage />} />
               <Route path="user-profile/edit" element={<SimpleProfileEdit />} />
               <Route path="menu" element={<MenuManagementHub />} />
+              <Route path="menu/categories" element={<MenuCategoriesPage />} />
             </Route>
 
             {/* Waiter portal for subdomain */}
@@ -352,6 +354,7 @@ function App({ getSubdomain }) {
             <Route path="user-profile" element={<AdminUserProfilePage />} />
             <Route path="user-profile/edit" element={<SimpleProfileEdit />} />
             <Route path="menu" element={<MenuManagementHub />} />
+            <Route path="menu/categories" element={<MenuCategoriesPage />} />
           </Route>
 
           {/* Waiter portal */}

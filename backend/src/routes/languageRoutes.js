@@ -21,8 +21,8 @@ router.get('/available', async (req, res, next) => {
         id,
         language_code,
         name,
-        name as native_name,
-        icon_file,
+        native_name,
+        flag_file,
         display_order,
         is_active,
         created_at
@@ -86,8 +86,8 @@ router.get('/:restaurantId/languages', async (req, res, next) => {
         rl.updated_at,
         l.language_code,
         l.name as language_name,
-        l.name as native_name,
-        l.icon_file
+        l.native_name,
+        l.flag_file
       FROM restaurant_languages rl
       INNER JOIN languages l ON rl.language_id = l.id
       WHERE rl.restaurant_id = $1 AND rl.is_active = true
@@ -247,8 +247,8 @@ router.put('/:restaurantId/languages', async (req, res, next) => {
         rl.updated_at,
         l.language_code,
         l.name as language_name,
-        l.name as native_name,
-        l.icon_file
+        l.native_name,
+        l.flag_file
       FROM restaurant_languages rl
       INNER JOIN languages l ON rl.language_id = l.id
       WHERE rl.restaurant_id = $1 AND rl.is_active = true
