@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Language Display Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .language-section {
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 5px;
+      }
+      .language-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .language-flag {
+        margin-right: 8px;
+      }
+      .flag-image {
+        width: 24px;
+        height: 16px;
+        object-fit: cover;
+        border-radius: 2px;
+      }
+      .language-names {
+        display: flex;
+        align-items: center;
+      }
+      .language-native {
+        font-weight: 600;
+        color: #333;
+      }
+      .language-name {
+        color: #666;
+        font-weight: normal;
+      }
+      .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .btn-secondary:hover {
+        background-color: #5a6268;
+      }
+      .api-test {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .token-info {
+        background-color: #d4edda;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        font-family: monospace;
+        font-size: 12px;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Language Display Test</h1>
+      <p>This page demonstrates how languages should appear in the MenuCategoriesPage modal.</p>
+
+      <div class="token-info">
+        <strong>Test Token (for manual testing):</strong><br />
+        <code
+          >eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjYWMxYzVkZS01OGQ4LTQzN2EtYWY1Yi0zZGU3ODgzMDEyNWEiLCJlbWFpbCI6ImZsYXZpb19sdWl6X2ZlcnJlaXJhQGhvdG1haWwuY29tIiwicmVzdGF1cmFudElkIjoiYzc3NDI4NjYtZjc3Yi00ZjY4LTg1ODYtNTdkNjMxYWYzMDFhIiwiaWF0IjoxNzUzMzgzMTc5LCJleHAiOjE3NTM0Njk1Nzl9.I327Tasts8-WA8Hl2j_RyPyLP7M6BWI4BTPN-pByRRg</code
+        >
+        <br /><br />
+        To use: Run this in browser console:<br />
+        <code>localStorage.setItem('token', 'TOKEN_FROM_ABOVE');</code>
+      </div>
+
+      <div class="api-test">
+        <h3>API Test</h3>
+        <button onclick="testAPI()" class="btn-secondary">Test Restaurant Languages API</button>
+        <div id="api-result"></div>
+      </div>
+
+      <h2>Expected Language Display Format:</h2>
+      <p><strong>Format:</strong> flag native_name (name)</p>
+
+      <div class="language-section">
+        <h5 class="language-header">
+          <span class="language-flag">
+            <img src="/images/languages/brazil.png" alt="Português flag" class="flag-image" />
+          </span>
+          <span class="language-names">
+            <span class="language-native">Português</span>
+          </span>
+        </h5>
+        <p>
+          ✅ Portuguese: Shows flag + "Português" (no parentheses since native_name = language_name)
+        </p>
+      </div>
+
+      <div class="language-section">
+        <h5 class="language-header">
+          <span class="language-flag">
+            <img src="/images/languages/spain.png" alt="Español flag" class="flag-image" />
+          </span>
+          <span class="language-names">
+            <span class="language-native">Español</span>
+          </span>
+        </h5>
+        <p>✅ Spanish: Shows flag + "Español" (no parentheses since native_name = language_name)</p>
+      </div>
+
+      <h2>Button Styling Test:</h2>
+      <button class="btn-secondary">Cancelar</button>
+      <p>✅ The "Cancelar" button should be gray/white as shown above</p>
+
+      <h2>Modal Close Buttons:</h2>
+      <p>ℹ️ About the "double X" issue: If there's an error message showing, you'll see:</p>
+      <ul>
+        <li>❌ Error alert close button (top of page)</li>
+        <li>❌ Modal close button (top-right of modal)</li>
+      </ul>
+      <p>This is normal behavior - the error alert can be dismissed separately from the modal.</p>
+    </div>
+
+    <script>
+      async function testAPI() {
+        const token = localStorage.getItem('token');
+        const resultDiv = document.getElementById('api-result');
+
+        if (!token) {
+          resultDiv.innerHTML =
+            '<p style="color: red;">No token found. Please set the token in localStorage first.</p>';
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            '/api/v1/restaurants/c7742866-f77b-4f68-8586-57d631af301a/languages',
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            resultDiv.innerHTML = `
+                        <h4>✅ API Response Success:</h4>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                    `;
+          } else {
+            const error = await response.text();
+            resultDiv.innerHTML = `<p style="color: red;">❌ API Error: ${response.status} - ${error}</p>`;
+          }
+        } catch (error) {
+          resultDiv.innerHTML = `<p style="color: red;">❌ Network Error: ${error.message}</p>`;
+        }
+      }
+    </script>
+  </body>
+</html>

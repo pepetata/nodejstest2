@@ -63,6 +63,9 @@ class MenuCategoryModel extends BaseModel {
    * Create a new category with translations
    */
   async create(categoryData) {
+    const db = require('../../config/db');
+    const client = await db.getClient();
+
     try {
       const { error, value } = this.createSchema.validate(categoryData);
       if (error) {
@@ -72,7 +75,7 @@ class MenuCategoryModel extends BaseModel {
       const { translations, ...categoryFields } = value;
 
       // Start transaction
-      await this.executeQuery('BEGIN');
+      await client.query('BEGIN');
 
       try {
         // Insert category
@@ -83,7 +86,7 @@ class MenuCategoryModel extends BaseModel {
           RETURNING *
         `;
 
-        const categoryResult = await this.executeQuery(categoryQuery, [
+        const categoryResult = await client.query(categoryQuery, [
           categoryFields.restaurant_id,
           categoryFields.parent_category_id,
           categoryFields.display_order,
@@ -92,9 +95,11 @@ class MenuCategoryModel extends BaseModel {
         ]);
 
         const category = categoryResult.rows[0];
+        console.log('Created category with ID:', category.id);
+        console.log('Translations to insert:', translations);
 
-        // Insert translations
-        const translationPromises = translations.map(async (translation) => {
+        // Insert translations sequentially to avoid race conditions
+        for (const translation of translations) {
           const translationQuery = `
             INSERT INTO ${this.translationsTable}
             (category_id, language_id, name, description, created_at, updated_at)
@@ -102,28 +107,34 @@ class MenuCategoryModel extends BaseModel {
             RETURNING *
           `;
 
-          return this.executeQuery(translationQuery, [
+          console.log(
+            'Inserting translation with category_id:',
+            category.id,
+            'language_id:',
+            translation.language_id
+          );
+          await client.query(translationQuery, [
             category.id,
             translation.language_id,
             translation.name,
             translation.description,
           ]);
-        });
-
-        await Promise.all(translationPromises);
+        }
 
         // Commit transaction
-        await this.executeQuery('COMMIT');
+        await client.query('COMMIT');
 
         // Return category with translations
         return this.findByIdWithTranslations(category.id);
       } catch (error) {
-        await this.executeQuery('ROLLBACK');
+        await client.query('ROLLBACK');
         throw error;
       }
     } catch (error) {
       this.logger.error('Error creating category:', error);
       throw error;
+    } finally {
+      client.release();
     }
   }
 
