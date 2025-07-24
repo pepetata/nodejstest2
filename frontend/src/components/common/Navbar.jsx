@@ -1,26 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Navbar, Nav, Container, Button } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../../store/authSlice';
+import { logout, rehydrate } from '../../store/authSlice';
 import LogoutConfirmationModal from '../admin/LogoutConfirmationModal';
 import '../../styles/Menu.scss';
 
 const AppNavbar = () => {
-  const { user, token, restaurant } = useSelector((state) => state.auth);
-  const isAuthenticated = !!user && !!token;
-  const isAdmin =
-    user?.role === 'restaurant_administrator' || user?.role === 'location_administrator';
-  const hasRestaurant = !!restaurant;
+  const { user, token, restaurant, status } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const location = useLocation();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Enhanced authentication check - check both Redux state and storage
+  const hasStoredToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const isAuthenticated = !!user && !!token && !!hasStoredToken;
+
+  const isAdmin =
+    user?.role === 'restaurant_administrator' || user?.role === 'location_administrator';
+  const hasRestaurant = !!restaurant;
 
   // Check if we're on a subdomain
   const subdomain = window.location.hostname.split('.')[0];
   const isSubdomain = subdomain && subdomain !== 'localhost' && subdomain !== 'www';
 
-  // Navbar is always visible
+  // Check if we're still rehydrating (loading initial auth state)
+  const isRehydrating = status === 'loading' || (hasStoredToken && !user && status === 'idle');
+
+  // Force rehydration when returning to main domain if we have a token but no user
+  useEffect(() => {
+    if (!isSubdomain && hasStoredToken && (!user || !token) && status !== 'loading') {
+      console.log('Navbar: Force rehydration - token exists but no user in Redux');
+      dispatch(rehydrate());
+    }
+  }, [dispatch, hasStoredToken, user, token, isSubdomain, status]);
+
+  // Debug authentication state
+  useEffect(() => {
+    console.log('Navbar auth state:', {
+      hasStoredToken: !!hasStoredToken,
+      hasUser: !!user,
+      hasToken: !!token,
+      isAuthenticated,
+      isAdmin,
+      hasRestaurant,
+      status,
+      isRehydrating,
+      location: location.pathname,
+    });
+  }, [
+    hasStoredToken,
+    user,
+    token,
+    isAuthenticated,
+    isAdmin,
+    hasRestaurant,
+    location.pathname,
+    status,
+    isRehydrating,
+  ]);
 
   const handleLogoutClick = () => {
     setShowLogoutModal(true);
@@ -28,17 +66,8 @@ const AppNavbar = () => {
 
   const handleLogoutConfirm = async () => {
     try {
-      // Get restaurant URL and admin status before clearing state
+      // Get restaurant URL before clearing state
       const restaurantUrl = restaurant?.url;
-      const isAdmin =
-        user?.role === 'restaurant_administrator' ||
-        user?.role === 'superadmin' ||
-        (user?.role_location_pairs &&
-          user.role_location_pairs.some(
-            (pair) =>
-              pair.role_name === 'restaurant_administrator' ||
-              pair.role_name === 'location_administrator'
-          ));
 
       // Clear authentication data from localStorage first
       localStorage.removeItem('token');
@@ -157,7 +186,12 @@ const AppNavbar = () => {
               </div>
 
               {/* Authentication buttons */}
-              {isAuthenticated ? (
+              {isRehydrating ? (
+                // Show placeholder while rehydrating
+                <div className="d-flex align-items-center">
+                  <small className="text-muted">Carregando...</small>
+                </div>
+              ) : isAuthenticated ? (
                 // Authenticated user buttons
                 <>
                   {isAdmin && hasRestaurant && (

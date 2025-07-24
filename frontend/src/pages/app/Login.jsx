@@ -36,27 +36,33 @@ const LoginPage = ({ subdomain: _subdomain }) => {
     if (authError) setError(authError);
   }, [authError]);
 
-  // Auto-logout any existing user when navigating to login page
+  // Only clear authentication if explicitly requested via URL parameter
   React.useEffect(() => {
-    const performLogout = async () => {
-      try {
-        // Clear authentication data from localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('persist:auth');
-        localStorage.removeItem('persist:root');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldLogout = urlParams.get('logout');
+    const clearAuth = urlParams.get('clear');
 
-        // Dispatch logout action to clear Redux state
-        dispatch(logout());
-      } catch (error) {
-        console.error('Error during auto-logout:', error);
-      }
-    };
+    if (shouldLogout === 'true' || clearAuth === 'true') {
+      console.log('Clearing authentication due to URL parameter');
+      // Clear authentication data from localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:root');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
 
-    performLogout();
-  }, [dispatch]); // Run once when component mounts
+      // Dispatch logout action to clear Redux state
+      dispatch(logout());
+
+      // Clean up URL parameters
+      urlParams.delete('logout');
+      urlParams.delete('clear');
+      const queryString = urlParams.toString();
+      const newUrl = window.location.pathname + (queryString ? `?${queryString}` : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [dispatch]);
 
   // Smooth scroll to top when entering the page
   React.useEffect(() => {

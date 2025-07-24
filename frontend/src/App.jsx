@@ -48,10 +48,24 @@ function App({ getSubdomain }) {
     if (isAuthenticated && restaurant) {
       // Allow users to complete login process on main domain
       const isOnLoginPage = location.pathname === '/login' || location.pathname === '/register';
+      const isOnConfirmEmail = location.pathname === '/confirm-email';
+      const isOnForgotPassword = location.pathname === '/forgot-password';
+      const isOnResetPassword = location.pathname === '/reset-password';
+      const isOnHomePage = location.pathname === '/';
+      const isOnAdminPage = location.pathname === '/admin';
+
+      const allowedOnMainDomain =
+        isOnLoginPage ||
+        isOnConfirmEmail ||
+        isOnForgotPassword ||
+        isOnResetPassword ||
+        isOnHomePage ||
+        isOnAdminPage;
 
       if (subdomain) {
         // If user is authenticated and we're on a subdomain, check if it matches their restaurant
         if (restaurant.url !== subdomain) {
+          console.log('Restaurant mismatch - logging out user');
           // Clear all authentication data
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -63,9 +77,10 @@ function App({ getSubdomain }) {
           // Dispatch logout action
           dispatch(logout());
         }
-      } else if (!isOnLoginPage) {
-        // If user is authenticated with a restaurant but on main domain (and not on login page), they should be logged out
-        // This prevents restaurant admin from accessing main domain while logged in
+      } else if (!allowedOnMainDomain) {
+        // If user is authenticated with a restaurant but on main domain (and not on allowed pages),
+        // they should be logged out to prevent restaurant admin from accessing main domain while logged in
+        console.log('Restaurant admin on main domain - logging out');
 
         // Clear all authentication data
         localStorage.removeItem('token');
