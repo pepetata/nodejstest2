@@ -50,6 +50,7 @@ class MenuCategoryModel extends BaseModel {
       translations: Joi.array()
         .items(
           Joi.object({
+            id: Joi.number().integer().optional(), // Allow translation ID for updates
             language_id: Joi.number().integer().required(),
             name: Joi.string().trim().min(1).max(255).required(),
             description: Joi.string().trim().max(2000).allow('', null).optional(),
@@ -95,8 +96,6 @@ class MenuCategoryModel extends BaseModel {
         ]);
 
         const category = categoryResult.rows[0];
-        console.log('Created category with ID:', category.id);
-        console.log('Translations to insert:', translations);
 
         // Insert translations sequentially to avoid race conditions
         for (const translation of translations) {
@@ -107,12 +106,6 @@ class MenuCategoryModel extends BaseModel {
             RETURNING *
           `;
 
-          console.log(
-            'Inserting translation with category_id:',
-            category.id,
-            'language_id:',
-            translation.language_id
-          );
           await client.query(translationQuery, [
             category.id,
             translation.language_id,
@@ -142,6 +135,9 @@ class MenuCategoryModel extends BaseModel {
    * Update category with translations
    */
   async update(id, categoryData) {
+    const db = require('../../config/db');
+    const client = await db.getClient();
+
     try {
       const { error, value } = this.updateSchema.validate(categoryData);
       if (error) {
@@ -151,7 +147,7 @@ class MenuCategoryModel extends BaseModel {
       const { translations, ...categoryFields } = value;
 
       // Start transaction
-      await this.executeQuery('BEGIN');
+      await client.query('BEGIN');
 
       try {
         // Update category if there are category fields to update
@@ -176,26 +172,26 @@ class MenuCategoryModel extends BaseModel {
             RETURNING *
           `;
 
-          await this.executeQuery(categoryQuery, values);
+          await client.query(categoryQuery, values);
         }
 
         // Update translations if provided
         if (translations && translations.length > 0) {
-          // Delete existing translations
-          await this.executeQuery(`DELETE FROM ${this.translationsTable} WHERE category_id = $1`, [
-            id,
-          ]);
-
-          // Insert new translations
+          // Use UPSERT approach to avoid constraint violations
           const translationPromises = translations.map(async (translation) => {
             const translationQuery = `
               INSERT INTO ${this.translationsTable}
               (category_id, language_id, name, description, created_at, updated_at)
               VALUES ($1, $2, $3, $4, NOW(), NOW())
+              ON CONFLICT (category_id, language_id)
+              DO UPDATE SET
+                name = EXCLUDED.name,
+                description = EXCLUDED.description,
+                updated_at = NOW()
               RETURNING *
             `;
 
-            return this.executeQuery(translationQuery, [
+            return await client.query(translationQuery, [
               id,
               translation.language_id,
               translation.name,
@@ -207,17 +203,20 @@ class MenuCategoryModel extends BaseModel {
         }
 
         // Commit transaction
-        await this.executeQuery('COMMIT');
+        await client.query('COMMIT');
 
-        // Return updated category with translations
-        return this.findByIdWithTranslations(id);
+        // Return updated category with translations using the same client
+        const result = await this.findByIdWithTranslationsUsingClient(id, client);
+        return result;
       } catch (error) {
-        await this.executeQuery('ROLLBACK');
+        await client.query('ROLLBACK');
         throw error;
       }
     } catch (error) {
       this.logger.error('Error updating category:', error);
       throw error;
+    } finally {
+      client.release();
     }
   }
 
@@ -232,6 +231,7 @@ class MenuCategoryModel extends BaseModel {
           COALESCE(
             JSON_AGG(
               JSON_BUILD_OBJECT(
+                'id', t.id,
                 'language_id', t.language_id,
                 'name', t.name,
                 'description', t.description
@@ -254,6 +254,39 @@ class MenuCategoryModel extends BaseModel {
   }
 
   /**
+   * Find category by ID with translations using a specific client connection
+   */
+  async findByIdWithTranslationsUsingClient(id, client) {
+    try {
+      const query = `
+        SELECT
+          c.*,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'id', t.id,
+                'language_id', t.language_id,
+                'name', t.name,
+                'description', t.description
+              ) ORDER BY t.language_id
+            ) FILTER (WHERE t.id IS NOT NULL),
+            '[]'::json
+          ) as translations
+        FROM ${this.tableName} c
+        LEFT JOIN ${this.translationsTable} t ON c.id = t.category_id
+        WHERE c.id = $1
+        GROUP BY c.id
+      `;
+
+      const result = await client.query(query, [id]);
+      return result.rows[0] || null;
+    } catch (error) {
+      this.logger.error('Error finding category by ID using client:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Find all categories for a restaurant with translations
    */
   async findByRestaurantWithTranslations(restaurantId, languageId = null) {
@@ -264,6 +297,7 @@ class MenuCategoryModel extends BaseModel {
           COALESCE(
             JSON_AGG(
               JSON_BUILD_OBJECT(
+                'id', t.id,
                 'language_id', t.language_id,
                 'name', t.name,
                 'description', t.description
@@ -299,18 +333,20 @@ class MenuCategoryModel extends BaseModel {
     try {
       await this.executeQuery('BEGIN');
 
-      const updatePromises = categoryOrders.map(async ({ id, display_order }) => {
+      // Update one by one to avoid conflicts
+      for (const { id, display_order } of categoryOrders) {
         const query = `
           UPDATE ${this.tableName}
           SET display_order = $1, updated_at = NOW()
           WHERE id = $2
           RETURNING id, display_order
         `;
-        return this.executeQuery(query, [display_order, id]);
-      });
+        const result = await this.executeQuery(query, [display_order, id]);
+        console.log(`Updated category ${id}: display_order = ${display_order}`, result.rows[0]);
+      }
 
-      await Promise.all(updatePromises);
       await this.executeQuery('COMMIT');
+      console.log('All category order updates committed successfully');
 
       return { success: true, message: 'Display order updated successfully' };
     } catch (error) {
