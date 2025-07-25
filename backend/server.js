@@ -17,6 +17,7 @@ const v1Routes = require('./src/routes/v1');
 const authRoutes = require('./src/routes/authRoutes');
 const locationRoutes = require('./src/routes/locationRoutes');
 const menuRoutes = require('./src/routes/menuRoutes');
+const menuItemRoutes = require('./src/routes/menuItemRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const restaurantRoutes = require('./src/routes/restaurantRoutes');
 
@@ -54,6 +55,7 @@ app.use('/api/v1', v1Routes);
 app.use('/api/auth', RateLimitMiddleware.auth(), authRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api', menuItemRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 

@@ -6,7 +6,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import '../../../styles/admin/restaurant/restaurantParametersTab.scss';
 
 const RestaurantParametersTab = () => {
-  const { restaurant } = useSelector((state) => state.auth);
+  const { restaurant, token } = useSelector((state) => state.auth);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,18 +27,12 @@ const RestaurantParametersTab = () => {
   // Custom dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const getAuthToken = () => {
-    const token = localStorage.getItem('token');
-    return token;
-  };
-
   // Fetch available languages and restaurant's current languages
   const fetchLanguages = useCallback(async () => {
     try {
       setLanguagesLoading(true);
       setError('');
 
-      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -75,7 +69,7 @@ const RestaurantParametersTab = () => {
     } finally {
       setLanguagesLoading(false);
     }
-  }, [restaurant?.id]);
+  }, [restaurant?.id, token]);
 
   useEffect(() => {
     if (restaurant?.id) {
@@ -161,7 +155,6 @@ const RestaurantParametersTab = () => {
       setLoading(true);
       setError('');
 
-      const token = getAuthToken();
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,

@@ -1,0 +1,91 @@
+General considerations for the application
+Frontend & Backend
+Frontend Analysis & Understanding
+•	Authentication flow - Understand login process and user /restaurant data retrieval
+•	Domain/subdomain control - Verify restaurant isolation mechanisms
+•	Existing components in src/components/admin/ for reusable patterns
+•	Understand src/styles pattern: all styles go here not in the page/componets. (variables.scss -> use it for colors, fonts, etc.  If you need color, always use a variant of $logoO (preferably) or $logoB
+Backend Analysis & Implementation
+o	Verify backend structure at backend/src
+Database Layer:
+•	db/migrations/ - Review existing db structure
+•	db/seeds/ - Add comprehensive test data for various scenarios
+•	in case you need: the postgre user password is admin and the database is alacarte_dev
+Security & Access Control
+Restaurant Isolation:
+•	 Understand  existing implementation:
+o	URL changes trigger logout/re-authentication
+o	 Unauthenticated users are redirected to login
+o	Ensure cross-restaurant data access prevention
+o	Validate subdomain-based restaurant switching
+Role-Based Access:
+•	Restaurant Admin and Location Admin: Full access to all menu management
+•	No access to users with other roles or from other restaurants
+Route Structure:
+•	URL Pattern: [restaurant-url].[app url] /admin/menu
+Generic User Interface Specifications for all User Management pages
+•	All pages and messages in the GUI  must be in Brazilian Portuguese.
+•	All Administrator users must only access menu data from the restaurant they belong to
+•	Must be linked with the Menu Hub
+•	The label must use a smaller font size than the data (must be bold)
+•	Placeholders must be in italic blue
+•	When editing or creating an object, scroll to the top when showing the page.
+•	when creating or editing  an object, warn (using a modal) about data loss when leaving the page without saving the data.
+
+Languages
+o	Each restaurant decides that the menu can be presented in more than one language.
+o	The default language, if the restaurant does not change it, is Brazilian Portuguese
+
+Existing Authentication Components
+1. AdminProtectedRoute - The main authentication guard
+Location: AdminProtectedRoute.jsx
+Handles: User authentication, role authorization, token validation
+Features:
+Automatic token validation from localStorage/sessionStorage
+Cross-domain authentication (subdomain support)
+Admin role checking (restaurant_administrator, location_administrator)
+Automatic redirects to login pages
+Restaurant ownership validation
+2. RouteGuard - General route protection
+Location: RouteGuard.jsx
+Handles: General route protection and subdomain logic
+3. Redux Auth Management
+Location: authSlice.js
+Features: Token storage, user state, automatic rehydration
+4. Auth Middleware
+Location: authMiddleware.js
+Handles: Authentication checks for API requests
+Features: Validates user token, checks restaurant access
+5. Authenticated API Requests
+Location: api.js
+Handles: API requests with authentication headers
+Features: Automatically adds authentication headers to requests
+6. Language Selector
+Location: LanguageSelector.jsx
+Handles: Language selection for the application
+Features: Displays available languages, allows language switching
+7. Language Management
+Location: languageSlice.js
+Handles: Language state management
+Features: Stores selected language, updates language in the application
+8. Language Translation
+Location: translationSlice.js
+Handles: Translation management for the application
+Features: Stores translations, updates translations based on selected language
+9. Language Selector Component
+Location: LanguageSelector.jsx
+Handles: Language selection in the UI
+Features: Displays available languages, allows language switching
+10. Language Translation Component
+Location: Translation.jsx
+Handles: Displays translated text based on selected language
+Features: Uses translations from translationSlice.js
+11. Language Management in Redux
+Location: languageSlice.js
+Handles: Language state management in Redux
+Features: Stores selected language, updates language in the application
+12. Language Translation in Redux
+Location: translationSlice.js
+Handles: Translation management in Redux
+Features: Stores translations, updates translations based on selected language
+

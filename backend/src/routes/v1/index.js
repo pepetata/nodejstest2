@@ -13,6 +13,7 @@ const languageRoutes = require('../languageRoutes');
 
 // Import new menu management routes
 const categoryRoutes = require('../menu/categoryRoutes');
+const menuItemRoutes = require('../menuItemRoutes');
 
 const restaurantCreationLimiter = RateLimitMiddleware.restaurantCreation();
 const router = express.Router();
@@ -33,6 +34,9 @@ router.use('/locations', locationRoutes);
 
 // Menu category management routes (must come before general menu routes)
 router.use('/menu/categories', categoryRoutes);
+
+// Menu items routes
+router.use('/', menuItemRoutes);
 
 // Menu routes with search rate limiting for menu items
 router.use('/menu', menuRoutes);

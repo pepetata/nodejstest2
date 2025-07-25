@@ -1,0 +1,331 @@
+Implementation suggestion
+Database Schema Recommendation
+Core Menu Tables Structure
+Since you want to start fresh, I recommend creating these new tables (replacing the current simple menu_items table):
+1. Menu Categories & Structure
+-- Main categories (Entradas, Pratos Principais, etc.)
+menu_categories
+- id (UUID)
+- restaurant_id (UUID, FK)
+- parent_category_id (UUID, FK - for subcategories)
+- display_order (INT)
+- is_active (BOOLEAN)
+- created_at, updated_at
+-- Multilingual category names
+menu_category_translations
+- id (UUID)
+- category_id (UUID, FK)
+- language_code (VARCHAR, FK to languages table)
+- name (VARCHAR)
+- description (TEXT)
+•
+•
+•
+•
+2. Menu Items Core
+menu_items
+- id (UUID)
+- restaurant_id (UUID, FK)
+- sku (VARCHAR) -- internal reference
+- base_price (DECIMAL)
+- preparation_time_minutes (INT, nullable)
+- is_available (BOOLEAN)
+- is_featured (BOOLEAN)
+- display_order (INT)
+- created_at, updated_at
+-- Multilingual item content
+
+menu_item_translations
+- id (UUID)
+- item_id (UUID, FK)
+- language_code (VARCHAR, FK)
+- name (VARCHAR)
+- description (TEXT)
+- ingredients (TEXT)
+- preparation_method (TEXT)
+•
+•
+•
+•
+3. Category-Item Relationships
+menu_item_categories
+- id (UUID)
+- item_id (UUID, FK)
+- category_id (UUID, FK)
+- display_order (INT)
+•
+•
+•
+•
+4. Media Management
+menu_item_media
+- id (UUID)
+- item_id (UUID, FK)
+- media_type (ENUM: 'image', 'video')
+- file_url (VARCHAR)
+- display_order (INT)
+- alt_text (VARCHAR)
+- is_primary (BOOLEAN)
+•
+•
+•
+•
+5. Modifiers System
+menu_modifiers
+- id (UUID)
+- restaurant_id (UUID, FK)
+- modifier_type (ENUM: 'optional', 'required', 'paid')
+- min_selections (INT)
+- max_selections (INT)
+- display_order (INT)
+menu_modifier_translations
+- modifier_id (UUID, FK)
+- language_code (VARCHAR, FK)
+- name (VARCHAR)
+- description (TEXT)
+menu_modifier_options
+- id (UUID)
+- modifier_id (UUID, FK)
+- price_adjustment (DECIMAL)
+- display_order (INT)
+menu_modifier_option_translations
+- option_id (UUID, FK)
+- language_code (VARCHAR, FK)
+- name (VARCHAR)
+menu_item_modifiers
+- item_id (UUID, FK)
+- modifier_id (UUID, FK)
+•
+•
+•
+•
+6. Dietary & Allergen Information
+dietary_tags
+- id (UUID)
+- tag_type (ENUM: 'dietary', 'allergen', 'cooking_method')
+- icon (VARCHAR)
+- color (VARCHAR)
+dietary_tag_translations
+- tag_id (UUID, FK)
+- language_code (VARCHAR, FK)
+- name (VARCHAR)
+- description (TEXT)
+menu_item_dietary_tags
+- item_id (UUID, FK)
+- tag_id (UUID, FK)
+•
+•
+•
+•
+7. Nutritional Information
+menu_item_nutrition
+- item_id (UUID, FK, unique)
+- calories (INT)
+- protein_g (DECIMAL)
+- fat_g (DECIMAL)
+- carbs_g (DECIMAL)
+- portion_size (VARCHAR)
+- portion_weight_g (INT)
+•
+•
+•
+•
+8. Promotions & Scheduling
+menu_promotions
+- id (UUID)
+- restaurant_id (UUID, FK)
+- promotion_type (ENUM: 'percentage', 'fixed_amount', 'bogo', 'combo')
+- discount_value (DECIMAL)
+- start_date (TIMESTAMP)
+- end_date (TIMESTAMP)
+- is_active (BOOLEAN)
+menu_item_promotions
+- item_id (UUID, FK)
+- promotion_id (UUID, FK)
+menu_availability_schedules
+- id (UUID)
+- item_id (UUID, FK)
+- day_of_week (INT) -- 0-6
+- start_time (TIME)
+- end_time (TIME)
+- is_active (BOOLEAN)
+•
+•
+•
+•
+Backend Architecture Recommendation
+1. Updated Models Structure
+models/
+├── menu/
+│   ├── MenuCategoryModel.js
+│   ├── MenuItemModel.js
+│   ├── MenuModifierModel.js
+│   ├── MenuPromotionModel.js
+│   └── MenuAvailabilityModel.js
+├── DietaryTagModel.js
+└── (existing models...)
+•
+•
+•
+•
+2. Controllers Structure
+controllers/
+├── menu/
+│   ├── menuCategoryController.js
+│   ├── menuItemController.js
+│   ├── menuModifierController.js
+│   └── menuPromotionController.js
+├── customerMenuController.js  -- Customer-facing API
+└── (existing controllers...)
+•
+•
+•
+•
+3. Services Layer
+services/
+├── MenuTranslationService.js
+├── MenuAvailabilityService.js
+├── MenuPricingService.js
+├── MenuMediaService.js
+└── QRCodeService.js
+•
+•
+•
+•
+4. API Endpoints Structure
+Customer-Facing APIs:
+•	GET /api/menu/:restaurantId/:languageCode - Complete menu with translations
+•	GET /api/menu/:restaurantId/categories - Menu structure
+•	GET /api/menu/:restaurantId/items/:categoryId - Items by category
+•	GET /api/menu/:restaurantId/item/:itemId - Single item details
+•	GET /api/menu/:restaurantId/availability - Real-time availability
+•	GET /api/menu/:restaurantId/promotions - Active promotions
+Admin APIs:
+•	Full CRUD operations for all menu components
+•	Bulk operations for categories and items
+•	Translation management endpoints
+•	Media upload and management
+•	Availability scheduling
+Frontend Architecture Recommendation
+1. Component Structure
+src/
+├── components/
+│   ├── customer-menu/
+│   │   ├── MenuContainer.jsx
+│   │   ├── LanguageSelector.jsx
+│   │   ├── CategoryNavigation.jsx
+│   │   ├── MenuItem.jsx
+│   │   ├── ItemModal.jsx
+│   │   ├── ModifierGroup.jsx
+│   │   ├── DietaryBadges.jsx
+│   │   ├── SearchFilter.jsx
+│   │   └── PromotionBanner.jsx
+│   └── admin-menu/
+│       ├── MenuManagement.jsx
+│       ├── CategoryManager.jsx
+│       ├── ItemEditor.jsx
+│       ├── ModifierManager.jsx
+│       ├── TranslationEditor.jsx
+│       ├── MediaUploader.jsx
+│       └── AvailabilityScheduler.jsx
+•
+•
+•
+•
+2. State Management
+Using Redux Toolkit (already in your project):
+store/
+├── slices/
+│   ├── customerMenuSlice.js
+│   ├── adminMenuSlice.js
+│   ├── languageSlice.js
+│   └── cartSlice.js
+•
+•
+•
+•
+3. Customer Menu Features Implementation
+Multi-Language Support:
+•	Language selector with flag icons
+•	Context-based language switching
+•	Cached translations for performance
+•	Fallback to default language
+Menu Structure:
+•	Collapsible category navigation
+•	Quick-access floating buttons
+•	Search and filter functionality
+•	Infinite scroll for large menus
+Rich Media:
+•	Image carousel with lazy loading
+•	Video playback controls
+•	Progressive image loading
+•	Responsive media containers
+4. Advanced Features Implementation
+Real-time Availability:
+•	WebSocket connection for live updates
+•	Visual indicators (available/sold out)
+•	Automatic menu refresh
+QR Code Integration:
+•	Table-specific QR codes
+•	Session management
+•	Mobile-optimized interface
+Customization System:
+•	Dynamic modifier groups
+•	Half-and-half builders
+•	Combo meal configurators
+•	Price calculation engine
+Technology Recommendations
+1. Additional Backend Dependencies
+{
+  "sharp": "^0.32.6",           // Image processing
+  "qrcode": "^1.5.3",           // QR code generation
+  "node-cron": "^3.0.3",       // Scheduled tasks
+  "ws": "^8.14.2",              // WebSocket support
+  "redis": "^4.6.0",           // Caching
+  "helmet": "^7.1.0"           // Security headers
+}
+•
+•
+•
+•
+2. Frontend Enhancements
+{
+  "framer-motion": "^10.16.0",     // Animations
+  "react-query": "^3.39.0",       // Server state management
+  "react-intersection-observer": "^9.5.0", // Lazy loading
+  "react-qr-code": "^2.0.0",      // QR code display
+  "socket.io-client": "^4.7.0"    // Real-time updates
+}
+•
+•
+•
+•
+Implementation Strategy
+Phase 1: Core Infrastructure
+1.	Create new database schema
+2.	Implement base models and controllers
+3.	Set up translation system
+4.	Basic CRUD operations
+Phase 2: Customer Menu
+1.	Public menu API
+2.	Customer-facing components
+3.	Language switching
+4.	Basic ordering flow
+Phase 3: Advanced Features
+1.	Modifier system
+2.	Real-time availability
+3.	Media management
+4.	Promotions engine
+Phase 4: Admin Interface
+1.	Menu management dashboard
+2.	Translation tools
+3.	Analytics and reporting
+4.	Bulk operations
+Phase 5: Optimization
+1.	Performance optimization
+2.	Caching strategies
+3.	Mobile optimization
+4.	Accessibility features
+This architecture provides a solid foundation for all the requirements you've outlined while maintaining scalability and maintainability. The multilingual support is built into the core structure, and the modular design allows for incremental implementation of features.
+Would you like me to elaborate on any specific aspect of this implementation plan?
+
