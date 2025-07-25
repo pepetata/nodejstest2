@@ -38,6 +38,28 @@ $accent-orange-light: #ffb347; // Light orange for hover states
 $warning: #ff6b35; // Orange-red for warnings
 $success: #4caf50; // Keep green for success states
 
+// $logoO Color Gradient (20 shades from lightest to darkest)
+$logoO-10: #fffbf5; // 10% - Extremely light tint
+$logoO-20: #fff7eb; // 20% - Very light tint
+$logoO-30: #fff3e0; // 30% - Light tint
+$logoO-40: #ffeed6; // 40% - Light tint
+$logoO-50: #ffeacc; // 50% - Medium light tint
+$logoO-60: #ffe6c2; // 60% - Medium light tint
+$logoO-70: #ffe1b8; // 70% - Medium tint
+$logoO-80: #ffddad; // 80% - Medium tint
+$logoO-90: #ffd9a3; // 90% - Slightly light tint
+$logoO-100: #ffd499; // 100% - Light tint
+$logoO-200: #ffc966; // 200% - Light
+$logoO-300: #ffbe33; // 300% - Original color lightened
+$logoO-400: #ffb300; // 400% - Slightly lighter than original
+$logoO-500: #ffaa00; // 500% - Original $logoO color
+$logoO-600: #e69900; // 600% - Slightly darker
+$logoO-700: #cc8800; // 700% - Medium dark
+$logoO-800: #b37700; // 800% - Dark
+$logoO-900: #996600; // 900% - Darker
+$logoO-950: #805500; // 950% - Very dark
+$logoO-990: #664400; // 990% - Extremely dark
+
 // Background variations
 $bg-light: color.scale($bg-color, $lightness: 5%);
 $bg-dark: color.scale($bg-color, $lightness: -10%);

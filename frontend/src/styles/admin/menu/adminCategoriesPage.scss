@@ -2,7 +2,7 @@
 @use '../../variables.scss' as *;
 
 .admin-categories-page {
-  padding: 24px;
+  padding: 12px 24px;
   background: linear-gradient(135deg, #fff8f0 0%, #ffe8d1 100%);
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -112,7 +112,7 @@
     .stat-card {
       background: white;
       border-radius: 16px;
-      padding: 24px;
+      padding: 5px 15px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.2);
       transition: all 0.3s ease;
@@ -205,7 +205,7 @@
   .categories-content {
     background: white;
     border-radius: 16px;
-    padding: 32px;
+    padding: 12px 32px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.2);
 
@@ -269,7 +269,7 @@
       gap: 24px;
 
       .category-card {
-        background: #f8f9fa;
+        background: $logoO-10;
         border: 2px solid #e9ecef;
         border-radius: 12px;
         padding: 20px;
@@ -394,7 +394,7 @@
     // Table styles for new layout
     .categories-table-container {
       .table-controls {
-        background: #f8f9fa;
+        background: $logoO-10;
         padding: 16px 20px;
         border-radius: 8px 8px 0 0;
         border-bottom: 1px solid #dee2e6;
@@ -520,7 +520,7 @@
                 font-size: 0.9rem;
 
                 &:hover {
-                  background: #f8f9fa;
+                  background: $logoO-10;
                 }
 
                 &.active {
@@ -609,7 +609,7 @@
         overflow: hidden;
 
         .table-header {
-          background: #f8f9fa;
+          background: $logoO-10 !important;
           border-bottom: 2px solid #dee2e6;
 
           .header-row {
@@ -630,7 +630,7 @@
             transition: background-color 0.2s ease;
 
             &:hover {
-              background: #f8f9fa;
+              background: $logoO-50;
             }
 
             &:last-child {
@@ -638,7 +638,7 @@
             }
 
             .table-cell {
-              padding: 16px 12px;
+              padding: 8px 12px;
               vertical-align: middle;
               display: flex;
               align-items: center;
@@ -650,6 +650,7 @@
           display: grid;
           grid-template-columns: 1fr 100px 120px 160px;
           min-height: 60px;
+          background-color: $logoO-30;
 
           @media (max-width: 1024px) {
             grid-template-columns: 1fr 80px 100px 140px;
@@ -676,7 +677,7 @@
 
           // Subcategory styling
           &.subcategory-row {
-            background-color: #f8f9fa;
+            background-color: $logoO-10;
 
             .name-cell {
               padding-left: 24px;
@@ -898,7 +899,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        background: linear-gradient(135deg, $logoO-10 0%, #ffffff 100%);
 
         h3 {
           margin: 0;
@@ -931,7 +932,7 @@
           justify-content: center;
 
           &:hover {
-            background: #f8f9fa;
+            background: $logoO-10;
             color: #dc3545;
             transform: scale(1.1);
           }
@@ -944,7 +945,7 @@
         .form-sections {
           .form-section {
             margin-bottom: 40px;
-            background: #f8f9fa;
+            background: $logoO-10;
             border-radius: 12px;
             padding: 24px;
             border: 1px solid #e9ecef;
@@ -1122,7 +1123,7 @@
           gap: 16px;
           padding: 32px 40px;
           border-top: 2px solid #e9ecef;
-          background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+          background: linear-gradient(135deg, $logoO-10 0%, #ffffff 100%);
           margin: 0 -40px -40px -40px;
           border-radius: 0 0 16px 16px;
 
@@ -1159,7 +1160,7 @@
               box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
               &:hover {
-                background: #f8f9fa !important;
+                background: $logoO-10 !important;
                 color: #495057 !important;
                 border-color: #adb5bd !important;
                 transform: translateY(-1px);
@@ -1168,7 +1169,7 @@
             }
 
             &.btn-secondary {
-              background: #6c757d !important;
+              background: $primary-lighter !important;
               color: white !important;
               box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
 
@@ -1201,7 +1202,7 @@
 
       .view-section {
         margin-bottom: 40px;
-        background: #f8f9fa;
+        background: $logoO-10;
         border-radius: 12px;
         padding: 24px;
         border: 1px solid #e9ecef;
@@ -1382,7 +1383,7 @@
                   font-size: 1rem;
                   line-height: 1.5;
                   padding: 12px 16px;
-                  background: #f8f9fa;
+                  background: $logoO-10;
                   border-radius: 8px;
                   border: 1px solid #e9ecef;
                   min-height: 44px;
@@ -1408,7 +1409,7 @@
       gap: 16px;
       padding: 32px 40px;
       border-top: 2px solid #e9ecef;
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      background: linear-gradient(135deg, $logoO-10 0%, #ffffff 100%);
       margin: 0 -40px -40px -40px;
       border-radius: 0 0 16px 16px;
 
@@ -1594,11 +1595,11 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      border-bottom: 1px solid #f8f9fa;
+      border-bottom: 1px solid $logoO-10;
       transition: background-color 0.2s ease;
 
       &:hover {
-        background-color: #f8f9fa;
+        background-color: $logoO-10;
       }
 
       &:last-child {
@@ -1612,7 +1613,7 @@
       }
 
       &.subcategory {
-        background-color: #f8f9fa;
+        background-color: $logoO-10;
         margin-left: 0;
         color: #6c757d;
         font-weight: normal;
@@ -1681,7 +1682,7 @@
 
     .btn {
       &.btn-secondary {
-        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        background: $primary-light;
         border: none;
         color: white;
         font-weight: 600;

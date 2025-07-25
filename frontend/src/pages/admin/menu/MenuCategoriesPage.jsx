@@ -862,10 +862,7 @@ const MenuCategoriesPage = () => {
       <div className="page-header">
         <div className="header-content">
           <div className="page-title-section">
-            <h1 className="page-title">
-              <FaList />
-              Categorias do Cardápio
-            </h1>
+            <h1 className="page-title">Categorias do Cardápio</h1>
             <p className="page-subtitle">
               Gerencie as categorias do seu cardápio com suporte multilíngue
             </p>
@@ -1284,7 +1281,13 @@ const MenuCategoriesPage = () => {
                       >
                         <option value="">Categoria principal</option>
                         {categories
-                          .filter((cat) => !editingCategory || cat.id !== editingCategory.id)
+                          .filter(
+                            (cat) =>
+                              // Only show parent categories (categories without parent_category_id)
+                              !cat.parent_category_id &&
+                              // Exclude the category being edited (if any)
+                              (!editingCategory || cat.id !== editingCategory.id)
+                          )
                           .map((category) => (
                             <option key={category.id} value={category.id}>
                               {getPrimaryTranslation(category.translations)?.name || 'Sem nome'}
