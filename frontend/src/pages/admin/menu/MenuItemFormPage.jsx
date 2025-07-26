@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FaSave, FaPlus, FaTimes, FaUtensils } from 'react-icons/fa';
@@ -15,8 +15,7 @@ const MenuItemFormPage = () => {
     preparation_time_minutes: '',
     is_available: true,
     is_featured: false,
-    display_order: 0,
-    category_ids: [],
+    categories: [], // Changed from category_ids to categories with display_order
   });
 
   const [translations, setTranslations] = useState([]);
@@ -27,6 +26,10 @@ const MenuItemFormPage = () => {
   const [activeTab, setActiveTab] = useState('general');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // New state for category selection
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [newCategoryOrder, setNewCategoryOrder] = useState(1);
+
   const isEditing = !!id;
   const isSubdomain =
     !restaurantSlug &&
@@ -36,44 +39,9 @@ const MenuItemFormPage = () => {
 
   const basePath = isSubdomain ? '' : `/${restaurantSlug}`;
 
-  useEffect(() => {
-    fetchInitialData();
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
-    // Warning when leaving page with unsaved changes
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
-
-  const fetchInitialData = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
-      setLoading(true);
-      await Promise.all([
-        fetchCategories(),
-        fetchLanguages(),
-        isEditing ? fetchMenuItem() : Promise.resolve(),
-      ]);
-    } catch (fetchError) {
-      console.error('Error fetching initial data:', fetchError);
-      setError('Erro ao carregar dados iniciais');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`/api/restaurants/${restaurant.id}/menu-categories`, {
+      const response = await fetch(`/api/v1/menu/categories`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -82,14 +50,19 @@ const MenuItemFormPage = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Categories API response:', data);
+        console.log('Categories count:', data.data?.length || 0);
+        console.log('First category structure:', data.data?.[0]);
         setCategories(data.data || []);
+      } else {
+        console.error('Categories API failed:', response.status, response.statusText);
       }
     } catch (fetchError) {
       console.error('Error fetching categories:', fetchError);
     }
-  };
+  }, [token]);
 
-  const fetchLanguages = async () => {
+  const fetchLanguages = useCallback(async () => {
     try {
       const response = await fetch(`/api/v1/restaurants/${restaurant.id}/languages`, {
         headers: {
@@ -118,11 +91,11 @@ const MenuItemFormPage = () => {
     } catch (fetchError) {
       console.error('Error fetching languages:', fetchError);
     }
-  };
+  }, [token, restaurant.id, isEditing]);
 
-  const fetchMenuItem = async () => {
+  const fetchMenuItem = useCallback(async () => {
     try {
-      const response = await fetch(`/api/menu-items/${id}`, {
+      const response = await fetch(`/api/v1/menu-items/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -139,8 +112,11 @@ const MenuItemFormPage = () => {
           preparation_time_minutes: item.preparation_time_minutes || '',
           is_available: item.is_available,
           is_featured: item.is_featured || false,
-          display_order: item.display_order || 0,
-          category_ids: item.categories?.map((cat) => cat.id) || [],
+          categories:
+            item.categories?.map((cat) => ({
+              category_id: cat.id,
+              display_order: cat.display_order || 0,
+            })) || [],
         });
 
         setTranslations(item.translations || []);
@@ -152,7 +128,42 @@ const MenuItemFormPage = () => {
       console.error('Error fetching menu item:', fetchError);
       setError('Erro ao carregar item do cardápio');
     }
-  };
+  }, [id, token, navigate, basePath]);
+
+  const fetchInitialData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        fetchCategories(),
+        fetchLanguages(),
+        isEditing ? fetchMenuItem() : Promise.resolve(),
+      ]);
+    } catch (fetchError) {
+      console.error('Error fetching initial data:', fetchError);
+      setError('Erro ao carregar dados iniciais');
+    } finally {
+      setLoading(false);
+    }
+  }, [isEditing, fetchCategories, fetchLanguages, fetchMenuItem]);
+
+  useEffect(() => {
+    fetchInitialData();
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+  }, [fetchInitialData]);
+
+  useEffect(() => {
+    // Warning when leaving page with unsaved changes
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -174,12 +185,57 @@ const MenuItemFormPage = () => {
     setHasUnsavedChanges(true);
   };
 
-  const handleCategoryChange = (categoryId, isChecked) => {
+  // New category selection functions
+  const getCategoryName = (category) => {
+    // Get the first available translation name, prioritizing Portuguese (language_id: 1)
+    if (category.translations && category.translations.length > 0) {
+      const ptTranslation = category.translations.find((t) => t.language_id === 1);
+      if (ptTranslation && ptTranslation.name) {
+        return ptTranslation.name;
+      }
+      // Fallback to first available translation
+      return category.translations[0].name || 'Categoria sem nome';
+    }
+    return category.display_name || 'Categoria sem nome';
+  };
+
+  const getAvailableCategories = () => {
+    const selectedCategoryIds = formData.categories.map((cat) => cat.category_id);
+    return categories.filter((cat) => !selectedCategoryIds.includes(cat.id));
+  };
+
+  const addCategory = () => {
+    if (!selectedCategoryId) return;
+
+    const categoryToAdd = {
+      category_id: parseInt(selectedCategoryId),
+      display_order: newCategoryOrder,
+    };
+
     setFormData((prev) => ({
       ...prev,
-      category_ids: isChecked
-        ? [...prev.category_ids, categoryId]
-        : prev.category_ids.filter((id) => id !== categoryId),
+      categories: [...prev.categories, categoryToAdd],
+    }));
+
+    setSelectedCategoryId('');
+    setNewCategoryOrder(1);
+    setHasUnsavedChanges(true);
+  };
+
+  const removeCategory = (categoryId) => {
+    setFormData((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((cat) => cat.category_id !== categoryId),
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  const updateCategoryOrder = (categoryId, newOrder) => {
+    setFormData((prev) => ({
+      ...prev,
+      categories: prev.categories.map((cat) =>
+        cat.category_id === categoryId ? { ...cat, display_order: parseInt(newOrder) || 0 } : cat
+      ),
     }));
     setHasUnsavedChanges(true);
   };
@@ -188,6 +244,12 @@ const MenuItemFormPage = () => {
     // Check base price
     if (!formData.base_price || parseFloat(formData.base_price) <= 0) {
       setError('Preço base é obrigatório e deve ser maior que zero');
+      return false;
+    }
+
+    // Check categories - at least one required
+    if (!formData.categories || formData.categories.length === 0) {
+      setError('Pelo menos uma categoria é obrigatória');
       return false;
     }
 
@@ -212,7 +274,7 @@ const MenuItemFormPage = () => {
       setLoading(true);
       setError('');
 
-      const url = isEditing ? `/api/menu-items/${id}` : '/api/menu-items';
+      const url = isEditing ? `/api/v1/menu-items/${id}` : '/api/v1/menu-items';
       const method = isEditing ? 'PUT' : 'POST';
 
       // Filter out empty translations
@@ -247,8 +309,7 @@ const MenuItemFormPage = () => {
             preparation_time_minutes: '',
             is_available: true,
             is_featured: false,
-            display_order: 0,
-            category_ids: [],
+            categories: [],
           });
 
           // Reset translations
@@ -411,9 +472,7 @@ const MenuItemFormPage = () => {
                       required
                     />
                   </div>
-                </div>
 
-                <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="preparation_time_minutes">Tempo de Preparo (minutos)</label>
                     <input
@@ -426,38 +485,99 @@ const MenuItemFormPage = () => {
                       placeholder="Tempo em minutos (opcional)"
                     />
                   </div>
-
-                  <div className="form-group">
-                    <label htmlFor="display_order">Ordem de Exibição</label>
-                    <input
-                      type="number"
-                      id="display_order"
-                      name="display_order"
-                      value={formData.display_order}
-                      onChange={handleInputChange}
-                      min="0"
-                      placeholder="0"
-                    />
-                  </div>
                 </div>
 
                 {/* Categories */}
                 {categories.length > 0 && (
                   <div className="form-group">
-                    <label>Categorias</label>
-                    <div className="checkbox-grid">
-                      {categories.map((category) => (
-                        <div key={category.id} className="checkbox-item">
-                          <input
-                            type="checkbox"
-                            id={`category-${category.id}`}
-                            checked={formData.category_ids.includes(category.id)}
-                            onChange={(e) => handleCategoryChange(category.id, e.target.checked)}
-                          />
-                          <label htmlFor={`category-${category.id}`}>{category.name}</label>
-                        </div>
-                      ))}
+                    <label htmlFor="category-selector">Categorias e Ordem de Exibição *</label>
+
+                    {/* Category Selector */}
+                    <div className="category-selector">
+                      <div className="selector-row">
+                        <select
+                          id="category-selector"
+                          value={selectedCategoryId}
+                          onChange={(e) => setSelectedCategoryId(e.target.value)}
+                          className="category-dropdown"
+                        >
+                          <option value="">Selecione uma categoria para adicionar...</option>
+                          {getAvailableCategories().map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {getCategoryName(category)}
+                            </option>
+                          ))}
+                        </select>
+
+                        <input
+                          type="number"
+                          value={newCategoryOrder}
+                          onChange={(e) => setNewCategoryOrder(parseInt(e.target.value) || 1)}
+                          min="1"
+                          placeholder="Ordem"
+                          className="order-input"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={addCategory}
+                          disabled={!selectedCategoryId}
+                          className="add-category-btn"
+                        >
+                          Adicionar
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Selected Categories List */}
+                    {formData.categories.length > 0 && (
+                      <div className="selected-categories">
+                        <h4>Categorias Selecionadas:</h4>
+                        <div className="selected-categories-list">
+                          {formData.categories.map((selectedCat) => {
+                            const category = categories.find(
+                              (cat) => cat.id === selectedCat.category_id
+                            );
+                            return (
+                              <div key={selectedCat.category_id} className="selected-category-item">
+                                <span className="category-name">
+                                  {category
+                                    ? getCategoryName(category)
+                                    : 'Categoria não encontrada'}
+                                </span>
+                                <div className="category-controls">
+                                  <label htmlFor={`order-${selectedCat.category_id}`}>Ordem:</label>
+                                  <input
+                                    type="number"
+                                    id={`order-${selectedCat.category_id}`}
+                                    value={selectedCat.display_order}
+                                    onChange={(e) =>
+                                      updateCategoryOrder(selectedCat.category_id, e.target.value)
+                                    }
+                                    min="0"
+                                    className="order-input-small"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeCategory(selectedCat.category_id)}
+                                    className="remove-category-btn"
+                                    title="Remover categoria"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {formData.categories.length === 0 && (
+                      <p className="category-hint">
+                        Selecione pelo menos uma categoria para este item.
+                      </p>
+                    )}
                   </div>
                 )}
 

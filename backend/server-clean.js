@@ -16,7 +16,7 @@ const v1Routes = require('./src/routes/v1');
 // Import legacy routes (for backward compatibility)
 const authRoutes = require('./src/routes/authRoutes');
 const locationRoutes = require('./src/routes/locationRoutes');
-const menuRoutes = require('./src/routes/menuRoutes');
+const menuRoutes = require('./src/routes/menu/menuRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const restaurantRoutes = require('./src/routes/restaurantRoutes');
 

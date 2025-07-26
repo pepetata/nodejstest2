@@ -1,38 +1,51 @@
-const MenuItemModel = require('../models/menuItemModel');
-const MenuCategoryModel = require('../models/menu/MenuCategoryModel');
-const authMiddleware = require('../middleware/authMiddleware');
-const { requireRestaurantAccess } = require('../middleware/restaurantAuth');
+const MenuItemModel = require('../../models/menu/menuItemModel');
+const MenuCategoryModel = require('../../models/menu/MenuCategoryModel');
+const authMiddleware = require('../../middleware/authMiddleware');
+const { requireRestaurantAccess } = require('../../middleware/restaurantAuth');
 const { validationResult } = require('express-validator');
 
 class MenuItemController {
   // Get all menu items for a restaurant
   static async getMenuItems(req, res) {
     try {
+      console.log('[MenuItemController] getMenuItems called');
       const { restaurantId } = req.params;
       const { language = 'pt-BR', search, category_id } = req.query;
+      console.log('[MenuItemController] Parameters:', {
+        restaurantId,
+        language,
+        search,
+        category_id,
+      });
+      console.log('[MenuItemController] User restaurant_id:', req.user?.restaurant_id);
 
       // Verify user has access to this restaurant
       if (!req.user.restaurant_id || req.user.restaurant_id !== restaurantId) {
+        console.log('[MenuItemController] Access denied - user restaurant mismatch');
         return res.status(403).json({
           success: false,
           message: 'Acesso negado a este restaurante',
         });
       }
 
+      console.log('[MenuItemController] Fetching menu items...');
       let items;
 
       if (search || category_id) {
+        console.log('[MenuItemController] Using search method');
         items = await MenuItemModel.search(restaurantId, search, category_id, language);
       } else {
+        console.log('[MenuItemController] Using getByRestaurant method');
         items = await MenuItemModel.getByRestaurant(restaurantId, language);
       }
 
+      console.log('[MenuItemController] Found items:', items?.length || 0);
       res.json({
         success: true,
         data: items,
       });
     } catch (error) {
-      console.error('Error fetching menu items:', error);
+      console.error('[MenuItemController] Error fetching menu items:', error);
       res.status(500).json({
         success: false,
         message: 'Erro interno do servidor ao buscar itens do cardápio',
@@ -122,9 +135,8 @@ class MenuItemController {
         preparation_time_minutes,
         is_available = true,
         is_featured = false,
-        display_order = 0,
         translations,
-        category_ids = [],
+        categories = [], // Changed from category_ids to categories with display_order
       } = req.body;
 
       const restaurantId = req.user.restaurant_id;
@@ -148,9 +160,9 @@ class MenuItemController {
       }
 
       // Validate categories exist and belong to the restaurant
-      if (category_ids.length > 0) {
-        for (const categoryId of category_ids) {
-          const category = await MenuCategoryModel.getById(categoryId);
+      if (categories.length > 0) {
+        for (const categoryItem of categories) {
+          const category = await MenuCategoryModel.getById(categoryItem.category_id);
           if (!category || category.restaurant_id !== restaurantId) {
             return res.status(400).json({
               success: false,
@@ -167,10 +179,9 @@ class MenuItemController {
         preparation_time_minutes,
         is_available,
         is_featured,
-        display_order,
       };
 
-      const newItem = await MenuItemModel.create(itemData, translations, category_ids);
+      const newItem = await MenuItemModel.create(itemData, translations, categories);
 
       res.status(201).json({
         success: true,
@@ -223,9 +234,8 @@ class MenuItemController {
         preparation_time_minutes,
         is_available,
         is_featured,
-        display_order,
         translations,
-        category_ids = [],
+        categories = [], // Changed from category_ids to categories with display_order
       } = req.body;
 
       // Validate that we have at least one translation
@@ -247,9 +257,9 @@ class MenuItemController {
       }
 
       // Validate categories exist and belong to the restaurant
-      if (category_ids.length > 0) {
-        for (const categoryId of category_ids) {
-          const category = await MenuCategoryModel.getById(categoryId);
+      if (categories.length > 0) {
+        for (const categoryItem of categories) {
+          const category = await MenuCategoryModel.getById(categoryItem.category_id);
           if (!category || category.restaurant_id !== existingItem.restaurant_id) {
             return res.status(400).json({
               success: false,
@@ -265,10 +275,9 @@ class MenuItemController {
         preparation_time_minutes,
         is_available,
         is_featured,
-        display_order,
       };
 
-      const updatedItem = await MenuItemModel.update(id, itemData, translations, category_ids);
+      const updatedItem = await MenuItemModel.update(id, itemData, translations, categories);
 
       res.json({
         success: true,

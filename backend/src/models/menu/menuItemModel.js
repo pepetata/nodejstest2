@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const db = require('../../config/db');
 
 class MenuItemModel {
   // Get all menu items for a restaurant with translations and categories
@@ -12,7 +12,6 @@ class MenuItemModel {
         mi.preparation_time_minutes,
         mi.is_available,
         mi.is_featured,
-        mi.display_order,
         mi.created_at,
         mi.updated_at,
         mit.name,
@@ -20,15 +19,19 @@ class MenuItemModel {
         mit.ingredients,
         mit.preparation_method,
         mit.language_code,
-        -- Get categories for this item
+        -- Get categories for this item with their specific display orders
         COALESCE(
           JSON_AGG(
             DISTINCT JSONB_BUILD_OBJECT(
               'id', mc.id,
-              'name', mct.name,
-              'parent_id', mc.parent_category_id
+              'name', COALESCE(
+                (SELECT name FROM menu_category_translations
+                 WHERE category_id = mc.id AND language_code = $2 LIMIT 1),
+                'Category ' || mc.id
+              ),
+              'parent_id', mc.parent_category_id,
+              'display_order', mic.display_order
             )
-            ORDER BY mic.display_order
           ) FILTER (WHERE mc.id IS NOT NULL),
           '[]'
         ) as categories
@@ -36,13 +39,12 @@ class MenuItemModel {
       LEFT JOIN menu_item_translations mit ON mi.id = mit.item_id AND mit.language_code = $2
       LEFT JOIN menu_item_categories mic ON mi.id = mic.item_id
       LEFT JOIN menu_categories mc ON mic.category_id = mc.id
-      LEFT JOIN menu_category_translations mct ON mc.id = mct.category_id AND mct.language_code = $2
       WHERE mi.restaurant_id = $1
       GROUP BY
         mi.id, mi.restaurant_id, mi.sku, mi.base_price, mi.preparation_time_minutes,
-        mi.is_available, mi.is_featured, mi.display_order, mi.created_at, mi.updated_at,
+        mi.is_available, mi.is_featured, mi.created_at, mi.updated_at,
         mit.name, mit.description, mit.ingredients, mit.preparation_method, mit.language_code
-      ORDER BY mi.display_order, mit.name
+      ORDER BY mit.name
     `;
 
     const result = await db.query(query, [restaurantId, languageCode]);
@@ -60,7 +62,6 @@ class MenuItemModel {
         mi.preparation_time_minutes,
         mi.is_available,
         mi.is_featured,
-        mi.display_order,
         mi.created_at,
         mi.updated_at
       FROM menu_items mi
@@ -90,12 +91,13 @@ class MenuItemModel {
         mc.display_order as category_order,
         mic.display_order as item_category_order,
         mct.name,
-        mct.language_code
+        l.code as language_code
       FROM menu_item_categories mic
       JOIN menu_categories mc ON mic.category_id = mc.id
       LEFT JOIN menu_category_translations mct ON mc.id = mct.category_id
+      LEFT JOIN languages l ON mct.language_id = l.id
       WHERE mic.item_id = $1
-      ORDER BY mic.display_order, mct.language_code
+      ORDER BY mic.display_order, l.code
     `;
 
     const [itemResult, translationsResult, categoriesResult] = await Promise.all([
@@ -116,18 +118,18 @@ class MenuItemModel {
   }
 
   // Create new menu item
-  static async create(itemData, translations, categoryIds = []) {
+  static async create(itemData, translations, categoryData = []) {
     const client = await db.getClient();
 
     try {
       await client.query('BEGIN');
 
-      // Insert main item
+      // Insert main item (without display_order)
       const itemQuery = `
         INSERT INTO menu_items (
           restaurant_id, sku, base_price, preparation_time_minutes,
-          is_available, is_featured, display_order
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          is_available, is_featured
+        ) VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
       `;
 
@@ -138,7 +140,6 @@ class MenuItemModel {
         itemData.preparation_time_minutes || null,
         itemData.is_available !== undefined ? itemData.is_available : true,
         itemData.is_featured !== undefined ? itemData.is_featured : false,
-        itemData.display_order || 0,
       ];
 
       const itemResult = await client.query(itemQuery, itemValues);
@@ -164,13 +165,17 @@ class MenuItemModel {
         await client.query(translationQuery, translationValues);
       }
 
-      // Insert category relationships
-      for (let i = 0; i < categoryIds.length; i++) {
+      // Insert category relationships with specific display orders
+      for (const categoryItem of categoryData) {
         const categoryQuery = `
           INSERT INTO menu_item_categories (item_id, category_id, display_order)
           VALUES ($1, $2, $3)
         `;
-        await client.query(categoryQuery, [newItem.id, categoryIds[i], i]);
+        await client.query(categoryQuery, [
+          newItem.id,
+          categoryItem.category_id,
+          categoryItem.display_order || 0,
+        ]);
       }
 
       await client.query('COMMIT');
@@ -184,13 +189,13 @@ class MenuItemModel {
   }
 
   // Update menu item
-  static async update(itemId, itemData, translations, categoryIds = []) {
+  static async update(itemId, itemData, translations, categoryData = []) {
     const client = await db.getClient();
 
     try {
       await client.query('BEGIN');
 
-      // Update main item
+      // Update main item (without display_order)
       const itemQuery = `
         UPDATE menu_items SET
           sku = $2,
@@ -198,7 +203,6 @@ class MenuItemModel {
           preparation_time_minutes = $4,
           is_available = $5,
           is_featured = $6,
-          display_order = $7,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         RETURNING *
@@ -211,7 +215,6 @@ class MenuItemModel {
         itemData.preparation_time_minutes || null,
         itemData.is_available,
         itemData.is_featured,
-        itemData.display_order,
       ];
 
       const itemResult = await client.query(itemQuery, itemValues);
@@ -242,13 +245,18 @@ class MenuItemModel {
       // Delete existing category relationships and recreate them
       await client.query('DELETE FROM menu_item_categories WHERE item_id = $1', [itemId]);
 
-      // Insert new category relationships
-      for (let i = 0; i < categoryIds.length; i++) {
+      // Insert new category relationships with specific display orders
+      for (const categoryItem of categoryData) {
         const categoryQuery = `
           INSERT INTO menu_item_categories (item_id, category_id, display_order)
           VALUES ($1, $2, $3)
+          VALUES ($1, $2, $3)
         `;
-        await client.query(categoryQuery, [itemId, categoryIds[i], i]);
+        await client.query(categoryQuery, [
+          itemId,
+          categoryItem.category_id,
+          categoryItem.display_order || 0,
+        ]);
       }
 
       await client.query('COMMIT');
@@ -279,13 +287,33 @@ class MenuItemModel {
         mi.preparation_time_minutes,
         mi.is_available,
         mi.is_featured,
-        mi.display_order,
+        mi.created_at,
+        mi.updated_at,
         mit.name,
         mit.description,
         mit.ingredients,
-        mit.preparation_method
+        mit.preparation_method,
+        mit.language_code,
+        -- Get categories for this item with their specific display orders
+        COALESCE(
+          JSON_AGG(
+            DISTINCT JSONB_BUILD_OBJECT(
+              'id', mc.id,
+              'name', COALESCE(
+                (SELECT name FROM menu_category_translations
+                 WHERE category_id = mc.id AND language_code = $2 LIMIT 1),
+                'Category ' || mc.id
+              ),
+              'parent_id', mc.parent_category_id,
+              'display_order', mic.display_order
+            )
+          ) FILTER (WHERE mc.id IS NOT NULL),
+          '[]'
+        ) as categories
       FROM menu_items mi
       LEFT JOIN menu_item_translations mit ON mi.id = mit.item_id AND mit.language_code = $2
+      LEFT JOIN menu_item_categories mic ON mi.id = mic.item_id
+      LEFT JOIN menu_categories mc ON mic.category_id = mc.id
       WHERE mi.restaurant_id = $1
     `;
 
@@ -300,11 +328,17 @@ class MenuItemModel {
 
     if (categoryId) {
       paramCount++;
-      query += ` AND EXISTS (SELECT 1 FROM menu_item_categories mic WHERE mic.item_id = mi.id AND mic.category_id = $${paramCount})`;
+      query += ` AND EXISTS (SELECT 1 FROM menu_item_categories mic2 WHERE mic2.item_id = mi.id AND mic2.category_id = $${paramCount})`;
       params.push(categoryId);
     }
 
-    query += ` ORDER BY mi.display_order, mit.name`;
+    query += `
+      GROUP BY
+        mi.id, mi.restaurant_id, mi.sku, mi.base_price, mi.preparation_time_minutes,
+        mi.is_available, mi.is_featured, mi.created_at, mi.updated_at,
+        mit.name, mit.description, mit.ingredients, mit.preparation_method, mit.language_code
+      ORDER BY mit.name
+    `;
 
     const result = await db.query(query, params);
     return result.rows;
@@ -322,7 +356,7 @@ class MenuItemModel {
     return result.rows[0];
   }
 
-  // Get items by category
+  // Get items by category (properly ordered within that category)
   static async getByCategory(categoryId, languageCode = 'pt-BR') {
     const query = `
       SELECT
@@ -333,7 +367,6 @@ class MenuItemModel {
         mi.preparation_time_minutes,
         mi.is_available,
         mi.is_featured,
-        mi.display_order,
         mit.name,
         mit.description,
         mit.ingredients,
@@ -343,7 +376,7 @@ class MenuItemModel {
       JOIN menu_item_categories mic ON mi.id = mic.item_id
       LEFT JOIN menu_item_translations mit ON mi.id = mit.item_id AND mit.language_code = $2
       WHERE mic.category_id = $1
-      ORDER BY mic.display_order, mi.display_order, mit.name
+      ORDER BY mic.display_order, mit.name
     `;
 
     const result = await db.query(query, [categoryId, languageCode]);

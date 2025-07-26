@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db');
-const authMiddleware = require('../middleware/authMiddleware');
-const ValidationMiddleware = require('../middleware/validationMiddleware');
+const db = require('../../config/db');
+const authMiddleware = require('../../middleware/authMiddleware');
+const ValidationMiddleware = require('../../middleware/validationMiddleware');
 
 // Apply middleware
 router.use(authMiddleware);

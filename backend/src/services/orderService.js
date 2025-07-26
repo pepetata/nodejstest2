@@ -1,5 +1,5 @@
 const orderModel = require('../models/orderModel');
-const menuItemModel = require('../models/menuItemModel');
+const menuItemModel = require('../models/menu/menuItemModel');
 
 class OrderService {
   async createOrder(userId, orderData) {

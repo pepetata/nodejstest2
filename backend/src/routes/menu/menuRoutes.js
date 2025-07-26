@@ -1,7 +1,7 @@
 const express = require('express');
-const menuController = require('../controllers/menuController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { validateMenuItem } = require('../utils/validationUtils');
+const menuController = require('../../controllers/menu/menuController');
+const authMiddleware = require('../../middleware/authMiddleware');
+const { validateMenuItem } = require('../../utils/validationUtils');
 
 const router = express.Router();
 

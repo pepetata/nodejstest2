@@ -4,16 +4,16 @@ const RateLimitMiddleware = require('../../middleware/rateLimitMiddleware');
 // Import existing route modules
 const authRoutes = require('../authRoutes');
 const locationRoutes = require('../locationRoutes');
-const menuRoutes = require('../menuRoutes');
+const menuRoutes = require('../menu/menuRoutes');
 const orderRoutes = require('../orderRoutes');
 const restaurantRoutes = require('../restaurantRoutes');
 const userRoutes = require('../userRoutes');
 const testRoutes = require('../testRoutes');
-const languageRoutes = require('../languageRoutes');
 
 // Import new menu management routes
-const categoryRoutes = require('../menu/categoryRoutes');
-const menuItemRoutes = require('../menuItemRoutes');
+const menuCategoryRoutes = require('../menu/menuCategoryRoutes');
+const menuItemRoutes = require('../menu/menuItemRoutes');
+const menuLanguageRoutes = require('../menu/menuLanguageRoutes');
 
 const restaurantCreationLimiter = RateLimitMiddleware.restaurantCreation();
 const router = express.Router();
@@ -33,7 +33,7 @@ router.use('/auth', RateLimitMiddleware.auth(), authRoutes);
 router.use('/locations', locationRoutes);
 
 // Menu category management routes (must come before general menu routes)
-router.use('/menu/categories', categoryRoutes);
+router.use('/menu/categories', menuCategoryRoutes);
 
 // Menu items routes
 router.use('/', menuItemRoutes);
@@ -61,10 +61,10 @@ router.use(
 router.use('/users', userRoutes);
 
 // Language routes
-router.use('/languages', languageRoutes);
+router.use('/languages', menuLanguageRoutes);
 
 // Restaurant language routes (for endpoints like /restaurants/:id/languages)
-router.use('/restaurants', languageRoutes);
+router.use('/restaurants', menuLanguageRoutes);
 
 // Test routes for debugging (development only)
 if (process.env.NODE_ENV !== 'production') {

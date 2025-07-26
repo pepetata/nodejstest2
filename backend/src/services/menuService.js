@@ -1,4 +1,4 @@
-const menuItemModel = require('../models/menuItemModel');
+const menuItemModel = require('../models/menu/menuItemModel');
 
 class MenuService {
   async getAllMenuItems() {

@@ -1,8 +1,8 @@
 const express = require('express');
 const { body } = require('express-validator');
-const MenuItemController = require('../controllers/menuItemController');
-const authMiddleware = require('../middleware/authMiddleware');
-const { requireRestaurantAccess } = require('../middleware/restaurantAuth');
+const MenuItemController = require('../../controllers/menu/menuItemController');
+const authMiddleware = require('../../middleware/authMiddleware');
+const { requireRestaurantAccess } = require('../../middleware/restaurantAuth');
 
 const router = express.Router();
 
@@ -35,7 +35,7 @@ const validateMenuItem = [
 router.get(
   '/restaurants/:restaurantId/menu-categories',
   authMiddleware,
-  requireRestaurantAccess,
+  requireRestaurantAccess('restaurantId'),
   MenuItemController.getMenuCategories
 );
 
@@ -43,7 +43,7 @@ router.get(
 router.get(
   '/restaurants/:restaurantId/menu-items',
   authMiddleware,
-  requireRestaurantAccess,
+  requireRestaurantAccess('restaurantId'),
   MenuItemController.getMenuItems
 );
 

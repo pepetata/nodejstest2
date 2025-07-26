@@ -112,7 +112,7 @@ const MenuItemsPage = () => {
     try {
       const languageCode = selectedLanguage?.code || 'pt-BR';
       const response = await fetch(
-        `/api/restaurants/${restaurant.id}/menu-items?language=${languageCode}${
+        `/api/v1/restaurants/${restaurant.id}/menu-items?language=${languageCode}${
           searchTerm ? `&search=${searchTerm}` : ''
         }${selectedCategory ? `&category_id=${selectedCategory}` : ''}`,
         {
@@ -134,6 +134,15 @@ const MenuItemsPage = () => {
       setError('Erro ao carregar itens do cardápio');
     }
   }, [restaurant?.id, selectedLanguage?.code, searchTerm, selectedCategory, token]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchMenuItems();
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [fetchMenuItems]);
 
   const fetchCategories = useCallback(async () => {
     if (!restaurant?.id) return;
@@ -221,14 +230,14 @@ const MenuItemsPage = () => {
 
     try {
       setLoading(true);
-      await Promise.all([fetchMenuItems(), fetchCategories(), fetchRestaurantLanguages()]);
+      await Promise.all([fetchCategories(), fetchRestaurantLanguages()]);
     } catch (fetchError) {
       console.error('Error fetching data:', fetchError);
       setError('Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
-  }, [restaurant?.id, fetchMenuItems, fetchCategories, fetchRestaurantLanguages]);
+  }, [restaurant?.id, fetchCategories, fetchRestaurantLanguages]);
 
   useEffect(() => {
     fetchData();
@@ -236,22 +245,17 @@ const MenuItemsPage = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchMenuItems();
     trackChanges();
   };
 
   const handleCategoryFilter = (categoryId) => {
     setSelectedCategory(categoryId);
     trackChanges();
-    // Trigger search with new category
-    setTimeout(() => fetchMenuItems(), 100);
   };
 
   const handleLanguageChange = (language) => {
     setSelectedLanguage(language);
     setShowLanguageDropdown(false);
-    // Trigger menu items refresh after language change
-    setTimeout(() => fetchMenuItems(), 100);
   };
 
   const handleSort = (field) => {
@@ -265,7 +269,7 @@ const MenuItemsPage = () => {
 
   const toggleAvailability = async (itemId) => {
     try {
-      const response = await fetch(`/api/menu-items/${itemId}/toggle-availability`, {
+      const response = await fetch(`/api/v1/menu-items/${itemId}/toggle-availability`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -290,7 +294,7 @@ const MenuItemsPage = () => {
     }
 
     try {
-      const response = await fetch(`/api/menu-items/${itemId}`, {
+      const response = await fetch(`/api/v1/menu-items/${itemId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -550,7 +554,7 @@ const MenuItemsPage = () => {
             <div className="table-header">
               <div className="header-row">
                 <button
-                  className="table-header-cell sortable"
+                  className={`table-header-cell sortable ${sortBy === 'name' ? 'active' : ''}`}
                   onClick={() => handleSort('name')}
                   type="button"
                 >
@@ -559,7 +563,7 @@ const MenuItemsPage = () => {
                     (sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />)}
                 </button>
                 <button
-                  className="table-header-cell sortable"
+                  className={`table-header-cell sortable ${sortBy === 'category' ? 'active' : ''}`}
                   onClick={() => handleSort('category')}
                   type="button"
                 >
@@ -568,7 +572,7 @@ const MenuItemsPage = () => {
                     (sortOrder === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />)}
                 </button>
                 <button
-                  className="table-header-cell sortable"
+                  className={`table-header-cell sortable ${sortBy === 'base_price' ? 'active' : ''}`}
                   onClick={() => handleSort('base_price')}
                   type="button"
                 >
@@ -601,16 +605,18 @@ const MenuItemsPage = () => {
                   <div key={item.id} className="table-row">
                     <div className="table-cell name-cell" data-label="Nome:">
                       <strong>{item.name || 'Sem nome'}</strong>
-                      {item.sku && <div className="item-sku">SKU: {item.sku}</div>}
                     </div>
                     <div className="table-cell category-cell" data-label="Categoria:">
                       {item.categories && item.categories.length > 0 ? (
-                        item.categories.map((cat, index) => (
-                          <span key={cat.id} className="category-badge">
-                            {cat.name}
-                            {index < item.categories.length - 1 && ', '}
-                          </span>
-                        ))
+                        <div className="categories-list">
+                          {item.categories
+                            .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+                            .map((cat) => (
+                              <div key={cat.id} className="category-item">
+                                <span className="category-badge">{cat.name}</span>
+                              </div>
+                            ))}
+                        </div>
                       ) : (
                         <span className="no-category">Sem categoria</span>
                       )}
@@ -625,9 +631,10 @@ const MenuItemsPage = () => {
                       </div>
                     </div>
                     <div className="table-cell status-cell" data-label="Status:">
-                      <span className={`status-badge ${item.is_available ? 'active' : 'inactive'}`}>
-                        {item.is_available ? 'Disponível' : 'Indisponível'}
-                      </span>
+                      <div
+                        className={`status-circle ${item.is_available ? 'available' : 'unavailable'}`}
+                        title={item.is_available ? 'Disponível' : 'Indisponível'}
+                      ></div>
                     </div>
                     <div className="table-cell actions-cell" data-label="Ações:">
                       <div className="action-buttons">

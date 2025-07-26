@@ -507,8 +507,17 @@
           border-bottom: 2px solid #dee2e6;
 
           .header-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1fr 100px 160px;
             align-items: center;
+
+            @media (max-width: 1024px) {
+              grid-template-columns: 1.5fr 1fr 80px 80px 140px;
+            }
+
+            @media (max-width: 768px) {
+              display: none; // Hide headers on mobile since we use data-label
+            }
 
             .table-header-cell {
               font-weight: 600;
@@ -521,7 +530,6 @@
               display: flex;
               align-items: center;
               gap: 4px;
-              flex: 1;
               border: none;
               background: none;
               text-align: left;
@@ -538,6 +546,17 @@
                   outline: none;
                   background: #e9ecef;
                   color: $logoO;
+                }
+
+                // Active state when this column is being sorted
+                &.active,
+                &[data-active='true'] {
+                  color: $logoO;
+                  background: rgba(255, 170, 0, 0.1);
+
+                  svg {
+                    color: $logoO;
+                  }
                 }
               }
 
@@ -628,15 +647,20 @@
               font-weight: 600;
               font-size: 1rem;
             }
-
-            .item-sku {
-              color: #6c757d;
-              font-size: 0.8rem;
-              margin-top: 2px;
-            }
           }
 
           .category-cell {
+            .categories-list {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+            }
+
+            .category-item {
+              display: flex;
+              align-items: center;
+            }
+
             .category-badge {
               background: #e9ecef;
               color: #495057;
@@ -671,22 +695,26 @@
           .status-cell {
             justify-content: center;
 
-            .status-badge {
-              padding: 6px 12px;
-              border-radius: 12px;
-              font-size: 0.7rem;
-              font-weight: 600;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
+            .status-circle {
+              width: 16px;
+              height: 16px;
+              border-radius: 50%;
+              display: inline-block;
+              cursor: help;
+              transition: all 0.2s ease;
 
-              &.active {
-                background: #d4edda;
-                color: #155724;
+              &.available {
+                background-color: #28a745;
+                box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
               }
 
-              &.inactive {
-                background: #f8d7da;
-                color: #721c24;
+              &.unavailable {
+                background-color: #dc3545;
+                box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+              }
+
+              &:hover {
+                transform: scale(1.2);
               }
             }
           }
